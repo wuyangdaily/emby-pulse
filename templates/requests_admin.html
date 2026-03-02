@@ -2,22 +2,22 @@
 
 {% block content %}
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">🍿 资源求片大厅</h1>
-            <p class="text-sm text-gray-500 mt-1">处理用户的求片心愿，按照呼声权重优先处理。</p>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">🍿 资源求片大厅</h1>
+            <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">处理用户的求片心愿，按照呼声权重优先处理。</p>
         </div>
         <div class="mt-4 sm:mt-0 flex gap-3">
-            <button onclick="loadRequests()" class="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shadow-sm border border-gray-200">
+            <button onclick="loadRequests()" class="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shadow-sm border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
                 <i class="fa-solid fa-rotate-right mr-1"></i> 刷新列表
             </button>
-            <a href="/request" target="_blank" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm font-medium">
+            <a href="/request" target="_blank" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm font-medium dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50">
                 <i class="fa-solid fa-external-link-alt mr-1"></i> 访问用户求片页
             </a>
         </div>
     </div>
 
-    <div id="loading" class="text-center py-10 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
+    <div id="loading" class="text-center py-10 text-gray-500 dark:text-gray-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
     
     <div id="requests-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
         </div>
@@ -49,17 +49,17 @@
         grid.innerHTML = '';
         
         if (list.length === 0) {
-            grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-400">当前没有待处理的求片请求。</div>`;
+            grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-400 dark:bg-gray-800 dark:border-gray-700">当前没有待处理的求片请求。</div>`;
             grid.classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
             return;
         }
 
         const statusUI = {
-            0: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">待审批</span>' },
-            1: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">下载中</span>' },
-            2: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">已入库</span>' },
-            3: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">已拒绝</span>' }
+            0: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700">待审批</span>' },
+            1: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700">下载中</span>' },
+            2: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700">已入库</span>' },
+            3: { badge: '<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">已拒绝</span>' }
         };
 
         let html = '';
@@ -73,7 +73,7 @@
                 // 待审批状态：显示批准和拒绝
                 actionButtons = `
                     <button onclick="doAction(${item.tmdb_id}, 'approve')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm"><i class="fa-solid fa-check mr-1"></i> 批准并下载</button>
-                    <button onclick="doAction(${item.tmdb_id}, 'reject')" class="px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium transition"><i class="fa-solid fa-xmark"></i></button>
+                    <button onclick="doAction(${item.tmdb_id}, 'reject')" class="px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"><i class="fa-solid fa-xmark"></i></button>
                 `;
             } else if (item.status === 1) {
                 // 下载中状态：显示手动标记完成（未来自动化后可去掉）
@@ -83,27 +83,27 @@
             } else {
                 // 已完成或已拒绝：显示删除记录
                 actionButtons = `
-                    <button onclick="if(confirm('确定要删除这条求片记录吗？')) doAction(${item.tmdb_id}, 'delete')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition border border-red-100"><i class="fa-solid fa-trash-can mr-1"></i> 删除记录</button>
+                    <button onclick="if(confirm('确定要删除这条求片记录吗？')) doAction(${item.tmdb_id}, 'delete')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40"><i class="fa-solid fa-trash-can mr-1"></i> 删除记录</button>
                 `;
             }
 
             html += `
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex gap-5">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex gap-5 dark:bg-gray-800 dark:border-gray-700">
                 <img src="${item.poster_path || defaultPoster}" class="w-24 h-36 object-cover rounded-xl shadow-sm">
                 <div class="flex-grow flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start mb-1">
-                            <h3 class="font-bold text-lg text-gray-800 line-clamp-1" title="${item.title}">${item.title}</h3>
+                            <h3 class="font-bold text-lg text-gray-800 line-clamp-1 dark:text-gray-100" title="${item.title}">${item.title}</h3>
                             ${statusUI[item.status].badge}
                         </div>
-                        <div class="text-sm text-gray-500 mb-2">${icon} ${item.media_type === 'movie'?'电影':'剧集'} · ${item.year}</div>
+                        <div class="text-sm text-gray-500 mb-2 dark:text-gray-400">${icon} ${item.media_type === 'movie'?'电影':'剧集'} · ${item.year}</div>
                         
-                        <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
-                            <div class="text-xs text-gray-500 mb-1 flex items-center">
+                        <div class="bg-gray-50 rounded-lg p-2.5 border border-gray-100 dark:bg-gray-700/50 dark:border-gray-600">
+                            <div class="text-xs text-gray-500 mb-1 flex items-center dark:text-gray-400">
                                 <i class="fa-solid fa-users text-indigo-400 mr-1.5"></i> 
-                                求片人数：<span class="font-bold text-indigo-600 text-sm ml-1">${item.request_count}</span> 人
+                                求片人数：<span class="font-bold text-indigo-600 text-sm ml-1 dark:text-indigo-400">${item.request_count}</span> 人
                             </div>
-                            <div class="text-xs text-gray-600 line-clamp-1" title="${item.requested_by}">
+                            <div class="text-xs text-gray-600 line-clamp-1 dark:text-gray-400" title="${item.requested_by}">
                                 呼声来自: ${item.requested_by}
                             </div>
                         </div>
@@ -139,4 +139,4 @@
         }
     }
 </script>
-{% end strict %}
+{% endblock %}

@@ -20,11 +20,14 @@ def check_login(request: Request):
         return True
     return False
 
+# ================= 独立求片门户 (后台管理端) =================
 @router.get("/requests_admin")
 async def requests_admin_page(request: Request):
+    from fastapi.responses import RedirectResponse
     if not request.session.get("user"):
         return RedirectResponse(url="/login")
-    return templates.TemplateResponse("requests_admin.html", {"request": request, "active_nav": "requests_admin"})
+    # 🔥 注意这里把 active_nav 改成了 active_page，并且确保 RedirectResponse 被导入
+    return templates.TemplateResponse("requests_admin.html", {"request": request, "active_page": "requests_admin"})
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
