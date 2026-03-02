@@ -242,7 +242,7 @@ def manage_request_action(data: AdminActionModel, request: Request):
                 mp_type_map = {"movie": "电影", "tv": "电视剧"}
                 payload = {"name": row["title"], "tmdbid": int(row["tmdb_id"]), "year": str(row["year"]) if row["year"] else "", "type": mp_type_map.get(row["media_type"], "未知")}
                 
-                # 🔥 安全提取季数
+                # 修复: 从 sqlite3.Row 中安全提取 season
                 if row["media_type"] == "tv": 
                     season_val = row["season"] if "season" in row.keys() else 0
                     payload["season"] = season_val if season_val else 1
@@ -256,16 +256,9 @@ def manage_request_action(data: AdminActionModel, request: Request):
 
     elif data.action == "reject": 
         new_status = 3
-        # 🔥 修复了 Row 的 AttributeError 报错
-        t_name = row['title']
-        season_val = row["season"] if "season" in row.keys() else 0
-        if row['media_type'] == 'tv' and season_val: 
-            t_name += f" (第 {season_val} 季)"
-            
-        bot_msg = f"❌ <b>求片被拒绝</b>\n\n📌 <b>片名：</b>{t_name}\n⚠️ <b>原因：</b>{data.reject_reason or '暂无说明'}"
-        bot.send_message("sys_notify", bot_msg, platform="all")
+        # 已删除了骚扰管理员的机器人通知代码，现在只会默默更新数据库反馈给前端用户
         execute_sql("UPDATE media_requests SET status = ?, reject_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE tmdb_id = ?", (new_status, data.reject_reason, data.tmdb_id))
-        return {"status": "success", "message": "已拒绝并反馈原因"}
+        return {"status": "success", "message": "已拒绝并反馈给用户"}
 
     elif data.action == "finish": new_status = 2
     elif data.action == "delete":
