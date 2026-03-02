@@ -1,154 +1,155 @@
 {% extends "layout.html" %}
 
+{% set active_page = 'requests_admin' %}
+
 {% block title %}资源求片大厅 - EmbyPulse{% endblock %}
 
 {% block content %}
 <style>
     [x-cloak] { display: none !important; }
-    .pulse-list-row { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-    .pulse-list-row:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-    html.dark .pulse-list-row:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+    .pulse-list-row { transition: all 0.2s ease-in-out; }
+    .pulse-list-row:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05); }
+    html.dark .pulse-list-row:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4); }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    html.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
 </style>
 
-<div x-data="adminApp()" x-init="init()" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6" x-cloak>
+<div x-data="adminApp()" x-init="init()" class="p-4 md:p-6 max-w-[1600px] mx-auto space-y-6" x-cloak>
     
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <div>
-            <h2 class="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                <span class="text-2xl">🍿</span> 资源求片大厅
-            </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">处理用户的求片心愿，支持一键推送到 MoviePilot</p>
-        </div>
         <div class="flex items-center gap-3">
-            <button @click="loadData()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-xl text-sm font-medium transition flex items-center gap-2">
+            <div class="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center text-2xl text-red-500">🍿</div>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">资源求片大厅</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">多季度精准管理 · 审批即入库闭环</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+            <button @click="loadData()" class="flex-1 sm:flex-none px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
                 <i class="fa-solid fa-rotate-right"></i> 刷新数据
             </button>
-            <a href="/request" target="_blank" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-blue-500/30 flex items-center gap-2">
-                👉 前往用户前台
+            <a href="/request" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-green-500/20 flex items-center justify-center gap-2">
+                👉 前往求片前台
             </a>
         </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">待审批</div>
-            <div class="text-3xl font-bold text-blue-500" x-text="requests.filter(r => r.status === 0).length"></div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">下载中</div>
-            <div class="text-3xl font-bold text-yellow-500" x-text="requests.filter(r => r.status === 1).length"></div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">已入库</div>
-            <div class="text-3xl font-bold text-green-500" x-text="requests.filter(r => r.status === 2).length"></div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-            <div class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">已拒绝</div>
-            <div class="text-3xl font-bold text-red-500" x-text="requests.filter(r => r.status === 3).length"></div>
-        </div>
+    <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+        <button @click="filterStatus = 'all'" :class="filterStatus === 'all' ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900 shadow-md' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50'" class="px-5 py-2.5 rounded-full text-sm font-bold border transition whitespace-nowrap">
+            全部 (<span x-text="requests.length"></span>)
+        </button>
+        <button @click="filterStatus = 0" :class="filterStatus === 0 ? 'bg-blue-600 text-white border-transparent shadow-blue-500/20' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'" class="px-5 py-2.5 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-2">
+            待审批 <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="filterStatus === 0 ? 'bg-white/20' : 'bg-blue-500/10 text-blue-500'" x-text="requests.filter(r => r.status === 0).length"></span>
+        </button>
+        <button @click="filterStatus = 1" :class="filterStatus === 1 ? 'bg-yellow-500 text-white border-transparent' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'" class="px-5 py-2.5 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-2">
+            下载中 <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="filterStatus === 1 ? 'bg-white/20' : 'bg-yellow-500/10 text-yellow-500'" x-text="requests.filter(r => r.status === 1).length"></span>
+        </button>
+        <button @click="filterStatus = 2" :class="filterStatus === 2 ? 'bg-green-600 text-white border-transparent' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'" class="px-5 py-2.5 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-2">
+            已入库 <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="filterStatus === 2 ? 'bg-white/20' : 'bg-green-500/10 text-green-500'" x-text="requests.filter(r => r.status === 2).length"></span>
+        </button>
+        <button @click="filterStatus = 3" :class="filterStatus === 3 ? 'bg-red-500 text-white border-transparent' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'" class="px-5 py-2.5 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-2">
+            已拒绝 <span class="px-1.5 py-0.5 rounded-md text-[10px]" :class="filterStatus === 3 ? 'bg-white/20' : 'bg-red-500/10 text-red-500'" x-text="requests.filter(r => r.status === 3).length"></span>
+        </button>
     </div>
 
-    <div class="flex gap-2 overflow-x-auto hide-scrollbar">
-        <button @click="filterStatus = 'all'" :class="filterStatus === 'all' ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900 shadow-md' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-5 py-2 rounded-full text-sm font-bold border transition whitespace-nowrap">全部</button>
-        <button @click="filterStatus = 0" :class="filterStatus === 0 ? 'bg-blue-500 text-white border-blue-500 shadow-md shadow-blue-500/20' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-5 py-2 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-1.5">待审批</button>
-        <button @click="filterStatus = 1" :class="filterStatus === 1 ? 'bg-yellow-500 text-white border-yellow-500 shadow-md shadow-yellow-500/20' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-5 py-2 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-1.5">下载中</button>
-        <button @click="filterStatus = 2" :class="filterStatus === 2 ? 'bg-green-500 text-white border-green-500 shadow-md shadow-green-500/20' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-5 py-2 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-1.5">已入库</button>
-        <button @click="filterStatus = 3" :class="filterStatus === 3 ? 'bg-red-500 text-white border-red-500 shadow-md shadow-red-500/20' : 'bg-white border-gray-200 text-gray-600 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-5 py-2 rounded-full text-sm font-bold border transition whitespace-nowrap flex items-center gap-1.5">已拒绝</button>
-    </div>
-
-    <div class="space-y-3">
-        <template x-for="item in filteredRequests" :key="item.tmdb_id">
-            <div class="pulse-list-row flex flex-col lg:flex-row gap-4 items-start lg:items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+    <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+        <template x-for="item in filteredRequests" :key="item.tmdb_id + '_' + item.season">
+            <div class="pulse-list-row bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex gap-4">
                 
-                <div class="flex gap-4 items-center w-full lg:w-auto flex-1">
-                    <img :src="item.poster_path || 'https://via.placeholder.com/150'" class="w-16 h-24 rounded-lg object-cover shadow-md bg-gray-200 dark:bg-gray-900 shrink-0 border border-gray-100 dark:border-gray-700">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-1.5">
-                            <span class="px-2 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded text-[11px] font-bold shrink-0" x-text="item.media_type === 'movie' ? '电影' : '剧集'"></span>
-                            <h3 class="font-bold text-lg text-gray-900 dark:text-white truncate" x-text="item.title"></h3>
-                        </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-5 gap-y-2 mt-1">
-                            <span class="flex items-center gap-1"><i class="fa-regular fa-calendar"></i> <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.year"></span></span>
-                            <span class="flex items-center gap-1"><i class="fa-solid fa-fire text-orange-400"></i> 求片: <span class="font-bold text-gray-700 dark:text-gray-300" x-text="item.request_count + '人'"></span></span>
-                            <span class="flex items-center gap-1 truncate max-w-[150px] md:max-w-[250px]"><i class="fa-solid fa-user text-blue-400"></i> <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.requested_by"></span></span>
-                            <span class="flex items-center gap-1"><i class="fa-regular fa-clock"></i> <span x-text="item.created_at.substring(0, 16)"></span></span>
-                        </div>
-                        
-                        <div x-show="item.status === 3 && item.reject_reason" class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 px-2.5 py-1 rounded font-medium inline-block border border-red-100 dark:border-red-900/50">
-                            <i class="fa-solid fa-circle-exclamation mr-1"></i> 拒绝原因: <span x-text="item.reject_reason"></span>
-                        </div>
-                    </div>
+                <div class="shrink-0">
+                    <img :src="item.poster_path || 'https://via.placeholder.com/150'" class="w-16 h-24 rounded-lg object-cover shadow-sm bg-gray-100 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
                 </div>
 
-                <div class="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-center w-full lg:w-48 shrink-0 gap-3 mt-3 lg:mt-0 pt-3 lg:pt-0 border-t border-gray-100 dark:border-gray-700 lg:border-0 pl-2 lg:pl-6 lg:border-l">
-                    
-                    <div class="w-24 text-left lg:text-right">
-                        <span x-show="item.status === 0" class="text-blue-500 text-sm font-bold bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-500/20">待审批</span>
-                        <span x-show="item.status === 1" class="text-yellow-600 dark:text-yellow-500 text-sm font-bold bg-yellow-50 dark:bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-200 dark:border-yellow-500/20 inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>下载中</span>
-                        <span x-show="item.status === 2" class="text-green-600 dark:text-green-500 text-sm font-bold bg-green-50 dark:bg-green-500/10 px-3 py-1 rounded-full border border-green-200 dark:border-green-500/20">✅ 已入库</span>
-                        <span x-show="item.status === 3" class="text-red-600 dark:text-red-500 text-sm font-bold bg-red-50 dark:bg-red-500/10 px-3 py-1 rounded-full border border-red-200 dark:border-red-500/20">❌ 已拒绝</span>
+                <div class="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <h3 class="font-bold text-gray-900 dark:text-white truncate text-base mb-1" x-text="item.title"></h3>
+                                <div class="flex items-center gap-2 text-[10px]">
+                                    <span class="px-1.5 py-0.5 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded font-bold uppercase" x-text="item.media_type === 'movie' ? 'Movie' : 'TV Series'"></span>
+                                    <span class="text-gray-400" x-text="item.year"></span>
+                                </div>
+                            </div>
+                            <div class="shrink-0">
+                                <span x-show="item.status === 0" class="text-blue-500 text-[11px] font-bold bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-500/20">待审批</span>
+                                <span x-show="item.status === 1" class="text-yellow-600 dark:text-yellow-500 text-[11px] font-bold bg-yellow-50 dark:bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-100 dark:border-yellow-500/20 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>下载中</span>
+                                <span x-show="item.status === 2" class="text-green-600 dark:text-green-500 text-[11px] font-bold bg-green-50 dark:bg-green-500/10 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-500/20">✅ 已入库</span>
+                                <span x-show="item.status === 3" class="text-red-500 text-[11px] font-bold bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full border border-red-100 dark:border-red-500/20">❌ 已拒绝</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 space-y-1">
+                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                <i class="fa-solid fa-users text-blue-400/80 w-4"></i>
+                                <span class="truncate">支持者: <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.requested_by"></span></span>
+                            </div>
+                            <div x-show="item.status === 3 && item.reject_reason" class="flex items-start gap-1.5 text-[11px] text-red-500 mt-2 bg-red-50 dark:bg-red-500/5 p-1.5 rounded-lg border border-red-100 dark:border-red-900/30">
+                                <i class="fa-solid fa-ban mt-0.5"></i>
+                                <span>原因: <span x-text="item.reject_reason"></span></span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <template x-if="item.status === 0">
-                            <button @click="doAction(item.tmdb_id, 'approve')" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition shadow-md shadow-blue-500/20 active:scale-95 w-full whitespace-nowrap">
-                                推送下载
+                    <div class="mt-4 flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50">
+                        <div class="text-[10px] text-gray-400 font-mono" x-text="item.created_at.substring(5, 16)"></div>
+                        <div class="flex items-center gap-2">
+                            <template x-if="item.status === 0">
+                                <button @click="doAction(item.tmdb_id, 'approve', item.season)" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95">推送下载</button>
+                            </template>
+                            <template x-if="item.status === 1">
+                                <button @click="doAction(item.tmdb_id, 'finish', item.season)" class="px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-green-500/20 active:scale-95">完成入库</button>
+                            </template>
+                            <template x-if="item.status === 0 || item.status === 1">
+                                <button @click="openRejectModal(item)" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="拒绝">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                </button>
+                            </template>
+                            <button @click="if(confirm('确认删除该记录吗？用户前端也会同步消失。')) doAction(item.tmdb_id, 'delete', item.season)" class="p-1.5 text-gray-300 hover:text-gray-600 dark:hover:text-red-400 rounded-lg transition" title="彻底删除">
+                                <i class="fa-regular fa-trash-can"></i>
                             </button>
-                        </template>
-                        <template x-if="item.status === 1">
-                            <button @click="doAction(item.tmdb_id, 'finish')" class="px-5 py-2 bg-green-500 hover:bg-green-400 text-white rounded-lg text-sm font-bold transition shadow-md shadow-green-500/20 active:scale-95 w-full whitespace-nowrap">
-                                手动入库
-                            </button>
-                        </template>
-                        
-                        <template x-if="item.status === 0 || item.status === 1">
-                            <button @click="openRejectModal(item)" class="p-2 text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-50 dark:bg-gray-700 dark:hover:bg-red-500/20 rounded-lg transition" title="拒绝求片">
-                                <i class="fa-solid fa-ban"></i>
-                            </button>
-                        </template>
-                        <button @click="if(confirm('确认彻底删除该记录？这也会删除用户的求片状态！')) doAction(item.tmdb_id, 'delete')" class="p-2 text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-50 dark:bg-gray-700 dark:hover:bg-red-500/20 rounded-lg transition" title="彻底删除记录">
-                            <i class="fa-regular fa-trash-can"></i>
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </template>
+    </div>
 
-        <div x-show="filteredRequests.length === 0" class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm" x-cloak>
-            <span class="text-5xl block mb-3 opacity-30 text-gray-400">📭</span>
-            <p class="text-gray-500 dark:text-gray-400 font-medium">暂无相关求片记录</p>
-        </div>
+    <div x-show="filteredRequests.length === 0" class="text-center py-24 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm" x-cloak>
+        <div class="text-6xl mb-4 opacity-20">📂</div>
+        <p class="text-gray-400 dark:text-gray-500 font-medium">当前分类下没有求片心愿</p>
     </div>
 
     <div x-show="rejectModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
-        <div class="absolute inset-0 bg-gray-900/50 dark:bg-black/70 backdrop-blur-sm" @click="rejectModal.open = false"></div>
+        <div class="absolute inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm transition-opacity" @click="rejectModal.open = false" x-transition.opacity></div>
         <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl"
              x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-            <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-                <i class="fa-solid fa-triangle-exclamation text-red-500"></i> 拒绝求片
-            </h3>
+            <div class="flex items-center gap-3 mb-4 text-red-500">
+                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">确认拒绝该求片？</h3>
+            </div>
             
             <div class="mb-5">
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 font-medium">请选择反馈给用户的拒绝原因：</p>
                 <div class="flex flex-wrap gap-2 mb-4">
                     <template x-for="reason in predefinedReasons" :key="reason">
                         <button @click="rejectModal.reasonType = reason" 
-                                class="px-3 py-1.5 rounded-lg text-sm border font-medium transition"
-                                :class="rejectModal.reasonType === reason ? 'bg-red-50 border-red-300 text-red-600 dark:bg-red-500/20 dark:border-red-500/50 dark:text-red-400' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'">
+                                class="px-3 py-2 rounded-lg text-xs border font-bold transition-all"
+                                :class="rejectModal.reasonType === reason ? 'bg-red-50 border-red-400 text-red-600 dark:bg-red-500/20 dark:border-red-500 dark:text-red-400 shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600'">
                             <span x-text="reason"></span>
                         </button>
                     </template>
                 </div>
                 
-                <div x-show="rejectModal.reasonType === '其他原因...'">
-                    <textarea x-model="rejectModal.customReason" rows="3" placeholder="请输入具体的拒绝原因..." 
-                              class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/50 transition resize-none text-gray-800 dark:text-white"></textarea>
+                <div x-show="rejectModal.reasonType === '其他原因...'" x-collapse>
+                    <textarea x-model="rejectModal.customReason" rows="3" placeholder="请输入具体原因，将实时推送给用户..." 
+                              class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 transition resize-none text-gray-800 dark:text-white"></textarea>
                 </div>
             </div>
 
             <div class="flex gap-3 justify-end">
-                <button @click="rejectModal.open = false" class="px-5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 font-medium transition">取消</button>
-                <button @click="submitReject()" class="px-5 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition shadow-lg shadow-red-500/30 flex items-center gap-2">
+                <button @click="rejectModal.open = false" class="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 font-bold transition">取消</button>
+                <button @click="submitReject()" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition shadow-lg shadow-red-500/30 flex items-center gap-2 active:scale-95">
                     <span x-show="isOperating" class="animate-spin w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></span>
                     <span x-show="!isOperating">确认拒绝</span>
                 </button>
@@ -158,6 +159,7 @@
 
     <div x-show="toast.show" x-transition x-cloak class="fixed top-20 left-1/2 -translate-x-1/2 z-[110] px-6 py-3 rounded-full shadow-2xl border backdrop-blur-xl flex items-center gap-2 font-bold bg-white/90 dark:bg-gray-800/90"
          :class="toast.type === 'success' ? 'border-green-300 text-green-600 dark:border-green-500/30 dark:text-green-400' : 'border-red-300 text-red-600 dark:border-red-500/30 dark:text-red-400'">
+        <i :class="toast.type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
         <span x-text="toast.message"></span>
     </div>
 </div>
@@ -171,14 +173,23 @@
             requests: [],
             filterStatus: 'all',
             isOperating: false,
+            sidebarOpen: false, // 兼容移动端侧边栏切换
             toast: { show: false, message: '', type: 'success' },
             
-            // 拒绝弹窗状态
-            rejectModal: { open: false, tmdb_id: null, reasonType: '影片未上映', customReason: '' },
+            // 拒绝 Modal 状态
+            rejectModal: { 
+                open: false, 
+                tmdb_id: null, 
+                season: 0, 
+                reasonType: '未找到可用资源', 
+                customReason: '' 
+            },
             predefinedReasons: ['影片未上映', '剧集未开播', '未找到可用资源', '质量太差等待洗版', '其他原因...'],
 
             init() {
                 this.loadData();
+                // 每隔30秒自动刷新，保持数据新鲜
+                setInterval(() => this.loadData(), 30000);
             },
 
             get filteredRequests() {
@@ -199,12 +210,13 @@
                         this.requests = data.data;
                     }
                 } catch (e) {
-                    this.showToast('加载数据失败', 'error');
+                    console.error("Failed to fetch requests", e);
                 }
             },
 
             openRejectModal(item) {
                 this.rejectModal.tmdb_id = item.tmdb_id;
+                this.rejectModal.season = item.season || 0;
                 this.rejectModal.reasonType = '未找到可用资源';
                 this.rejectModal.customReason = '';
                 this.rejectModal.open = true;
@@ -214,7 +226,7 @@
                 let finalReason = this.rejectModal.reasonType;
                 if (finalReason === '其他原因...') {
                     finalReason = this.rejectModal.customReason.trim();
-                    if (!finalReason) return this.showToast('请输入原因', 'error');
+                    if (!finalReason) return this.showToast('请输入具体拒绝原因', 'error');
                 }
                 
                 this.isOperating = true;
@@ -222,30 +234,35 @@
                     const res = await fetch('/api/manage/requests/action', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tmdb_id: this.rejectModal.tmdb_id, action: 'reject', reject_reason: finalReason })
+                        body: JSON.stringify({ 
+                            tmdb_id: this.rejectModal.tmdb_id, 
+                            season: this.rejectModal.season, 
+                            action: 'reject', 
+                            reject_reason: finalReason 
+                        })
                     });
                     const data = await res.json();
                     if (data.status === 'success') {
-                        this.showToast('已拒绝该求片并通知用户');
+                        this.showToast('已拒绝该求片');
                         this.rejectModal.open = false;
                         this.loadData();
                     } else {
                         this.showToast(data.message, 'error');
                     }
                 } catch (e) {
-                    this.showToast('操作失败，请检查网络', 'error');
+                    this.showToast('后端接口异常，请重试', 'error');
                 } finally {
                     this.isOperating = false;
                 }
             },
 
-            async doAction(id, action) {
+            async doAction(id, action, season = 0) {
                 this.isOperating = true;
                 try {
                     const res = await fetch('/api/manage/requests/action', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tmdb_id: id, action: action })
+                        body: JSON.stringify({ tmdb_id: id, season: season, action: action })
                     });
                     const data = await res.json();
                     if (data.status === 'success') {
@@ -255,7 +272,7 @@
                         this.showToast(data.message, 'error');
                     }
                 } catch (e) {
-                    this.showToast('操作失败', 'error');
+                    this.showToast('网络请求失败', 'error');
                 } finally {
                     this.isOperating = false;
                 }
