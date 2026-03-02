@@ -162,6 +162,7 @@ def get_all_requests(request: Request):
     c.execute(query); rows = c.fetchall(); conn.close()
     return {"status": "success", "data": [{"tmdb_id": r[0], "media_type": r[1], "title": r[2], "year": r[3], "poster_path": r[4], "status": r[5], "created_at": r[6], "request_count": r[7], "requested_by": r[8] or "未知"} for r in rows]}
 
+# 🔥 核心更新：manage_request_action 强力清洗 Token 并强制斜杠
 @router.post("/api/manage/requests/action")
 def manage_request_action(data: MediaRequestActionModel, request: Request):
     if not request.session.get("user"): return {"status": "error", "message": "权限不足"}
@@ -179,10 +180,13 @@ def manage_request_action(data: MediaRequestActionModel, request: Request):
             
             if req_info:
                 try:
-                    # 🔥 强力清洗：剥离所有可能干扰的引号
+                    # 1. 强力清洗：剥离设置中可能误带的单引号、双引号及空格
                     clean_token = mp_token.strip().strip("'").strip('"')
+                    
+                    # 2. 强制加上末尾斜杠，绕过 MP 的 307 重定向
                     mp_api = f"{mp_url.rstrip('/')}/api/v1/subscribe/" 
                     
+                    # 3. Payload 严格对齐 MP V2 规范 (tmdbid 必须是 int, type 必须小写)
                     payload = {
                         "name": req_info[0], 
                         "tmdbid": int(req_info[1]), 
@@ -190,19 +194,14 @@ def manage_request_action(data: MediaRequestActionModel, request: Request):
                         "type": "movie" if req_info[2] == "movie" else "tv"
                     }
                     
-                    # 🔥 终极双保险：同时发送三种认证方式
+                    # 4. 认证头方案 (优先 Bearer)
                     headers = {
                         "Authorization": f"Bearer {clean_token}",
-                        "token": clean_token,  # 某些版本认这个
-                        "apikey": clean_token, # 某些版本认这个
                         "Content-Type": "application/json"
                     }
                     
-                    print(f"DEBUG: 请求 MP -> {mp_api}")
-                    print(f"DEBUG: Token -> {clean_token[:5]}***{clean_token[-5:]}")
-                    
-                    # 尝试带 Query 参数的终极绕过方案
-                    res = requests.post(f"{mp_api}?token={clean_token}", json=payload, headers=headers, timeout=10)
+                    # 执行请求
+                    res = requests.post(mp_api, json=payload, headers=headers, timeout=10)
                     
                     if res.status_code != 200:
                         return {"status": "error", "message": f"MoviePilot 拒绝请求: {res.text}"}
