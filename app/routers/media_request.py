@@ -102,7 +102,7 @@ def search_tmdb(query: str, request: Request):
         return {"status": "error", "message": "TMDB API 响应异常"}
     except Exception as e: return {"status": "error", "message": f"网络或代理错误: {str(e)}"}
 
-# ================= 🔥 提交求片 (完整大图+简介通知) =================
+# ================= 🔥 提交求片 (带代理拉取图，企微100%有封面) =================
 @router.post("/api/requests/submit")
 def submit_media_request(data: MediaRequestSubmitModel, request: Request):
     user = request.session.get("req_user")
@@ -137,7 +137,7 @@ def submit_media_request(data: MediaRequestSubmitModel, request: Request):
     admin_url = cfg.get("pulse_url") or str(request.base_url).rstrip('/')
     keyboard = {"inline_keyboard": [[{"text": "🍿 前往后台一键审批", "url": f"{admin_url}/requests_admin"}]]}
     
-    # 🔥 使用代理拉取封面，防止网络环境导致机器人发不出图
+    # 🔥 修复企微无图的关键：挂载代理拉取 TMDB 封面转成字节流
     photo_data = REPORT_COVER_URL
     if data.poster_path:
         try:
@@ -146,7 +146,8 @@ def submit_media_request(data: MediaRequestSubmitModel, request: Request):
             if img_res.status_code == 200: photo_data = io.BytesIO(img_res.content)
         except: pass
 
-    bot.send_photo("sys_notify", photo_data, bot_msg, reply_markup=keyboard, platform="all")
+    # 传给机器人的 wecom_photo_io 确保企微能收到图
+    bot.send_photo("sys_notify", photo_data, bot_msg, reply_markup=keyboard, platform="all", wecom_photo_io=photo_data)
     return {"status": "success", "message": "心愿提交成功！已通知服主处理。"}
 
 # ================= 🔥 管理员审批 (MoviePilot 终极适配版) =================

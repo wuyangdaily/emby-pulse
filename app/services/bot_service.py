@@ -58,6 +58,16 @@ class TelegramBot:
         proxy = cfg.get("proxy_url")
         return {"http": proxy, "https": proxy} if proxy else None
 
+    # 🔥 [新增功能] 自动更新求片大厅状态 (绝不干扰原有流程)
+    def _auto_finish_request(self, tmdb_id):
+        if not tmdb_id: return
+        try:
+            tid = int(tmdb_id)
+            query_db("UPDATE media_requests SET status = 2, updated_at = CURRENT_TIMESTAMP WHERE tmdb_id = ? AND status IN (0, 1)", (tid,))
+            logger.info(f"✅ 自动入库闭环: TMDB ID {tid} 状态已更新")
+        except Exception as e:
+            pass
+
     def _get_admin_id(self):
         key = cfg.get("emby_api_key"); host = cfg.get("emby_host")
         if not key or not host: return None
@@ -271,12 +281,15 @@ class TelegramBot:
         except Exception as e:
             if html_text: self._send_wecom_message(html_text, inline_keyboard, touser)
 
-    # ================= 🚀 底层双通道路由分发 =================
+    # ================= 🚀 底层双通道路由分发 (重点修复：企微海报加载) =================
 
     def send_photo(self, chat_id, photo_io, caption, parse_mode="HTML", reply_markup=None, platform="all", wecom_photo_io=None):
         photo_bytes = None
         if isinstance(photo_io, str):
-            try: photo_bytes = requests.get(photo_io, timeout=10).content
+            try: 
+                # 🔥 修复关键：判断 URL 是否含有 tmdb 等外部链接，如果是必须挂载代理下载到本地给企微用！
+                proxies = self._get_proxies() if ("tmdb" in photo_io.lower() or "themoviedb" in photo_io.lower()) else None
+                photo_bytes = requests.get(photo_io, proxies=proxies, timeout=10).content
             except Exception as e: pass
         else:
             photo_io.seek(0)
@@ -285,7 +298,10 @@ class TelegramBot:
         wecom_photo_bytes = photo_bytes
         if wecom_photo_io is not None and wecom_photo_io != photo_io:
             if isinstance(wecom_photo_io, str):
-                try: wecom_photo_bytes = requests.get(wecom_photo_io, timeout=10).content
+                try: 
+                    # 🔥 修复关键：同上，企微下载时必须挂载代理
+                    proxies = self._get_proxies() if ("tmdb" in wecom_photo_io.lower() or "themoviedb" in wecom_photo_io.lower()) else None
+                    wecom_photo_bytes = requests.get(wecom_photo_io, proxies=proxies, timeout=10).content
                 except Exception as e: pass
             else:
                 wecom_photo_io.seek(0)
@@ -440,6 +456,10 @@ class TelegramBot:
         except: pass
         if not series_info: series_info = episodes[0]
 
+        # 🔥 [联动介入点] 自动标记剧集入库状态
+        st_tmdb = series_info.get("ProviderIds", {}).get("Tmdb")
+        if st_tmdb: self._auto_finish_request(st_tmdb)
+
         # 🔥 按季号(ParentIndexNumber)进行二次分组，彻底解决多季丢失问题
         season_groups = defaultdict(list)
         for ep in episodes:
@@ -507,6 +527,10 @@ class TelegramBot:
             res = requests.get(url, timeout=10)
             if res.status_code == 200: item = res.json()
         except: pass
+
+        # 🔥 [联动介入点] 自动标记电影入库状态
+        tmdb_id = item.get("ProviderIds", {}).get("Tmdb")
+        if tmdb_id: self._auto_finish_request(tmdb_id)
 
         name = item.get("Name", "未知")
         year = item.get("ProductionYear", "")
@@ -594,7 +618,7 @@ class TelegramBot:
                 {"command": "yearly", "description": "📜 年度总结"},
                 {"command": "now", "description": "🟢 正在播放"},
                 {"command": "latest", "description": "🆕 最近入库"},
-                {"command": "recent", "description": "📜 播放历史"},
+                {"command": "recent", "description": "📜 最近播放记录"},
                 {"command": "check", "description": "📡 系统检查"},
                 {"command": "help", "description": "🤖 帮助菜单"}]
         try: requests.post(f"https://api.telegram.org/bot{token}/setMyCommands", json={"commands": cmds}, proxies=self._get_proxies(), timeout=10)
