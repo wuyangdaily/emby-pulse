@@ -20,15 +20,6 @@ def check_login(request: Request):
         return True
     return False
 
-# ================= 独立求片门户 (后台管理端) =================
-@router.get("/requests_admin")
-async def requests_admin_page(request: Request):
-    from fastapi.responses import RedirectResponse
-    if not request.session.get("user"):
-        return RedirectResponse(url="/login")
-    # 🔥 注意这里把 active_nav 改成了 active_page，并且确保 RedirectResponse 被导入
-    return templates.TemplateResponse("requests_admin.html", {"request": request, "active_page": "requests_admin"})
-
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if not check_login(request): return RedirectResponse("/login")
@@ -118,3 +109,25 @@ async def history_page(request: Request):
     user = request.session.get("user")
     if not user: return RedirectResponse(url="/login", status_code=303)
     return templates.TemplateResponse("history.html", {"request": request, "user": user, "active_page": "history", "version": APP_VERSION})
+
+# ================= 独立求片门户 (普通用户前台) =================
+@router.get("/request", response_class=HTMLResponse)
+async def request_page(request: Request):
+    # 检查当前是否已经有了求片系统的独立 Session
+    req_user = request.session.get("req_user")
+    return templates.TemplateResponse("request.html", {
+        "request": request, 
+        "req_user": req_user,
+        "version": APP_VERSION
+    })
+
+# ================= 独立求片门户 (服主审核后台) =================
+@router.get("/requests_admin", response_class=HTMLResponse)
+async def requests_admin_page(request: Request):
+    # 验证是否登录了主控制台
+    if not check_login(request): return RedirectResponse("/login")
+    return templates.TemplateResponse("requests_admin.html", {
+        "request": request, 
+        "active_page": "requests_admin",
+        "version": APP_VERSION
+    })
