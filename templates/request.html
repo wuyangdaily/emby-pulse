@@ -171,14 +171,25 @@
                     data.data.forEach(item => {
                         const defaultPoster = 'https://via.placeholder.com/500x750.png?text=No+Poster';
                         const typeIcon = item.media_type === 'movie' ? '🎬' : '📺';
+                        
+                        // 🔥 动态生成按钮
+                        let btnHtml = '';
+                        if (item.local_status === -1) {
+                            btnHtml = `<button onclick="submitRequest(${item.tmdb_id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.year}', '${item.poster_path}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg"><i class="fa-solid fa-plus mr-1"></i> 申请求片</button>`;
+                        } else if (item.local_status === 0 || item.local_status === 1) {
+                            btnHtml = `<button onclick="submitRequest(${item.tmdb_id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.year}', '${item.poster_path}')" class="bg-yellow-500 hover:bg-yellow-400 text-white font-bold py-2 px-6 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg"><i class="fa-solid fa-thumbs-up mr-1"></i> 我也想看 (+1)</button>`;
+                        } else if (item.local_status === 2) {
+                            btnHtml = `<button disabled class="bg-green-500 text-white font-bold py-2 px-6 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg cursor-not-allowed"><i class="fa-solid fa-check mr-1"></i> 已在媒体库</button>`;
+                        } else {
+                            btnHtml = `<button disabled class="bg-gray-500 text-white font-bold py-2 px-6 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg cursor-not-allowed"><i class="fa-solid fa-ban mr-1"></i> 暂不收录</button>`;
+                        }
+
                         html += `
                         <div class="bg-white rounded-xl shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden group flex flex-col">
                             <div class="relative w-full aspect-[2/3] overflow-hidden bg-gray-100">
                                 <img src="${item.poster_path || defaultPoster}" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" loading="lazy">
                                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                    <button onclick="submitRequest(${item.tmdb_id}, '${item.media_type}', '${item.title.replace(/'/g, "\\'")}', '${item.year}', '${item.poster_path}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 shadow-lg">
-                                        <i class="fa-solid fa-plus mr-1"></i> 求片
-                                    </button>
+                                    ${btnHtml}
                                 </div>
                             </div>
                             <div class="p-3 flex-grow flex flex-col justify-between">
@@ -209,6 +220,8 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     showToast(data.message);
+                    // 提交成功后自动重新搜索以刷新按钮状态
+                    doSearch();
                 } else {
                     showToast(data.message, "error");
                 }
@@ -255,7 +268,7 @@
         }
 
         async function logout() {
-            // 简单的清除 Session 机制 (前端无权限直接清，此处偷懒直接清 cookie 或跳走到一个注销路由)
+            // 简单的清除 Session 机制 (前端无权限直接清，此处偷懒直接清 cookie)
             document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             window.location.reload();
         }

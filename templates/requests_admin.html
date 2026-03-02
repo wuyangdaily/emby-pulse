@@ -5,51 +5,82 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
         <div>
             <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">🍿 资源求片大厅</h1>
-            <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">处理用户的求片心愿，按照呼声权重优先处理。</p>
+            <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">处理用户的求片心愿，支持一键发送至 MoviePilot。</p>
         </div>
         <div class="mt-4 sm:mt-0 flex gap-3">
             <button onclick="loadRequests()" class="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors shadow-sm border border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
-                <i class="fa-solid fa-rotate-right mr-1"></i> 刷新列表
+                <i class="fa-solid fa-rotate-right mr-1"></i> 刷新
             </button>
             <a href="/request" target="_blank" class="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm font-medium dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50">
-                <i class="fa-solid fa-external-link-alt mr-1"></i> 访问用户求片页
+                <i class="fa-solid fa-external-link-alt mr-1"></i> 前台
             </a>
         </div>
     </div>
 
+    <div class="flex space-x-2 overflow-x-auto pb-2 border-b border-gray-200 dark:border-gray-700">
+        <button onclick="filterStatus('all')" id="tab-all" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 transition">全部</button>
+        <button onclick="filterStatus(0)" id="tab-0" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition">待审批</button>
+        <button onclick="filterStatus(1)" id="tab-1" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition">下载中</button>
+        <button onclick="filterStatus(2)" id="tab-2" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition">已入库</button>
+        <button onclick="filterStatus(3)" id="tab-3" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition">已拒绝</button>
+    </div>
+
     <div id="loading" class="text-center py-10 text-gray-500 dark:text-gray-400"><i class="fa-solid fa-spinner fa-spin text-3xl"></i></div>
-    
-    <div id="requests-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
-        </div>
+    <div id="requests-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden"></div>
 </div>
 
+<div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50"></div>
+
 <script>
+    let allRequests = [];
+    let currentTab = 'all';
+
     document.addEventListener('DOMContentLoaded', loadRequests);
+
+    // 🔥 修复的 Toast 弹窗函数
+    function showToast(msg, type='success') {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 transition-all duration-300 transform translate-y-0 opacity-100 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+        setTimeout(() => { toast.classList.remove('translate-y-0', 'opacity-100'); toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+    }
 
     async function loadRequests() {
         document.getElementById('loading').classList.remove('hidden');
         document.getElementById('requests-grid').classList.add('hidden');
-        
         try {
             const res = await fetch('/api/manage/requests');
             const data = await res.json();
-            
             if (data.status === 'success') {
-                renderRequests(data.data);
-            } else {
-                showToast(data.message, 'error');
-            }
-        } catch (e) {
-            showToast('加载失败，网络错误', 'error');
-        }
+                allRequests = data.data;
+                renderRequests(); // 渲染当前 Tab 的数据
+            } else { showToast(data.message, 'error'); }
+        } catch (e) { showToast('加载失败', 'error'); }
     }
 
-    function renderRequests(list) {
+    function filterStatus(status) {
+        currentTab = status;
+        // 更新 Tab UI 高亮
+        ['all', 0, 1, 2, 3].forEach(t => {
+            const el = document.getElementById('tab-' + t);
+            if (t === status) {
+                el.className = "px-4 py-2 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400 transition";
+            } else {
+                el.className = "px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition";
+            }
+        });
+        renderRequests();
+    }
+
+    function renderRequests() {
         const grid = document.getElementById('requests-grid');
         grid.innerHTML = '';
         
+        // 过滤数据
+        const list = currentTab === 'all' ? allRequests : allRequests.filter(item => item.status === currentTab);
+        
         if (list.length === 0) {
-            grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-400 dark:bg-gray-800 dark:border-gray-700">当前没有待处理的求片请求。</div>`;
+            grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-400 dark:bg-gray-800 dark:border-gray-700">当前分类下没有求片记录。</div>`;
             grid.classList.remove('hidden');
             document.getElementById('loading').classList.add('hidden');
             return;
@@ -67,23 +98,22 @@
             const defaultPoster = 'https://via.placeholder.com/500x750.png?text=No+Poster';
             const icon = item.media_type === 'movie' ? '🎬' : '📺';
             
-            // 按钮渲染逻辑
             let actionButtons = '';
             if (item.status === 0) {
-                // 待审批状态：显示批准和拒绝
+                // MP 自动下载 + 拒绝
                 actionButtons = `
-                    <button onclick="doAction(${item.tmdb_id}, 'approve')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm"><i class="fa-solid fa-check mr-1"></i> 批准并下载</button>
-                    <button onclick="doAction(${item.tmdb_id}, 'reject')" class="px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"><i class="fa-solid fa-xmark"></i></button>
+                    <button onclick="doAction(${item.tmdb_id}, 'approve')" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm"><i class="fa-solid fa-cloud-arrow-down mr-1"></i> 推送下载</button>
+                    <button onclick="doAction(${item.tmdb_id}, 'finish')" class="px-4 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm mx-1" title="已有资源，直接标记入库"><i class="fa-solid fa-check"></i></button>
+                    <button onclick="doAction(${item.tmdb_id}, 'reject')" class="px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium transition dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600" title="拒绝求片"><i class="fa-solid fa-xmark"></i></button>
                 `;
             } else if (item.status === 1) {
-                // 下载中状态：显示手动标记完成（未来自动化后可去掉）
+                // 下载中 -> 手动转完成
                 actionButtons = `
-                    <button onclick="doAction(${item.tmdb_id}, 'finish')" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm"><i class="fa-solid fa-flag-checkered mr-1"></i> 强行标记入库</button>
+                    <button onclick="doAction(${item.tmdb_id}, 'finish')" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-sm font-medium transition shadow-sm"><i class="fa-solid fa-flag-checkered mr-1"></i> 手动标记入库</button>
                 `;
             } else {
-                // 已完成或已拒绝：显示删除记录
                 actionButtons = `
-                    <button onclick="if(confirm('确定要删除这条求片记录吗？')) doAction(${item.tmdb_id}, 'delete')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40"><i class="fa-solid fa-trash-can mr-1"></i> 删除记录</button>
+                    <button onclick="if(confirm('确定要彻底删除这条记录吗？')) doAction(${item.tmdb_id}, 'delete')" class="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/40"><i class="fa-solid fa-trash-can mr-1"></i> 删除记录</button>
                 `;
             }
 
@@ -103,9 +133,7 @@
                                 <i class="fa-solid fa-users text-indigo-400 mr-1.5"></i> 
                                 求片人数：<span class="font-bold text-indigo-600 text-sm ml-1 dark:text-indigo-400">${item.request_count}</span> 人
                             </div>
-                            <div class="text-xs text-gray-600 line-clamp-1 dark:text-gray-400" title="${item.requested_by}">
-                                呼声来自: ${item.requested_by}
-                            </div>
+                            <div class="text-xs text-gray-600 line-clamp-1 dark:text-gray-400" title="${item.requested_by}">来自: ${item.requested_by}</div>
                         </div>
                     </div>
                     <div class="flex gap-2 mt-4">
@@ -130,7 +158,7 @@
             const data = await res.json();
             if (data.status === 'success') {
                 showToast(data.message);
-                loadRequests(); // 重新加载列表刷新状态
+                loadRequests(); // 重新拉取数据以刷新状态
             } else {
                 showToast(data.message, 'error');
             }
