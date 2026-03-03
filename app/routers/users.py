@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Request, Response, UploadFile, File, Form
+from pydantic import BaseModel
 from app.schemas.models import UserUpdateModel, NewUserModel, InviteGenModel, BatchActionModel
 from app.core.config import cfg
 from app.core.database import query_db
@@ -8,6 +9,11 @@ import secrets
 import base64
 
 router = APIRouter()
+
+# 🔥 新增：用于处理邀请码批量操作的数据模型
+class InviteBatchModel(BaseModel):
+    codes: list[str]
+    action: str
 
 def check_expired_users():
     """ 扫描过期用户并自动在 Emby 端禁用 """
@@ -174,6 +180,29 @@ def api_gen_invite(data: InviteGenModel, request: Request):
         return {"status": "success", "codes": codes}
     except Exception as e: return {"status": "error", "message": str(e)}
 
+# 🔥 新增：获取系统中所有生成的邀请码列表
+@router.get("/api/manage/invites")
+def api_get_invites(request: Request):
+    if not request.session.get("user"): return {"status": "error"}
+    try:
+        rows = query_db("SELECT * FROM invitations ORDER BY created_at DESC")
+        data = [dict(r) for r in rows] if rows else []
+        return {"status": "success", "data": data}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+# 🔥 新增：批量删除闲置邀请码
+@router.post("/api/manage/invites/batch")
+def api_manage_invites_batch(data: InviteBatchModel, request: Request):
+    if not request.session.get("user"): return {"status": "error"}
+    try:
+        if data.action == "delete":
+            for code in data.codes:
+                query_db("DELETE FROM invitations WHERE code = ?", (code,))
+        return {"status": "success", "message": "删除成功"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @router.post("/api/manage/user/update")
 def api_manage_user_update(data: UserUpdateModel, request: Request):
     if not request.session.get("user"): return {"status": "error"}
@@ -244,7 +273,6 @@ def api_manage_user_delete(user_id: str, request: Request):
         return {"status": "success"}
     return {"status": "error"}
 
-# 🔥 新增：强大的批量操作引擎
 @router.post("/api/manage/users/batch")
 def api_manage_users_batch(data: BatchActionModel, request: Request):
     if not request.session.get("user"): return {"status": "error"}
@@ -253,12 +281,10 @@ def api_manage_users_batch(data: BatchActionModel, request: Request):
     
     try:
         for uid in data.user_ids:
-            # 批量删除
             if data.action == "delete":
                 requests.delete(f"{host}/emby/Users/{uid}?api_key={key}")
                 query_db("DELETE FROM users_meta WHERE user_id = ?", (uid,))
             
-            # 批量启用 / 禁用
             elif data.action in ["enable", "disable"]:
                 p_res = requests.get(f"{host}/emby/Users/{uid}?api_key={key}", timeout=5)
                 if p_res.status_code == 200:
@@ -270,7 +296,6 @@ def api_manage_users_batch(data: BatchActionModel, request: Request):
                         p.pop(k, None)
                     requests.post(f"{host}/emby/Users/{uid}/Policy?api_key={key}", json=p, headers={"Content-Type": "application/json", "X-Emby-Token": key})
             
-            # 批量续期 (绝对或相对时间)
             elif data.action == "renew":
                 new_date = None
                 if data.value.startswith('+'):
