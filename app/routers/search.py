@@ -30,15 +30,16 @@ def global_library_search(query: str, request: Request):
         return {"status": "error", "message": "找不到管理员账号"}
 
     try:
-        # 1. 穿透搜索 Emby 库，并强制要求返回 MediaSources 字段
+        # 1. 穿透搜索 Emby 库
+        # 🔥 注意这里增加了 ProviderIds，以便在图片缺失时去 TMDB 借图
         search_url = f"{host}/emby/Users/{admin_id}/Items"
         params = {
             "api_key": key,
             "SearchTerm": query,
             "IncludeItemTypes": "Movie,Series",
             "Recursive": "true",
-            "Fields": "Overview,MediaSources",
-            "Limit": 8 # 限制返回8条，保证 Cmd+K 搜索的极速响应
+            "Fields": "Overview,MediaSources,ProviderIds", 
+            "Limit": 8 
         }
         res = requests.get(search_url, params=params, timeout=10).json()
         items = res.get("Items", [])
@@ -47,6 +48,32 @@ def global_library_search(query: str, request: Request):
         for item in items:
             media_type = "movie" if item["Type"] == "Movie" else "tv"
             
+            # ================== 强化版图片获取策略 ==================
+            # 1. 优先尝试获取 Primary（主海报）
+            poster_url = ""
+            if item.get("ImageTags", {}).get("Primary"):
+                poster_url = f"{host}/emby/Items/{item['Id']}/Images/Primary?api_key={key}&MaxWidth=400"
+            else:
+                # 2. 如果没有 Primary，尝试用 Backdrop（背景图）
+                if item.get("ImageTags", {}).get("Backdrop"):
+                    poster_url = f"{host}/emby/Items/{item['Id']}/Images/Backdrop?api_key={key}&MaxWidth=400"
+                else:
+                    # 3. 如果还是没有，去 TMDB 提供商里挖图
+                    tmdb_id = item.get("ProviderIds", {}).get("Tmdb")
+                    if tmdb_id:
+                        poster_url = f"https://image.tmdb.org/t/p/w500/{tmdb_id}.jpg"
+                    else:
+                        # 4. 终极兜底：使用 EmbyPulse 的默认占位图
+                        poster_url = "/static/img/logo-dark.png" 
+
+            # 背景图获取策略
+            backdrop_url = ""
+            if item.get("ImageTags", {}).get("Backdrop"):
+                backdrop_url = f"{host}/emby/Items/{item['Id']}/Images/Backdrop?api_key={key}&MaxWidth=1280"
+            elif item.get("ImageTags", {}).get("Primary"):
+                backdrop_url = f"{host}/emby/Items/{item['Id']}/Images/Primary?api_key={key}&MaxWidth=1280"
+            # ========================================================
+            
             # 基础信息组装
             info = {
                 "id": item["Id"],
@@ -54,9 +81,9 @@ def global_library_search(query: str, request: Request):
                 "year": item.get("ProductionYear", "未知"),
                 "overview": item.get("Overview", "暂无简介"),
                 "type": media_type,
-                "poster": f"{host}/emby/Items/{item['Id']}/Images/Primary?api_key={key}" if item.get("ImageTags", {}).get("Primary") else "",
-                "backdrop": f"{host}/emby/Items/{item['Id']}/Images/Backdrop?api_key={key}" if item.get("ImageTags", {}).get("Backdrop") else "",
-                "badges": [] # 用于存储前端渲染的高级标签
+                "poster": poster_url,
+                "backdrop": backdrop_url,
+                "badges": [] 
             }
 
             # 2. 电影深度解析：画质、特效、音轨
