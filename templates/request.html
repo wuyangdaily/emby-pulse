@@ -76,7 +76,6 @@
     </div>
 
     <div x-show="isLoggedIn" x-transition.opacity.duration.500ms x-cloak>
-        
         <nav class="fixed top-0 w-full z-40 glass-panel border-b border-slate-200/50 dark:border-white/5 rounded-none">
             <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -121,7 +120,6 @@
             </div>
 
             <div class="min-h-[500px]">
-                
                 <div x-show="currentTab === 'explore'" x-transition.opacity.duration.300ms>
                     
                     <div x-show="searchResults.length > 0" class="mb-10">
@@ -141,7 +139,6 @@
                                             <span class="flex items-center gap-1 text-yellow-400 font-bold">★ <span x-text="item.vote_average"></span></span>
                                         </div>
                                     </div>
-                                    <div x-show="item.local_status === 2" class="absolute top-2 right-2 bg-green-500/90 backdrop-blur-md text-white text-xs px-2 py-1 rounded-full font-bold shadow-md border border-green-400">已入库</div>
                                 </div>
                             </template>
                         </div>
@@ -176,7 +173,6 @@
                             </template>
                         </div>
                     </div>
-
                 </div>
 
                 <div x-show="currentTab === 'queue'" x-transition.opacity.duration.300ms x-cloak>
@@ -253,6 +249,7 @@
                             <label class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border cursor-pointer select-none"
                                    :class="s.exists_locally ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-500/5 dark:border-green-500/20 dark:text-green-500 opacity-70 cursor-not-allowed' : (selectedSeasons.includes(s.season_number) ? 'bg-brand-500 border-brand-400 text-white shadow-md shadow-brand-500/30' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-700')">
                                 <input type="checkbox" :value="s.season_number" x-model="selectedSeasons" :disabled="s.exists_locally" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 dark:bg-zinc-900 dark:border-zinc-600 cursor-pointer" :class="s.exists_locally ? 'hidden' : ''">
+                                
                                 <span class="flex-1" x-text="`第 ${s.season_number} 季`"></span>
                                 <span x-show="s.exists_locally" class="text-xs bg-green-200 dark:bg-green-500/20 text-green-800 dark:text-green-400 px-2 py-0.5 rounded-full border border-green-300 dark:border-green-500/30">✅ 已入库</span>
                                 <span x-show="!s.exists_locally" class="text-xs opacity-70" x-text="`共 ${s.episode_count} 集`"></span>
@@ -262,12 +259,16 @@
                     </div>
                 </div>
 
-                <button @click="submitRequest()" :disabled="isSubmitting || (activeItem?.media_type === 'tv' && selectedSeasons.length === 0)"
+                <button @click="submitRequest()" 
+                        :disabled="isSubmitting || isCheckingLocal || (activeItem?.media_type === 'tv' && selectedSeasons.length === 0) || (activeItem?.media_type === 'movie' && activeItem?.local_status === 2)"
                         class="w-full py-4 rounded-2xl font-bold text-lg flex justify-center items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xl"
                         :class="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? 'bg-green-600 shadow-green-600/30' : 'bg-slate-900 hover:bg-slate-800 dark:bg-brand-600 dark:hover:bg-brand-500 dark:shadow-brand-600/30'">
-                    <span x-show="isSubmitting" class="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full"></span>
-                    <span x-show="!isSubmitting && activeItem?.local_status === 2 && activeItem?.media_type !== 'tv'">✅ 已在库中</span>
-                    <span x-show="!isSubmitting && !(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv')">🚀 发送求片心愿</span>
+                    
+                    <span x-show="isSubmitting || isCheckingLocal" class="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full"></span>
+                    
+                    <span x-show="!isSubmitting && !isCheckingLocal && activeItem?.local_status === 2 && activeItem?.media_type !== 'tv'">✅ 该电影已在库中</span>
+                    
+                    <span x-show="!isSubmitting && !isCheckingLocal && !(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv')">🚀 发送求片心愿</span>
                 </button>
             </div>
         </div>
@@ -299,6 +300,7 @@
                 activeItem: null,
                 tvSeasons: [],
                 isLoadingSeasons: false,
+                isCheckingLocal: false, // 🔥 电影查重状态
                 selectedSeasons: [], // 🔥 数组：存储多选结果
                 isSubmitting: false,
                 toast: { show: false, message: '', type: 'success' },
@@ -408,10 +410,20 @@
                             const data = await res.json();
                             if (data.status === 'success') {
                                 this.tvSeasons = data.seasons;
-                                // 默认不再自动选中，让用户自己勾选更符合多选逻辑
                             }
                         } catch (e) {}
                         this.isLoadingSeasons = false;
+                    } else if (item.media_type === 'movie') {
+                        // 🔥 新增：点开电影弹窗时，极速查询 Emby 库
+                        this.isCheckingLocal = true;
+                        try {
+                            const res = await fetch(`/api/requests/check/movie/${item.tmdb_id}`);
+                            const data = await res.json();
+                            if (data.status === 'success' && data.exists) {
+                                this.activeItem.local_status = 2; // 置为已入库
+                            }
+                        } catch(e) {}
+                        this.isCheckingLocal = false;
                     }
                 },
 
