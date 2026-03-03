@@ -71,16 +71,22 @@ def global_library_search(query: str, request: Request):
     if not request.session.get("user"):
         return {"status": "error", "message": "未登录"}
 
+    # 这是用于后端极速通信的内网 host
     host = cfg.get("emby_host")
     key = cfg.get("emby_api_key")
     if not host or not key:
         return {"status": "error", "message": "未配置 Emby 服务器"}
+
+    # 🔥 获取公网链接：如果配置了公网URL就用公网的，如果没配置则自动回退到内网 host
+    public_host = cfg.get("emby_public_url") or cfg.get("emby_external_url") or cfg.get("emby_public_host") or host
+    public_host = public_host.rstrip('/')
 
     admin_id = get_emby_admin(host, key)
     if not admin_id:
         return {"status": "error", "message": "找不到管理员账号"}
 
     try:
+        # API 穿透查询依然使用内网 host
         search_url = f"{host}/emby/Users/{admin_id}/Items"
         params = {
             "api_key": key,
@@ -97,7 +103,7 @@ def global_library_search(query: str, request: Request):
         for item in items:
             media_type = "movie" if item["Type"] == "Movie" else "tv"
             
-            # 🔥 走我们自己写的代理接口
+            # 图片代理依然走映迹的后端路由
             poster_url = ""
             if item.get("ImageTags", {}).get("Primary"):
                 poster_url = f"/api/library/image/{item['Id']}?type=Primary&width=400"
@@ -110,8 +116,8 @@ def global_library_search(query: str, request: Request):
                 else:
                     poster_url = "/static/img/logo-dark.png" 
 
-            # 🔥 构造直达 Emby 的跳转链接
-            emby_url = f"{host}/web/index.html#!/item/details.html?id={item['Id']}&serverId={item.get('ServerId', '')}"
+            # 🔥 构造直达 Emby 的跳转链接 (使用刚刚获取的 public_host)
+            emby_url = f"{public_host}/web/index.html#!/item/details.html?id={item['Id']}&serverId={item.get('ServerId', '')}"
 
             info = {
                 "id": item["Id"],
@@ -129,7 +135,6 @@ def global_library_search(query: str, request: Request):
 
             elif media_type == "tv":
                 try:
-                    # 1. 轻量级拉取所有集，只读所属季号，用于分组统计
                     eps_res = requests.get(
                         f"{host}/emby/Shows/{item['Id']}/Episodes?UserId={admin_id}&api_key={key}&Fields=ParentIndexNumber", 
                         timeout=5
@@ -138,10 +143,9 @@ def global_library_search(query: str, request: Request):
                     season_counts = {}
                     for ep in eps_res.get("Items", []):
                         s_idx = ep.get("ParentIndexNumber")
-                        if s_idx and s_idx > 0: # 排除第0季(特别篇)
+                        if s_idx and s_idx > 0: 
                             season_counts[s_idx] = season_counts.get(s_idx, 0) + 1
                     
-                    # 生成精细化季数标签：如 "第1季 (30集)"
                     for s_idx in sorted(season_counts.keys()):
                         info["badges"].append({
                             "type": "season",
@@ -149,7 +153,6 @@ def global_library_search(query: str, request: Request):
                             "color": "bg-emerald-500 text-white border-emerald-400"
                         })
 
-                    # 2. 额外拉取一次第一集的详细流数据，用来上 4K/HDR 标签
                     first_ep_res = requests.get(
                         f"{host}/emby/Shows/{item['Id']}/Episodes?UserId={admin_id}&api_key={key}&Limit=1&Fields=MediaSources", 
                         timeout=3
