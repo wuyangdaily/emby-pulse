@@ -67,29 +67,33 @@ def init_db():
                         data_json TEXT             -- 完整数据的 JSON 文本
                     )''')
 
-        # 4. 🔥 [新增] 求片资源主表
+        # 4. 🔥 [已修复] 求片资源主表 (同步最新多季架构，引入 season 和 复合主键)
         c.execute('''
             CREATE TABLE IF NOT EXISTS media_requests (
-                tmdb_id INTEGER PRIMARY KEY,
+                tmdb_id INTEGER,
                 media_type TEXT,
                 title TEXT,
                 year TEXT,
                 poster_path TEXT,
                 status INTEGER DEFAULT 0,
+                season INTEGER DEFAULT 0,
+                reject_reason TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (tmdb_id, season)
             )
         ''')
 
-        # 5. 🔥 [新增] 求片用户关联表 (+1 机制)
+        # 5. 🔥 [已修复] 求片用户关联表 (+1 机制，同步引入 season 复合唯一约束)
         c.execute('''
             CREATE TABLE IF NOT EXISTS request_users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tmdb_id INTEGER,
                 user_id TEXT,
                 username TEXT,
+                season INTEGER DEFAULT 0,
                 requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(tmdb_id, user_id)
+                UNIQUE(tmdb_id, user_id, season)
             )
         ''')
 
