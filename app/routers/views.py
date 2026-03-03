@@ -1,7 +1,7 @@
 import os
 import requests
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.core.config import cfg
 from app.core.database import query_db
@@ -20,11 +20,57 @@ def check_login(request: Request):
         return True
     return False
 
+# ==========================================================
+# 📱 核心修复：iOS & 安卓 桌面图标与 PWA 路由
+# ==========================================================
+
+@router.get("/apple-touch-icon.png")
+@router.get("/apple-touch-icon-precomposed.png")
+async def get_apple_touch_icon():
+    """ 专门喂给 iOS Safari 的桌面图标 """
+    icon_path = os.path.join("static", "img", "logo-app.png")
+    if os.path.exists(icon_path):
+        return FileResponse(icon_path)
+    return RedirectResponse("/static/img/logo-light.png")
+
+@router.get("/favicon.ico")
+async def get_favicon():
+    """ 兼容旧版浏览器和安卓书签图标 """
+    icon_path = os.path.join("static", "img", "logo-app.png")
+    return FileResponse(icon_path)
+
+@router.get("/manifest.json")
+async def get_manifest():
+    """ 为安卓提供的 PWA 配置文件，确保添加到桌面时名称和图标正确 """
+    return JSONResponse({
+        "name": "EmbyPulse 映迹",
+        "short_name": "EmbyPulse",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#4f46e5",
+        "icons": [
+            {
+                "src": "/static/img/logo-app.png",
+                "sizes": "180x180",
+                "type": "image/png"
+            },
+            {
+                "src": "/static/img/logo-app.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    })
+
+# ==========================================================
+# 🏠 基础页面路由
+# ==========================================================
+
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if not check_login(request): return RedirectResponse("/login")
     
-    # 🔥 获取 Emby 基础地址和 ServerId，用于前端跳转
     emby_url = cfg.get("emby_public_url") or cfg.get("emby_public_host") or cfg.get("emby_host") or ""
     if emby_url.endswith('/'): emby_url = emby_url[:-1]
     
@@ -39,8 +85,8 @@ async def index(request: Request):
         "request": request, 
         "active_page": "dashboard", 
         "version": APP_VERSION,
-        "emby_url": emby_url,        # 注入地址
-        "server_id": server_id       # 注入 ServerId
+        "emby_url": emby_url,
+        "server_id": server_id
     })
 
 @router.get("/login", response_class=HTMLResponse)
@@ -113,7 +159,6 @@ async def history_page(request: Request):
 # ================= 独立求片门户 (普通用户前台) =================
 @router.get("/request", response_class=HTMLResponse)
 async def request_page(request: Request):
-    # 检查当前是否已经有了求片系统的独立 Session
     req_user = request.session.get("req_user")
     return templates.TemplateResponse("request.html", {
         "request": request, 
@@ -121,10 +166,8 @@ async def request_page(request: Request):
         "version": APP_VERSION
     })
 
-# 🔥 新增：求片大厅的专属独立登录页路由
 @router.get("/request_login", response_class=HTMLResponse)
 async def request_login_page(request: Request):
-    # 如果已经登录过求片大厅，直接跳回大厅，无需再登
     if request.session.get("req_user"):
         return RedirectResponse("/request")
     return templates.TemplateResponse("request_login.html", {
@@ -135,7 +178,6 @@ async def request_login_page(request: Request):
 # ================= 独立求片门户 (服主审核后台) =================
 @router.get("/requests_admin", response_class=HTMLResponse)
 async def requests_admin_page(request: Request):
-    # 验证是否登录了主控制台
     if not check_login(request): return RedirectResponse("/login")
     return templates.TemplateResponse("requests_admin.html", {
         "request": request, 
