@@ -6,6 +6,34 @@ from app.core.config import cfg
 
 router = APIRouter()
 
+# ==========================================
+# 🌟 智能嗅探：Emby 版本检测与缓存
+# ==========================================
+_emby_version_cache = None
+
+def get_emby_version(host, key):
+    global _emby_version_cache
+    if _emby_version_cache:
+        return _emby_version_cache
+    try:
+        res = requests.get(f"{host}/emby/System/Info?api_key={key}", timeout=3).json()
+        _emby_version_cache = res.get("Version", "4.8.0.0")
+        return _emby_version_cache
+    except:
+        return "4.8.0.0" # 抓取失败时默认按新版处理
+
+def is_new_emby_router(version_str):
+    try:
+        parts = version_str.split('.')
+        major = int(parts[0])
+        minor = int(parts[1])
+        # Emby 4.8 及以上版本使用了精简的新路由
+        if major > 4 or (major == 4 and minor >= 8):
+            return True
+        return False
+    except:
+        return True
+
 def get_emby_admin(host, key):
     try:
         users = requests.get(f"{host}/emby/Users?api_key={key}", timeout=5).json()
@@ -82,6 +110,10 @@ def global_library_search(query: str, request: Request):
     if not admin_id:
         return {"status": "error", "message": "找不到管理员账号"}
 
+    # 🔥 获取并判断 Emby 版本
+    emby_version = get_emby_version(host, key)
+    use_new_route = is_new_emby_router(emby_version)
+
     try:
         search_url = f"{host}/emby/Users/{admin_id}/Items"
         params = {
@@ -111,8 +143,11 @@ def global_library_search(query: str, request: Request):
                 else:
                     poster_url = "/static/img/logo-dark.png" 
 
-            # 🔥 修复：去掉 details.html，适配最新版 Emby 前端路由
-            emby_url = f"{public_host}/web/index.html#!/item?id={item['Id']}&serverId={item.get('ServerId', '')}"
+            # 🔥 根据版本号，动态下发对应的跳转路由
+            if use_new_route:
+                emby_url = f"{public_host}/web/index.html#!/item?id={item['Id']}&serverId={item.get('ServerId', '')}"
+            else:
+                emby_url = f"{public_host}/web/index.html#!/item/details.html?id={item['Id']}&serverId={item.get('ServerId', '')}"
 
             info = {
                 "id": item["Id"],
