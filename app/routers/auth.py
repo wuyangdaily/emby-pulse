@@ -67,8 +67,12 @@ async def api_register(data: UserRegisterModel):
             query_db("INSERT INTO users_meta (user_id, expire_date, created_at) VALUES (?, ?, ?)", 
                      (new_id, expire_date, datetime.datetime.now().isoformat()))
 
-        # 7. 标记邀请码已用
-        query_db("UPDATE invitations SET used_count = used_count + 1 WHERE code = ?", (data.code,))
+        # 7. 🔥 修复：完整更新邀请码的使用状态、使用者和时间
+        used_at = datetime.datetime.now().isoformat()
+        query_db(
+            "UPDATE invitations SET used_count = used_count + 1, used_by = ?, used_at = ?, status = 1 WHERE code = ?", 
+            (data.username, used_at, data.code)
+        )
 
         public_url = cfg.get("emby_public_url") or host 
         welcome_msg = cfg.get("welcome_message") or "请妥善保管您的账号密码。"
