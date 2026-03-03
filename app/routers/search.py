@@ -86,24 +86,37 @@ def extract_media_badges(item):
         video_stream = next((s for s in media_streams if s["Type"] == "Video"), None)
         audio_stream = next((s for s in media_streams if s["Type"] == "Audio"), None)
 
+        # 🔥 1. REMUX 识别：通过文件名或路径 (通常在 Path 或 Name 里)
+        path_or_name = (source.get("Path", "") + " " + source.get("Name", "")).upper()
+        if "REMUX" in path_or_name:
+            badges.append({"type": "quality", "text": "REMUX", "color": "bg-blue-600 text-white border-blue-500"})
+
         if video_stream:
+            # 🔥 2. 分辨率
             width = video_stream.get("Width", 0)
             if width >= 3800:
-                badges.append({"type": "res", "text": "4K", "color": "bg-yellow-500 text-yellow-900 border-yellow-400"})
+                badges.append({"type": "res", "text": "4K", "color": "bg-gray-900 text-white border-gray-700 dark:bg-gray-100 dark:text-gray-900"})
             elif width >= 1900:
                 badges.append({"type": "res", "text": "1080P", "color": "bg-blue-500 text-blue-100 border-blue-400"})
             
-            video_range = video_stream.get("VideoRange", "")
-            if video_range == "HDR":
-                badges.append({"type": "fx", "text": "HDR", "color": "bg-purple-600 text-white border-purple-500"})
-            elif video_range == "DOVI":
+            # 🔥 3. 打破互斥：分别判断杜比视界和 HDR
+            video_range = video_stream.get("VideoRange", "").upper()
+            video_range_type = video_stream.get("VideoRangeType", "").upper()
+            
+            # 判断杜比视界 (Dolby Vision)
+            if "DOVI" in video_range or "DOVI" in video_range_type:
                 badges.append({"type": "fx", "text": "Dolby Vision", "color": "bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-400"})
+            
+            # 判断 HDR (独立判断，不再用 elif，允许共存)
+            if "HDR" in video_range or "HDR10" in video_range_type:
+                badges.append({"type": "fx", "text": "HDR", "color": "bg-yellow-500 text-yellow-900 border-yellow-400"})
                 
         if audio_stream:
             codec = audio_stream.get("Codec", "").upper()
             channels = audio_stream.get("Channels", 2)
             channel_str = "5.1" if channels == 6 else ("7.1" if channels == 8 else f"{channels}.0")
             badges.append({"type": "audio", "text": f"{codec} {channel_str}", "color": "bg-slate-700 text-slate-200 border-slate-600"})
+            
     return badges
 
 @router.get("/api/library/search")
