@@ -75,7 +75,6 @@ def api_manage_users(request: Request):
             meta = meta_map.get(uid, {})
             policy = u.get('Policy', {})
             
-            # 🔥 返回列表时加上高级权限状态，供前端显示图标用
             final_list.append({
                 "Id": uid, 
                 "Name": u['Name'], 
@@ -107,7 +106,6 @@ def api_get_single_user(user_id: str, request: Request):
         if res.status_code == 200:
             user_data = res.json()
             policy = user_data.get('Policy', {})
-            # 🔥 单个用户信息查询，补充高级权限
             return {
                 "status": "success", 
                 "data": {
@@ -206,22 +204,28 @@ def api_manage_user_update(data: UserUpdateModel, request: Request):
         if p_res.status_code == 200:
             p = p_res.json().get('Policy', {})
             
-            # 更新状态
             if data.is_disabled is not None:
                 p['IsDisabled'] = data.is_disabled
                 if not data.is_disabled: p['LoginAttemptsBeforeLockout'] = -1
             
-            # 更新库权限
             if data.enable_all_folders is not None:
                 p['EnableAllFolders'] = bool(data.enable_all_folders)
                 p['EnabledFolders'] = [str(x) for x in data.enabled_folders] if not p['EnableAllFolders'] and data.enabled_folders is not None else []
             if data.excluded_sub_folders is not None:
                 p['ExcludedSubFolders'] = data.excluded_sub_folders
                 
-            # 🔥 更新高级策略 (下载、转码、年龄分级)
-            if data.enable_downloading is not None: p['EnableContentDownloading'] = data.enable_downloading
-            if data.enable_video_transcoding is not None: p['EnableVideoPlaybackTranscoding'] = data.enable_video_transcoding
-            if data.enable_audio_transcoding is not None: p['EnableAudioPlaybackTranscoding'] = data.enable_audio_transcoding
+            # 🔥 强制同步连带权限
+            if data.enable_downloading is not None: 
+                p['EnableContentDownloading'] = data.enable_downloading
+                p['EnableSyncTranscoding'] = data.enable_downloading # 同步开启/关闭下载转码
+                
+            if data.enable_video_transcoding is not None: 
+                p['EnableVideoPlaybackTranscoding'] = data.enable_video_transcoding
+                p['EnablePlaybackRemuxing'] = data.enable_video_transcoding # 同步开启/关闭容器更改
+                
+            if data.enable_audio_transcoding is not None: 
+                p['EnableAudioPlaybackTranscoding'] = data.enable_audio_transcoding
+                
             if data.max_parental_rating is not None:
                 if data.max_parental_rating == -1: p.pop('MaxParentalRating', None)
                 else: p['MaxParentalRating'] = data.max_parental_rating
@@ -246,23 +250,22 @@ def api_manage_user_new(data: NewUserModel, request: Request):
         
         p = requests.get(f"{host}/emby/Users/{new_id}?api_key={key}").json().get('Policy', {})
         
-        # 🔥 如果选择了套用模板，根据前端传来的颗粒度选项进行复制
         if data.template_user_id:
             src = requests.get(f"{host}/emby/Users/{data.template_user_id}?api_key={key}").json().get('Policy', {})
             
-            # 1. 复制媒体库权限
             if data.copy_library:
                 p['EnableAllFolders'] = src.get('EnableAllFolders', True)
                 p['EnabledFolders'] = src.get('EnabledFolders', [])
                 p['ExcludedSubFolders'] = src.get('ExcludedSubFolders', [])
             
-            # 2. 复制基础策略 (下载、转码)
+            # 🔥 拷贝策略时加入子权限
             if data.copy_policy:
                 p['EnableContentDownloading'] = src.get('EnableContentDownloading', True)
+                p['EnableSyncTranscoding'] = src.get('EnableSyncTranscoding', True)
                 p['EnableVideoPlaybackTranscoding'] = src.get('EnableVideoPlaybackTranscoding', True)
+                p['EnablePlaybackRemuxing'] = src.get('EnablePlaybackRemuxing', True)
                 p['EnableAudioPlaybackTranscoding'] = src.get('EnableAudioPlaybackTranscoding', True)
                 
-            # 3. 复制家长控制分级
             if data.copy_parental:
                 if 'MaxParentalRating' in src: p['MaxParentalRating'] = src['MaxParentalRating']
                 else: p.pop('MaxParentalRating', None)

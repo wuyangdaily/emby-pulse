@@ -9,9 +9,6 @@ from app.schemas.models import LoginModel, UserRegisterModel
 
 router = APIRouter()
 
-# ==========================================
-# 🔥 数据库热升级：确保邀请码表字段完整
-# ==========================================
 def ensure_invitations_schema():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -36,7 +33,6 @@ ensure_invitations_schema()
 @router.post("/api/register")
 async def api_register(data: UserRegisterModel):
     try:
-        # 1. 校验邀请码
         invite = query_db("SELECT * FROM invitations WHERE code = ?", (data.code,), one=True)
         if not invite:
             return JSONResponse(content={"status": "error", "message": "无效的邀请码"})
@@ -47,32 +43,27 @@ async def api_register(data: UserRegisterModel):
         if used_count >= max_uses:
             return JSONResponse(content={"status": "error", "message": "邀请码已被使用或超过最大次数"})
 
-        # 2. 准备 Emby 连接
         host = cfg.get("emby_host"); key = cfg.get("emby_api_key")
         if not host or not key:
             return JSONResponse(content={"status": "error", "message": "系统未配置 Emby 连接"})
 
-        # 3. 创建用户
         res = requests.post(f"{host}/emby/Users/New?api_key={key}", json={"Name": data.username})
         if res.status_code != 200:
             return JSONResponse(content={"status": "error", "message": f"用户名可能已存在"})
         
         new_id = res.json()['Id']
 
-        # 4. 设置密码
         pwd_res = requests.post(f"{host}/emby/Users/{new_id}/Password?api_key={key}", json={"Id": new_id, "NewPw": data.password})
         if pwd_res.status_code not in [200, 204]:
             requests.delete(f"{host}/emby/Users/{new_id}?api_key={key}")
             return JSONResponse(content={"status": "error", "message": "密码设置失败"})
 
-        # 5. 初始化策略 (启用账户 + 完美继承模板的所有高级权限)
         p_res = requests.get(f"{host}/emby/Users/{new_id}?api_key={key}")
         policy = p_res.json().get('Policy', {}) if p_res.status_code == 200 else {}
         
         policy['IsDisabled'] = False
         policy['LoginAttemptsBeforeLockout'] = -1
         
-        # 读取绑定的模板ID进行权限继承
         template_id = invite['template_user_id'] if 'template_user_id' in invite.keys() else None
         
         if template_id:
@@ -81,24 +72,25 @@ async def api_register(data: UserRegisterModel):
                 if src_res.status_code == 200:
                     src_policy = src_res.json().get('Policy', {})
                     
-                    # 5.1 继承媒体库访问权限
                     policy['EnableAllFolders'] = src_policy.get('EnableAllFolders', True)
                     policy['EnabledFolders'] = src_policy.get('EnabledFolders', [])
                     policy['ExcludedSubFolders'] = src_policy.get('ExcludedSubFolders', [])
                     
-                    # 🔥 5.2 继承高级策略 (下载与转码)
+                    # 🔥 同步所有连带的子权限
                     policy['EnableContentDownloading'] = src_policy.get('EnableContentDownloading', True)
+                    policy['EnableSyncTranscoding'] = src_policy.get('EnableSyncTranscoding', True) 
+                    
                     policy['EnableVideoPlaybackTranscoding'] = src_policy.get('EnableVideoPlaybackTranscoding', True)
+                    policy['EnablePlaybackRemuxing'] = src_policy.get('EnablePlaybackRemuxing', True)
+                    
                     policy['EnableAudioPlaybackTranscoding'] = src_policy.get('EnableAudioPlaybackTranscoding', True)
                     
-                    # 🔥 5.3 继承家长控制 (年龄分级)
                     if 'MaxParentalRating' in src_policy:
                         policy['MaxParentalRating'] = src_policy['MaxParentalRating']
             except: pass
             
         requests.post(f"{host}/emby/Users/{new_id}/Policy?api_key={key}", json=policy)
 
-        # 6. 计算过期时间
         expire_date = None
         if invite['days'] > 0:
             expire_dt = datetime.datetime.now() + datetime.timedelta(days=invite['days'])
@@ -106,7 +98,6 @@ async def api_register(data: UserRegisterModel):
             query_db("INSERT INTO users_meta (user_id, expire_date, created_at) VALUES (?, ?, ?)", 
                      (new_id, expire_date, datetime.datetime.now().isoformat()))
 
-        # 7. 更新使用次数、使用者记录及状态
         used_at = datetime.datetime.now().isoformat()
         query_db(
             "UPDATE invitations SET used_count = COALESCE(used_count, 0) + 1, used_by = ?, used_at = ?, status = 1 WHERE code = ?", 
