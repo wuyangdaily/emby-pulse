@@ -4,22 +4,46 @@
 {% block content %}
 <div class="max-w-[1600px] mx-auto w-full px-4 py-6 pb-24">
     
-    <div class="flex items-center justify-between mb-6 sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur py-2">
+    <div class="flex items-center justify-between mb-6 sticky top-0 z-30 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur py-2">
         <div>
             <h1 class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-2">
                 <i class="fa-solid fa-bolt text-blue-500"></i> 任务中心
             </h1>
             <p class="text-xs text-gray-500 mt-1 hidden md:block">管理 Emby 计划任务与插件作业</p>
         </div>
-        <button onclick="loadTasks()" class="bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-bold transition shadow-sm flex items-center">
-            <i class="fa-solid fa-rotate-right mr-2"></i> 刷新
-        </button>
+        
+        <div class="flex items-center gap-2 md:gap-3">
+            <div class="relative" id="running-tasks-dropdown-container">
+                <button onclick="toggleRunningDropdown()" id="running-tasks-btn" class="hidden items-center gap-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-3 md:px-4 py-2 rounded-xl border border-blue-200 dark:border-blue-800/50 text-sm font-bold transition shadow-sm active:scale-95">
+                    <span class="relative flex h-2.5 w-2.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                    </span>
+                    <span id="running-tasks-count" class="hidden md:inline">0 项运行中</span>
+                    <span id="running-tasks-count-mobile" class="md:hidden">0</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] ml-0.5 transition-transform duration-300" id="running-tasks-icon"></i>
+                </button>
+
+                <div id="running-tasks-panel" class="absolute right-0 mt-3 w-72 md:w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700/60 hidden flex-col z-50 transform origin-top-right transition-all duration-200 scale-95 opacity-0">
+                    <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700/50 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30 rounded-t-2xl">
+                        <h3 class="text-sm font-bold text-gray-800 dark:text-gray-100 flex items-center gap-1.5"><i class="fa-solid fa-gear fa-spin text-blue-500"></i> 当前执行中</h3>
+                        <span class="text-[10px] bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 px-2 py-0.5 rounded font-mono font-bold border border-blue-200 dark:border-blue-800" id="panel-count-badge">0</span>
+                    </div>
+                    <div class="max-h-[60vh] overflow-y-auto custom-scroll p-3 space-y-2.5" id="running-tasks-list">
+                        </div>
+                </div>
+            </div>
+
+            <button onclick="loadTasks()" class="bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-200 px-3 md:px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-bold transition shadow-sm flex items-center active:scale-95">
+                <i class="fa-solid fa-rotate-right mr-0 md:mr-2"></i> <span class="hidden md:inline">刷新</span>
+            </button>
+        </div>
     </div>
 
     <div id="task-container" class="space-y-8">
         <div class="text-center py-32">
             <i class="fa-solid fa-circle-notch fa-spin text-gray-300 text-4xl mb-4"></i>
-            <p class="text-gray-400 text-sm">正在同步任务状态...</p>
+            <p class="text-gray-400 text-sm font-bold tracking-widest animate-pulse">正在同步服务器任务状态...</p>
         </div>
     </div>
 
@@ -27,6 +51,45 @@
 
 <script>
     let pollInterval = null;
+    let isDropdownOpen = false;
+
+    // 点击空白处关闭悬浮窗
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('running-tasks-dropdown-container');
+        if (isDropdownOpen && container && !container.contains(e.target)) {
+            closeRunningDropdown();
+        }
+    });
+
+    function toggleRunningDropdown() {
+        isDropdownOpen ? closeRunningDropdown() : openRunningDropdown();
+    }
+
+    function openRunningDropdown() {
+        isDropdownOpen = true;
+        const panel = document.getElementById('running-tasks-panel');
+        const icon = document.getElementById('running-tasks-icon');
+        panel.classList.remove('hidden');
+        
+        setTimeout(() => {
+            panel.classList.remove('scale-95', 'opacity-0');
+            panel.classList.add('scale-100', 'opacity-100');
+            icon.classList.add('-rotate-180');
+        }, 10);
+    }
+
+    function closeRunningDropdown() {
+        isDropdownOpen = false;
+        const panel = document.getElementById('running-tasks-panel');
+        const icon = document.getElementById('running-tasks-icon');
+        panel.classList.remove('scale-100', 'opacity-100');
+        panel.classList.add('scale-95', 'opacity-0');
+        icon.classList.remove('-rotate-180');
+        
+        setTimeout(() => {
+            if(!isDropdownOpen) panel.classList.add('hidden');
+        }, 200);
+    }
 
     async function init() {
         loadTasks();
@@ -40,15 +103,23 @@
             if(json.status === 'success') {
                 renderGroupedTasks(json.data);
                 
-                // 轮询逻辑：如果有任务在跑，每2秒刷一次
-                let anyRunning = false;
+                // 提取所有正在运行的任务
+                let runningTasks = [];
                 json.data.forEach(group => {
-                    if(group.tasks.some(t => t.State === 'Running')) anyRunning = true;
+                    group.tasks.forEach(t => {
+                        if (t.State === 'Running') {
+                            runningTasks.push(t);
+                        }
+                    });
                 });
 
-                if (anyRunning && !pollInterval) {
+                // 更新右上角悬浮组件状态
+                updateRunningTasksUI(runningTasks);
+
+                // 轮询逻辑：如果有任务在跑，每2秒刷一次进度
+                if (runningTasks.length > 0 && !pollInterval) {
                     pollInterval = setInterval(loadTasks, 2000);
-                } else if (!anyRunning && pollInterval) {
+                } else if (runningTasks.length === 0 && pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
                 }
@@ -56,11 +127,54 @@
         } catch(e) { console.error(e); }
     }
 
+    // 动态渲染右上角下拉列表
+    function updateRunningTasksUI(tasks) {
+        const btn = document.getElementById('running-tasks-btn');
+        const countText = document.getElementById('running-tasks-count');
+        const countTextMobile = document.getElementById('running-tasks-count-mobile');
+        const badge = document.getElementById('panel-count-badge');
+        const list = document.getElementById('running-tasks-list');
+
+        if (tasks.length > 0) {
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+            countText.textContent = `${tasks.length} 项运行中`;
+            countTextMobile.textContent = tasks.length;
+            badge.textContent = tasks.length;
+
+            let html = '';
+            tasks.forEach(t => {
+                const progress = t.CurrentProgressPercentage || 0;
+                html += `
+                <div class="bg-gray-50 dark:bg-gray-700/40 rounded-xl p-3 border border-gray-100 dark:border-gray-700/50 relative overflow-hidden flex flex-col gap-2 group shadow-sm">
+                    <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-1000 ease-linear" style="width: ${progress}%"></div>
+                    <div class="flex justify-between items-start">
+                        <div class="font-black text-gray-800 dark:text-gray-200 text-xs truncate flex-1 pr-2" title="${t.Name}">${t.Name}</div>
+                        <button onclick="stopTask('${t.Id}')" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 px-2 py-1 rounded transition-colors shrink-0 flex items-center gap-1 active:scale-95">
+                            <i class="fa-solid fa-stop text-[10px]"></i> <span class="text-[10px] font-bold">停止</span>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div class="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 flex-1 pr-2" title="${t.Description || ''}">${t.Description || '正在执行后台任务...'}</div>
+                        <div class="text-blue-600 dark:text-blue-400 font-mono text-[11px] font-black shrink-0 tabular-nums">${progress.toFixed(1)}%</div>
+                    </div>
+                </div>
+                `;
+            });
+            list.innerHTML = html;
+        } else {
+            // 没有运行中任务，隐藏按钮并自动关闭面板
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+            if (isDropdownOpen) closeRunningDropdown();
+        }
+    }
+
     function renderGroupedTasks(groups) {
         const container = document.getElementById('task-container');
         
         if(!groups || groups.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-400 py-10">暂无任务数据</div>';
+            container.innerHTML = '<div class="text-center text-gray-400 py-20 font-bold">暂无任务数据</div>';
             return;
         }
 
@@ -70,7 +184,7 @@
             html += `
             <div class="animate-fade-in">
                 <div class="flex items-center mb-3 px-1">
-                    <h3 class="font-bold text-gray-700 dark:text-gray-200 text-sm md:text-base">${group.title}</h3>
+                    <h3 class="font-black text-gray-700 dark:text-gray-200 text-sm md:text-base">${group.title}</h3>
                     <span class="ml-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold">${group.tasks.length}</span>
                 </div>
                 
@@ -81,7 +195,6 @@
                 const isRunning = t.State === 'Running';
                 const progress = t.CurrentProgressPercentage || 0;
                 
-                // 上次执行结果
                 let lastRunTime = '从未执行';
                 let statusIcon = '<span class="w-2 h-2 rounded-full bg-gray-300 inline-block mr-1"></span>';
                 let statusText = '无记录';
@@ -91,40 +204,39 @@
                     lastRunTime = end.toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
                     
                     if (t.LastExecutionResult.Status === 'Completed') {
-                        statusIcon = '<span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1"></span>';
+                        statusIcon = '<span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1 shadow-[0_0_5px_rgba(34,197,94,0.5)]"></span>';
                         statusText = '成功';
                     } else if (t.LastExecutionResult.Status === 'Failed') {
-                        statusIcon = '<span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1"></span>';
+                        statusIcon = '<span class="w-2 h-2 rounded-full bg-red-500 inline-block mr-1 shadow-[0_0_5px_rgba(239,68,68,0.5)]"></span>';
                         statusText = '失败';
                     } else {
-                        statusIcon = '<span class="w-2 h-2 rounded-full bg-yellow-500 inline-block mr-1"></span>';
+                        statusIcon = '<span class="w-2 h-2 rounded-full bg-yellow-500 inline-block mr-1 shadow-[0_0_5px_rgba(234,179,8,0.5)]"></span>';
                         statusText = '取消';
                     }
                 }
 
-                // 运行时的边框效果
                 const borderClass = isRunning 
-                    ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-100 dark:ring-blue-900 shadow-md' 
-                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-sm';
+                    ? 'border-blue-400 dark:border-blue-500 ring-2 ring-blue-100 dark:ring-blue-900/50 shadow-lg scale-[1.02] z-10' 
+                    : 'border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md';
 
                 html += `
-                <div class="relative bg-white dark:bg-gray-800 rounded-xl border ${borderClass} p-4 transition duration-200 group overflow-hidden flex flex-col justify-between min-h-[110px]">
+                <div class="relative bg-white dark:bg-gray-800 rounded-xl border ${borderClass} p-4 transition-all duration-300 group overflow-hidden flex flex-col justify-between min-h-[110px]">
                     
-                    ${isRunning ? `<div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-500 z-10" style="width: ${progress}%"></div>` : ''}
+                    ${isRunning ? `<div class="absolute bottom-0 left-0 h-1.5 bg-blue-500 transition-all duration-1000 ease-linear z-10" style="width: ${progress}%"></div>` : ''}
                     
                     <div class="flex justify-between items-start mb-2">
                         <div class="pr-2 overflow-hidden">
                             <div class="font-bold text-gray-800 dark:text-gray-100 text-sm truncate" title="${t.OriginalName}">${t.Name}</div>
-                            <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 line-clamp-2 leading-relaxed" title="${t.Description || ''}">
+                            <div class="text-[11px] text-gray-400 dark:text-gray-500 mt-1 line-clamp-2 leading-relaxed" title="${t.Description || ''}">
                                 ${t.Description || '暂无说明'}
                             </div>
                         </div>
                         <div class="shrink-0">
                             ${isRunning ? 
-                                `<button onclick="stopTask('${t.Id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-100 transition">
+                                `<button onclick="stopTask('${t.Id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/30 text-red-500 hover:bg-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 transition active:scale-90 shadow-sm">
                                     <i class="fa-solid fa-stop text-xs"></i>
                                 </button>` : 
-                                `<button onclick="startTask('${t.Id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition">
+                                `<button onclick="startTask('${t.Id}')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-500 hover:bg-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition active:scale-90 shadow-sm">
                                     <i class="fa-solid fa-play text-xs pl-0.5"></i>
                                 </button>`
                             }
@@ -134,16 +246,16 @@
                     <div class="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-2 pt-2 border-t border-gray-50 dark:border-gray-700/50">
                         <div class="flex items-center">
                             ${isRunning ? 
-                                `<span class="text-blue-500 font-bold flex items-center"><i class="fa-solid fa-gear fa-spin mr-1"></i> 运行中 ${Math.round(progress)}%</span>` : 
-                                `<div class="flex items-center">${statusIcon} ${statusText}</div>`
+                                `<span class="text-blue-500 font-black flex items-center bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 rounded"><i class="fa-solid fa-gear fa-spin mr-1.5"></i> 运行中 ${progress.toFixed(1)}%</span>` : 
+                                `<div class="flex items-center font-bold">${statusIcon} ${statusText}</div>`
                             }
                         </div>
-                        <div class="font-mono opacity-80">${lastRunTime}</div>
+                        <div class="font-mono opacity-80 font-bold">${lastRunTime}</div>
                     </div>
                 </div>`;
             });
 
-            html += `</div></div><div class="h-4"></div>`; // 组间距
+            html += `</div></div><div class="h-5"></div>`;
         });
 
         container.innerHTML = html;
@@ -159,7 +271,7 @@
     }
 
     async function stopTask(id) {
-        if(!confirm('确定要强制停止此任务吗？')) return;
+        if(!confirm('确定要强制停止此任务吗？可能导致数据不同步。')) return;
         try {
             const res = await fetch(`/api/tasks/${id}/stop`, {method: 'POST'});
             const json = await res.json();
@@ -170,4 +282,11 @@
 
     init();
 </script>
+
+<style>
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark .custom-scroll::-webkit-scrollbar-thumb { background: #475569; }
+</style>
 {% endblock %}
