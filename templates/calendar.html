@@ -79,13 +79,13 @@
             <i class="fa-solid fa-xmark text-sm"></i>
         </button>
         
-        <div class="flex flex-row p-4 md:p-0 max-h-[85vh] overflow-y-auto custom-scroll">
+        <div class="flex flex-row items-start p-4 md:p-0 max-h-[85vh] overflow-y-auto custom-scroll">
             
-            <div class="w-1/3 md:w-2/5 aspect-[2/3] md:aspect-auto relative shrink-0 bg-gray-100 dark:bg-gray-800 rounded-xl md:rounded-none overflow-hidden">
+            <div class="w-1/3 md:w-2/5 aspect-[2/3] md:aspect-auto md:h-full relative shrink-0 bg-gray-100 dark:bg-gray-800 rounded-xl md:rounded-none overflow-hidden shadow-md md:shadow-none">
                 <img id="m-poster" src="" class="absolute inset-0 w-full h-full object-cover">
             </div>
             
-            <div class="pl-4 md:p-8 flex-1 flex flex-col justify-start z-10">
+            <div class="pl-4 md:p-8 flex-1 flex flex-col justify-start z-10 w-2/3 md:w-3/5">
                 <h3 id="m-title" class="text-lg md:text-3xl font-black text-gray-900 dark:text-white leading-tight pr-6 md:pr-0 line-clamp-2 md:line-clamp-none"></h3>
                 
                 <div class="flex flex-wrap items-center gap-2 mt-2 md:mt-3">
@@ -97,7 +97,7 @@
                     <i class="fa-regular fa-clock"></i> <span id="m-date-val"></span>
                 </p>
                 
-                <div class="mt-3 md:mt-5 text-[11px] md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed flex-1 overflow-y-auto custom-scroll pr-1 md:pr-2">
+                <div class="mt-3 md:mt-5 text-[11px] md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed overflow-y-auto custom-scroll pr-1 md:pr-2 max-h-[120px] md:max-h-[200px]">
                     <p id="m-description"></p>
                 </div>
                 
@@ -194,7 +194,7 @@ function renderCalendar(days) {
             : day.items.map(item => generateCardHtml(item)).join('');
 
         return `
-            <div id="day-section-${index}" class="day-section flex flex-col gap-3 md:gap-4 relative scroll-mt-[130px]">
+            <div id="day-section-${index}" class="day-section flex flex-col gap-3 md:gap-4 relative">
                 
                 <div class="hidden md:flex justify-between items-end pb-2 pt-3 mb-1 border-b-2 ${isToday ? 'border-indigo-500' : 'border-gray-100 dark:border-gray-800'} sticky top-[72px] z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
                     <span class="font-black text-base ${isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-800 dark:text-gray-200'}">${day.weekday_cn}</span>
@@ -225,7 +225,6 @@ function generateCardHtml(item) {
     const poster = item.poster_path ? (imgBase + item.poster_path) : 'https://via.placeholder.com/300x450?text=No+Poster';
     const desc = item.series_overview || item.overview || "暂无剧情简介，静待更新...";
     
-    // 🔥 核心改进 4: 格式化时间，如果后端传来具体时间，这里会完美呈现 (2026.03.04 19:00)
     const formattedAirDate = item.air_date ? item.air_date.replace(/-/g, '.') : '未知时间';
 
     return `
@@ -272,7 +271,7 @@ function setupScrollSpy() {
             }
         });
     }, { 
-        rootMargin: '-140px 0px -50% 0px' 
+        rootMargin: '-150px 0px -50% 0px' 
     });
 
     sections.forEach(sec => scrollObserver.observe(sec));
@@ -308,12 +307,23 @@ function highlightNavBtn(activeIndex) {
     }
 }
 
-// 🔥 核心改进 2: 修复锚点跳转逻辑，使用 scrollIntoView
+// 🔥 核心修复 1: 使用原生 getBoundingClientRect 绝对计算距离，彻底解决移动端滑动失效问题
 function scrollToDay(index) {
     const section = document.getElementById(`day-section-${index}`);
-    if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if(window.innerWidth < 768) { highlightNavBtn(index); }
+    const headerContainer = document.getElementById('sticky-header-container');
+    
+    if (section && headerContainer) {
+        // 计算绝对位置：元素距离顶部的相对距离 + 当前页面滚动高度 - 顶部吸顶导航的高度 - 额外预留15px呼吸空间
+        const offsetPosition = section.getBoundingClientRect().top + window.scrollY - headerContainer.offsetHeight - 15;
+        
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+        });
+        
+        if(window.innerWidth < 768) { 
+            highlightNavBtn(index); 
+        }
     }
 }
 
@@ -325,7 +335,6 @@ function showDetails(item) {
     document.getElementById('m-episode-label').textContent = `S${String(item.season).padStart(2,'0')}E${String(item.episode).padStart(2,'0')}`;
     document.getElementById('m-poster').src = item.poster_path ? (imgBase + item.poster_path) : '';
     
-    // 弹窗内时间格式化
     const formattedAirDate = item.air_date ? item.air_date.replace(/-/g, '.') : '未知时间';
     document.getElementById('m-date-val').textContent = formattedAirDate;
     document.getElementById('m-description').textContent = item.series_overview || item.overview || "静待更新...";
