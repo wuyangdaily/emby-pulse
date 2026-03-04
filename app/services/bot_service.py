@@ -93,33 +93,42 @@ class TelegramBot:
 
     def _get_location(self, ip):
         if not ip: return "未知"
+        is_ipv6 = False
         try:
             ip_obj = ipaddress.ip_address(ip)
             if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
                 return "局域网"
+            is_ipv6 = (ip_obj.version == 6)
         except: pass
+        
         if ip in self.ip_cache: return self.ip_cache[ip]
         loc = ""
-        try:
-            res = requests.get(f"https://api.vvhan.com/api/ipInfo?ip={ip}", timeout=3)
-            if res.status_code == 200:
-                data = res.json()
-                if data.get('success'):
-                    info = data.get('info', {})
-                    country = info.get('country', '')
-                    prov = info.get('prov', '')
-                    city = info.get('city', '')
-                    if prov or city: loc = f"{country} {prov} {city}".strip()
-        except: pass
-        if not loc or loc == "中国  ":
+        
+        # 🔥 修复 1：拦截 IPv6 导致的免费 API 乱报错（如江西上饶移通）
+        if not is_ipv6:
             try:
-                res = requests.get(f"https://whois.pconline.com.cn/ipJson.jsp?ip={ip}&json=true", timeout=3)
-                res.encoding = 'gbk'
+                res = requests.get(f"https://api.vvhan.com/api/ipInfo?ip={ip}", timeout=3)
                 if res.status_code == 200:
-                    addr = res.json().get('addr', '')
-                    if addr and "本机地址" not in addr: loc = addr.strip()
+                    data = res.json()
+                    if data.get('success'):
+                        info = data.get('info', {})
+                        country = info.get('country', '')
+                        prov = info.get('prov', '')
+                        city = info.get('city', '')
+                        if prov or city: loc = f"{country} {prov} {city}".strip()
             except: pass
-        if not loc:
+            
+            if not loc or loc == "中国  ":
+                try:
+                    res = requests.get(f"https://whois.pconline.com.cn/ipJson.jsp?ip={ip}&json=true", timeout=3)
+                    res.encoding = 'gbk'
+                    if res.status_code == 200:
+                        addr = res.json().get('addr', '')
+                        if addr and "本机地址" not in addr: loc = addr.strip()
+                except: pass
+
+        # 针对 IPv6 或前面没查到的，使用支持度更好的 ip-api
+        if not loc or "江西上饶" in loc: 
             try:
                 res = requests.get(f"http://ip-api.com/json/{ip}?lang=zh-CN", timeout=3)
                 if res.status_code == 200:
@@ -130,11 +139,14 @@ class TelegramBot:
                         city = d.get('city', '')
                         loc = f"{country} {region} {city}".strip()
             except: pass
-        if not loc: loc = "未知地区"
+            
+        if not loc: loc = "IPv6 节点" if is_ipv6 else "未知地区"
         else:
             loc = loc.replace("省", "").replace("市", "").replace("中国 中国", "中国").strip()
             loc = re.sub(r'\s+', ' ', loc)
-        if loc != "未知地区":
+            
+        # 绝不缓存错误的江西上饶代理地址
+        if loc != "未知地区" and "江西上饶" not in loc:
             if len(self.ip_cache) > 1000: self.ip_cache.clear()
             self.ip_cache[ip] = loc
         return loc
@@ -560,12 +572,27 @@ class TelegramBot:
             
             title = item.get("Name", "未知内容")
             ep_info = ""
-            type_cn = "剧集" if item.get("Type") == "Episode" else "电影"
+            raw_type = item.get("Type", "")
             
-            if item.get("SeriesName"): 
+            # 🔥 修复 2：多维媒体类型精准映射
+            type_map = {
+                "Episode": "剧集",
+                "Movie": "电影",
+                "Audio": "音乐",
+                "MusicVideo": "MV",
+                "LiveTvProgram": "直播频道",
+                "TvChannel": "电视频道"
+            }
+            type_cn = type_map.get(raw_type, "媒体")
+            
+            # 针对不同类型的副标题特化处理
+            if raw_type == "Episode" and item.get("SeriesName"): 
                 idx = item.get("IndexNumber", 0); parent_idx = item.get("ParentIndexNumber", 1)
                 ep_info = f" S{str(parent_idx).zfill(2)}E{str(idx).zfill(2)} 第 {idx} 集"
                 title = f"{item.get('SeriesName')}"
+            elif raw_type == "Audio" and item.get("Artists"):
+                artist_str = ", ".join(item.get("Artists"))
+                title = f"{title} - {artist_str}"  # 音乐显示：歌名 - 歌手
             
             emoji = "▶️" if action == "start" else "⏹️"; act = "开始播放" if action == "start" else "停止播放"
             ip = session.get("RemoteEndPoint", "127.0.0.1"); loc = self._get_location(ip)
@@ -575,8 +602,12 @@ class TelegramBot:
                    f"📱 设备：{session.get('Client')} on {session.get('DeviceName')}\n"
                    f"🕒 时间：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             
+            # 封面图逻辑优化：音乐优先拿专辑封面
             target_id = item.get("Id")
-            if item.get("Type") == "Episode" and item.get("SeriesId"): target_id = item.get("SeriesId")
+            if raw_type == "Episode" and item.get("SeriesId"): 
+                target_id = item.get("SeriesId")
+            elif raw_type == "Audio" and item.get("AlbumId"): 
+                target_id = item.get("AlbumId")
             
             base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
             if base_url.endswith('/'): base_url = base_url[:-1]
