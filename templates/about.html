@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block title %}关于与支持 - EmbyPulse{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-4xl mx-auto px-4 md:px-6 py-8 pb-24">
+    
+    <div class="flex flex-col items-center justify-center text-center mb-10 mt-4">
+        <div class="w-24 h-24 bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 flex items-center justify-center p-4 mb-5 transform hover:scale-105 transition-all">
+            <img src="/static/img/logo-app.png" alt="Logo" class="w-full h-full object-contain rounded-xl">
+        </div>
+        <h1 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+            EmbyPulse 映迹
+        </h1>
+        <p class="text-sm font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-full mt-3 border border-indigo-100 dark:border-indigo-500/30">
+            Version {{ version }}
+        </p>
+        <p class="text-gray-500 dark:text-gray-400 mt-5 max-w-lg leading-relaxed text-sm">
+            打造极客级别的 Emby 态势感知与自动化管控中心。监控、排期、阻断，一切尽在掌握。
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+        <a href="https://github.com/zeyu8023/emby-pulse" target="_blank" class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all group">
+            <i class="fa-brands fa-github text-3xl text-gray-800 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-3"></i>
+            <h3 class="font-bold text-gray-900 dark:text-white text-sm">GitHub 仓库</h3>
+            <p class="text-xs text-gray-500 mt-1">给项目点个 Star ⭐</p>
+        </a>
+        
+        <a href="https://t.me/Emby_Pulse2" target="_blank" class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/50 transition-all group">
+            <i class="fa-solid fa-bullhorn text-3xl text-blue-500 mb-3 group-hover:scale-110 transition-transform"></i>
+            <h3 class="font-bold text-gray-900 dark:text-white text-sm">官方 TG 频道</h3>
+            <p class="text-xs text-gray-500 mt-1">获取最新版本资讯</p>
+        </a>
+
+        <a href="https://t.me/Emby_Pulse" target="_blank" class="flex flex-col items-center p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-500/50 transition-all group">
+            <i class="fa-brands fa-telegram text-3xl text-blue-500 mb-3 group-hover:scale-110 transition-transform"></i>
+            <h3 class="font-bold text-gray-900 dark:text-white text-sm">TG 交流群组</h3>
+            <p class="text-xs text-gray-500 mt-1">遇到问题？来这里交流</p>
+        </a>
+    </div>
+
+    <div class="flex flex-col items-center">
+        <button onclick="toggleDonate()" class="flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl font-black shadow-lg shadow-orange-500/30 active:scale-95 transition-all">
+            <i class="fa-solid fa-mug-hot"></i> 赞赏作者 (Buy me a coffee)
+        </button>
+        
+        <div id="donate-card" class="mt-6 overflow-hidden transition-all duration-500 ease-in-out max-h-0 opacity-0">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center">
+                <p class="text-sm text-gray-600 dark:text-gray-300 font-bold mb-4">开源不易，感谢你为服务器充入的一度电 ⚡</p>
+                <div class="w-48 md:w-56 rounded-2xl overflow-hidden border-4 border-gray-50 dark:border-gray-900 shadow-inner">
+                    <img src="/static/img/zanshangma.png" alt="赞赏码" class="w-full h-auto object-contain">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleDonate() {
+        const card = document.getElementById('donate-card');
+        if (card.classList.contains('max-h-0')) {
+            card.classList.remove('max-h-0', 'opacity-0');
+            card.classList.add('max-h-[500px]', 'opacity-100');
+            // 滑动到底部展示二维码
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        } else {
+            card.classList.remove('max-h-[500px]', 'opacity-100');
+            card.classList.add('max-h-0', 'opacity-0');
+        }
+    }
+</script>
+{% endblock %}

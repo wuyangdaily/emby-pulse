@@ -184,3 +184,13 @@ async def requests_admin_page(request: Request):
         "active_page": "requests_admin",
         "version": APP_VERSION
     })
+
+@router.get("/clients", response_class=HTMLResponse)
+async def clients_page(request: Request):
+    if not check_login(request): return RedirectResponse("/login")
+    return templates.TemplateResponse("clients.html", {"request": request, "active_page": "clients", "version": APP_VERSION})
+
+@router.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
+    if not check_login(request): return RedirectResponse("/login")
+    return templates.TemplateResponse("about.html", {"request": request, "active_page": "about", "version": APP_VERSION})

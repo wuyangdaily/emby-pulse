@@ -1,0 +1,319 @@
+{% extends "layout.html" %}
+{% block title %}客户端管控 - EmbyPulse{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-[1600px] mx-auto px-4 md:px-6 py-6 pb-24">
+    
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+                <i class="fa-solid fa-desktop text-indigo-500"></i>
+                终端态势与管控
+            </h1>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">分析全服播放设备，一键阻断异常客户端</p>
+        </div>
+        
+        <button onclick="toggleBlacklistModal()" class="flex items-center justify-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm shadow-md shadow-red-500/20 active:scale-95 transition-all">
+            <i class="fa-solid fa-shield-halved"></i> 软件黑名单管理
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-5 lg:col-span-1">
+            <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-blue-500"></i> 客户端生态分布
+            </h3>
+            <div class="relative h-48 w-full flex items-center justify-center">
+                <canvas id="clientPieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 p-5 lg:col-span-2">
+            <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-ranking-star text-amber-500"></i> 历史高频设备 TOP 5
+            </h3>
+            <div class="relative h-48 w-full">
+                <canvas id="deviceBarChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/60 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700/50 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-sm">全服已接入设备列表</h3>
+            <button onclick="fetchClientsData()" class="text-xs text-indigo-500 hover:text-indigo-600 font-bold flex items-center gap-1 transition-colors">
+                <i class="fa-solid fa-rotate"></i> 刷新列表
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3 whitespace-nowrap">设备名称 / ID</th>
+                        <th class="px-6 py-3 whitespace-nowrap">使用软件 (AppName)</th>
+                        <th class="px-6 py-3 whitespace-nowrap">最后活动时间</th>
+                        <th class="px-6 py-3 whitespace-nowrap text-right">授权状态 (拉黑)</th>
+                    </tr>
+                </thead>
+                <tbody id="devices-tbody">
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-400">正在准备加载设备数据...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="blacklist-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="toggleBlacklistModal()"></div>
+    <div class="relative w-full max-w-lg bg-white dark:bg-gray-900 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 scale-95 opacity-0" id="blacklist-container">
+        
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+            <h3 class="font-black text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-ban text-red-500"></i> 软件黑名单配置
+            </h3>
+            <button onclick="toggleBlacklistModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="new-block-app" placeholder="输入要封杀的软件名 (如 Fileball)" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm outline-none focus:border-red-500 dark:focus:border-red-500 transition-colors">
+                <button onclick="addBlacklist()" class="px-4 py-2.5 bg-gray-900 dark:bg-gray-700 hover:bg-black text-white rounded-xl text-sm font-bold shadow-sm transition-all">
+                    添加拦截
+                </button>
+            </div>
+            
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">当前已封杀名单</div>
+            
+            <ul class="space-y-2 max-h-60 overflow-y-auto custom-scroll" id="blacklist-ul">
+                <li class="text-center text-xs text-gray-400 py-4">加载中...</li>
+            </ul>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800">
+            <button id="execute-btn" onclick="executeBlock()" class="w-full py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-black shadow-md shadow-red-500/20 active:scale-95 transition-all flex justify-center items-center gap-2">
+                <i class="fa-solid fa-bolt"></i> 立即扫描并阻断线上设备
+            </button>
+            <p class="text-[10px] text-gray-500 text-center mt-2">点击将依据名单，吊销所有违规客户端的原生设备授权</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let pieChartInstance = null;
+let barChartInstance = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetchClientsData();
+    fetchBlacklist();
+});
+
+// 1. 获取图表与设备列表数据
+async function fetchClientsData() {
+    try {
+        const res = await fetch('/api/clients/data');
+        const data = await res.json();
+        if (data.status !== 'success') throw new Error(data.message);
+        
+        renderCharts(data.charts);
+        renderTable(data.devices);
+    } catch (e) {
+        document.getElementById('devices-tbody').innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-red-500">${e.message}</td></tr>`;
+    }
+}
+
+// 2. 渲染 Chart.js 图表
+function renderCharts(charts) {
+    const pieCtx = document.getElementById('clientPieChart');
+    const barCtx = document.getElementById('deviceBarChart');
+    
+    // 销毁旧图表防止重叠闪烁
+    if(pieChartInstance) pieChartInstance.destroy();
+    if(barChartInstance) barChartInstance.destroy();
+
+    // 智能识别主题变色
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#9ca3af' : '#4b5563';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+    // 环形图：客户端分布
+    pieChartInstance = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: charts.pie.labels,
+            datasets: [{
+                data: charts.pie.data,
+                backgroundColor: ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { 
+                    position: 'right', 
+                    labels: { boxWidth: 12, font: { size: 10 }, color: textColor } 
+                } 
+            },
+            cutout: '70%'
+        }
+    });
+
+    // 柱状图：活跃设备
+    barChartInstance = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: charts.bar.labels,
+            datasets: [{
+                label: '历史播放次数',
+                data: charts.bar.data,
+                backgroundColor: '#f59e0b',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { 
+                    beginAtZero: true, 
+                    grid: { color: gridColor },
+                    ticks: { color: textColor }
+                },
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0, color: textColor } 
+                }
+            }
+        }
+    });
+}
+
+// 3. 渲染设备表格
+function renderTable(devices) {
+    const tbody = document.getElementById('devices-tbody');
+    if (devices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">暂无任何设备连接记录</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = devices.map(d => `
+        <tr class="bg-white dark:bg-gray-800 border-b border-gray-50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+            <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full ${d.is_active ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : 'bg-gray-300 dark:bg-gray-600'}"></div>
+                    <span class="font-bold text-gray-900 dark:text-gray-200">${d.name}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <span class="px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-mono text-xs border border-blue-100 dark:border-blue-800/30">${d.app_name}</span>
+            </td>
+            <td class="px-6 py-4 text-xs font-mono text-gray-400">${d.last_activity}</td>
+            <td class="px-6 py-4 text-right">
+                ${d.is_blocked 
+                    ? '<span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-ban"></i> 违规拦截</span>' 
+                    : '<span class="text-green-500 font-bold text-xs"><i class="fa-solid fa-check"></i> 正常授权</span>'}
+            </td>
+        </tr>
+    `).join('');
+}
+
+// 4. 获取与渲染黑名单
+async function fetchBlacklist() {
+    const res = await fetch('/api/clients/blacklist');
+    const data = await res.json();
+    const ul = document.getElementById('blacklist-ul');
+    
+    if (data.data.length === 0) {
+        ul.innerHTML = '<li class="text-center text-xs text-gray-400 py-4">暂无封杀软件</li>';
+        return;
+    }
+    
+    ul.innerHTML = data.data.map(item => `
+        <li class="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800/30 rounded-lg group transition-all">
+            <span class="font-mono font-bold text-red-700 dark:text-red-400 text-sm"><i class="fa-solid fa-shield-virus mr-2"></i>${item.app_name}</span>
+            <button onclick="removeBlacklist('${item.app_name}')" class="text-red-300 hover:text-red-600 dark:text-red-800 dark:hover:text-red-400 transition-colors"><i class="fa-solid fa-trash"></i></button>
+        </li>
+    `).join('');
+}
+
+// 5. 添加黑名单
+async function addBlacklist() {
+    const input = document.getElementById('new-block-app');
+    const val = input.value.trim();
+    if(!val) return;
+    
+    const res = await fetch('/api/clients/blacklist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({app_name: val})
+    });
+    const data = await res.json();
+    if(data.status === 'success') {
+        input.value = '';
+        fetchBlacklist();
+        fetchClientsData(); // 刷新大表状态
+    } else {
+        alert(data.message);
+    }
+}
+
+// 6. 移除黑名单
+async function removeBlacklist(appName) {
+    await fetch(`/api/clients/blacklist/${appName}`, { method: 'DELETE' });
+    fetchBlacklist();
+    fetchClientsData();
+}
+
+// 7. 🔥 执行全局设备扫荡与封禁
+async function executeBlock() {
+    const btn = document.getElementById('execute-btn');
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 扫荡中...';
+    
+    try {
+        const res = await fetch('/api/clients/execute_block', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+        fetchClientsData(); // 刷新状态
+    } catch(e) { alert("网络异常"); }
+    
+    btn.innerHTML = ogHtml;
+}
+
+// 黑名单弹窗控制
+function toggleBlacklistModal() {
+    const modal = document.getElementById('blacklist-modal');
+    const container = document.getElementById('blacklist-container');
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            container.classList.remove('scale-95', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    } else {
+        container.classList.remove('scale-100', 'opacity-100');
+        container.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+}
+
+// 绑定回车添加
+document.getElementById('new-block-app').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') addBlacklist();
+});
+</script>
+
+<style>
+    .custom-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark .custom-scroll::-webkit-scrollbar-thumb { background: #475569; }
+</style>
+{% endblock %}
