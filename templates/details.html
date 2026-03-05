@@ -1,521 +1,502 @@
-<!DOCTYPE html>
-<html lang="zh-CN" class="antialiased">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>用户数据洞察 - Emby Pulse</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-    <style>
-        body {
-            background-color: #f8fafc;
-            background-image: radial-gradient(at 40% 20%, hsla(250,100%,74%,0.08) 0px, transparent 50%),
-                              radial-gradient(at 80% 0%, hsla(189,100%,56%,0.08) 0px, transparent 50%),
-                              radial-gradient(at 0% 50%, hsla(340,100%,76%,0.08) 0px, transparent 50%);
-            background-attachment: fixed;
-        }
-        .dark body {
-            background-color: #0f172a;
-            background-image: radial-gradient(at 40% 20%, hsla(250,100%,74%,0.15) 0px, transparent 50%),
-                              radial-gradient(at 80% 0%, hsla(189,100%,56%,0.15) 0px, transparent 50%),
-                              radial-gradient(at 0% 50%, hsla(340,100%,76%,0.15) 0px, transparent 50%);
-        }
-        /* 隐藏滚动条但保留功能 */
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .bento-card {
-            @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-gray-700/50 hover:shadow-lg hover:border-indigo-500/30 transition-all duration-300 relative overflow-hidden;
-        }
-    </style>
-    <script>
-        tailwind.config = { darkMode: 'media' }
-    </script>
-</head>
-<body class="text-gray-800 dark:text-gray-200 min-h-screen pb-12 transition-colors duration-300">
+{% extends "layout.html" %}
 
-    <nav class="sticky top-0 z-50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg border-b border-gray-200/50 dark:border-gray-800/50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <button onclick="window.history.back()" class="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center font-bold">
-                <i class="fa-solid fa-chevron-left mr-2"></i> 返回大盘
-            </button>
-            <h1 class="text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500">
-                Pulse Insights
-            </h1>
-            <div class="w-20"></div> </div>
-    </nav>
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        
-        <div class="bento-card mb-6 flex flex-col md:flex-row items-center md:items-start justify-between">
-            <div class="flex flex-col md:flex-row items-center gap-6 z-10">
-                <div class="relative group">
-                    <img id="user-avatar" src="" class="w-24 h-24 rounded-[20px] object-cover shadow-md border-2 border-white dark:border-gray-700 bg-gray-100 dark:bg-gray-800 shrink-0">
-                    <div class="absolute inset-0 rounded-[20px] ring-4 ring-indigo-500/20 group-hover:ring-indigo-500/50 transition-all"></div>
-                </div>
-                <div class="text-center md:text-left">
-                    <h2 id="user-name" class="text-3xl font-black text-gray-900 dark:text-white tracking-tight">加载中...</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium flex items-center justify-center md:justify-start">
-                        <i class="fa-solid fa-rocket mr-2 opacity-70"></i> 已入驻 Emby <span id="account-age" class="mx-1 font-bold text-indigo-500">0</span> 天
-                    </p>
-                    <div id="badges-container" class="flex flex-wrap justify-center md:justify-start gap-2 mt-4 min-h-[28px]"></div>
-                </div>
+<style>
+    /* 在原有框架内实现 Bento 卡片风格 */
+    .bento-card {
+        background-color: var(--tw-bg-opacity, 1);
+        border-radius: 1.5rem; /* 24px */
+        padding: 1.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border-width: 1px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .bento-card:hover {
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+
+<div class="container mx-auto px-4 py-6 pb-24 w-full max-w-7xl">
+
+    <div class="flex items-center justify-between mb-6">
+        <button onclick="window.history.back()" class="text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center font-bold text-sm md:text-base">
+            <i class="fa-solid fa-arrow-left mr-2"></i> 返回列表
+        </button>
+        <h1 class="text-xl md:text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 tracking-tight">
+            用户数据洞察
+        </h1>
+        <div class="w-20"></div> </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-gray-700/50 mb-6 flex flex-col md:flex-row items-center md:items-start justify-between transition-all hover:shadow-md">
+        <div class="flex flex-col md:flex-row items-center gap-6 z-10 w-full md:w-auto">
+            <div class="relative group shrink-0">
+                <img id="user-avatar" src="" class="w-24 h-24 md:w-20 md:h-20 rounded-[20px] object-cover shadow-sm border-2 border-white dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                <div class="absolute inset-0 rounded-[20px] ring-4 ring-indigo-500/20 group-hover:ring-indigo-500/50 transition-all"></div>
             </div>
+            <div class="text-center md:text-left flex-1 min-w-0">
+                <h2 id="user-name" class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight truncate">加载中...</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium text-sm flex items-center justify-center md:justify-start">
+                    <i class="fa-solid fa-rocket mr-1.5 opacity-70"></i> 已入驻 <span id="account-age" class="mx-1.5 font-bold text-indigo-500">0</span> 天
+                </p>
+                <div id="badges-container" class="flex flex-wrap justify-center md:justify-start gap-2 mt-3 min-h-[28px]"></div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2 md:gap-6 mt-6 md:mt-0 w-full md:w-auto bg-gray-50 dark:bg-gray-900/50 p-4 rounded-[20px] border border-gray-100 dark:border-gray-700/50 shrink-0">
+            <div class="text-center px-2">
+                <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">总播放次数</p>
+                <p id="total-plays" class="text-xl md:text-3xl font-black text-gray-900 dark:text-white font-mono">0</p>
+            </div>
+            <div class="text-center border-l border-gray-200 dark:border-gray-700 px-2">
+                <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">总观影时长</p>
+                <p class="text-xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-purple-600 font-mono">
+                    <span id="total-hours">0</span><span class="text-xs text-gray-500 font-bold ml-1">h</span>
+                </p>
+            </div>
+            <div class="text-center border-l border-gray-200 dark:border-gray-700 px-2">
+                <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">平均单次时长</p>
+                <p class="text-xl md:text-3xl font-black text-gray-900 dark:text-white font-mono">
+                    <span id="avg-mins">0</span><span class="text-xs text-gray-500 font-bold ml-1">m</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+        
+        <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
             
-            <div class="grid grid-cols-3 gap-4 md:gap-8 mt-6 md:mt-0 w-full md:w-auto bg-gray-50/50 dark:bg-gray-900/50 p-4 rounded-[20px] border border-gray-100/50 dark:border-gray-700/30">
-                <div class="text-center">
-                    <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">总播放次数</p>
-                    <p id="total-plays" class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-mono">0</p>
+            <div class="bg-white dark:bg-gray-800 rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-gray-700/50 hover:border-indigo-500/30 transition-all relative">
+                <div class="flex items-center justify-between mb-4 relative z-10">
+                    <h3 class="text-base font-black flex items-center text-gray-800 dark:text-gray-100">
+                        <i class="fa-solid fa-chart-area text-indigo-500 mr-2"></i> 观影心电图
+                    </h3>
+                    <div class="bg-gray-100 dark:bg-gray-900 p-1 rounded-lg flex space-x-1 text-xs font-bold">
+                        <button onclick="loadTrendChart('day')" id="btn-day" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all">近30天</button>
+                        <button onclick="loadTrendChart('month')" id="btn-month" class="px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">年度回溯</button>
+                    </div>
                 </div>
-                <div class="text-center border-l border-gray-200 dark:border-gray-700">
-                    <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">总观影时长</p>
-                    <p class="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 to-purple-600 font-mono">
-                        <span id="total-hours">0</span><span class="text-sm text-gray-500 font-bold ml-1">h</span>
-                    </p>
+                <div id="trendChart" class="w-full h-[220px] md:h-[260px]"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-gray-800 rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-gray-700/50 hover:border-rose-500/30 transition-all flex flex-col justify-center">
+                    <h3 class="text-base font-black mb-6 flex items-center text-gray-800 dark:text-gray-100">
+                        <i class="fa-solid fa-clapperboard text-rose-500 mr-2"></i> 基因图谱
+                    </h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-2">
+                                <span class="text-gray-600 dark:text-gray-400"><i class="fa-solid fa-film mr-1.5 opacity-50"></i>电影</span>
+                                <span id="movie-percent" class="text-rose-500 font-mono">0%</span>
+                            </div>
+                            <div class="h-2.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
+                                <div id="movie-bar" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-2">
+                                <span class="text-gray-600 dark:text-gray-400"><i class="fa-solid fa-tv mr-1.5 opacity-50"></i>剧集</span>
+                                <span id="tv-percent" class="text-indigo-500 font-mono">0%</span>
+                            </div>
+                            <div class="h-2.5 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
+                                <div id="tv-bar" class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="preference-desc" class="mt-6 text-xs text-center text-gray-500 font-bold bg-gray-50 dark:bg-gray-900/50 py-2 rounded-xl border border-gray-100 dark:border-gray-800">数据分析中...</p>
                 </div>
-                <div class="text-center border-l border-gray-200 dark:border-gray-700">
-                    <p class="text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">平均单次时长</p>
-                    <p class="text-2xl md:text-3xl font-black text-gray-900 dark:text-white font-mono">
-                        <span id="avg-mins">0</span><span class="text-sm text-gray-500 font-bold ml-1">m</span>
-                    </p>
+
+                <div class="bg-white dark:bg-gray-800 rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-gray-700/50 hover:border-amber-500/30 transition-all">
+                    <h3 class="text-base font-black mb-2 flex items-center text-gray-800 dark:text-gray-100">
+                        <i class="fa-solid fa-clock text-amber-500 mr-2"></i> 活跃生物钟
+                    </h3>
+                    <div id="hourlyChart" class="w-full h-[180px]"></div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
             
-            <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
+            <div class="bg-white dark:bg-gray-800 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700/50 hover:border-red-500/30 transition-all relative overflow-hidden group cursor-pointer min-h-[160px] md:min-h-[190px]">
+                <div id="top-fav-bg" class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10 dark:opacity-20 group-hover:opacity-25 transition-opacity duration-500 blur-sm scale-110"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent dark:from-gray-800 dark:via-gray-800/80 dark:to-transparent z-0"></div>
                 
-                <div class="bento-card">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-base font-black flex items-center">
-                            <i class="fa-solid fa-chart-area text-indigo-500 mr-2"></i> 观影心电图
+                <div class="relative z-10 p-5 h-full flex flex-col justify-between">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center">
+                            <i class="fa-solid fa-fire-flame-curved text-red-500 mr-2"></i> 最爱 · 执念
                         </h3>
-                        <div class="bg-gray-100 dark:bg-gray-900 p-1 rounded-lg flex space-x-1 text-xs font-bold">
-                            <button onclick="loadTrendChart('day')" id="btn-day" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400 transition-all">近30天</button>
-                            <button onclick="loadTrendChart('month')" id="btn-month" class="px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">年度回溯</button>
-                        </div>
+                        <span class="text-[10px] font-black bg-black/5 dark:bg-white/10 px-2 py-1 rounded-md text-gray-600 dark:text-gray-300">TOP 1</span>
                     </div>
-                    <div id="trendChart" class="w-full h-[250px] md:h-[280px]"></div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bento-card">
-                        <h3 class="text-base font-black mb-6 flex items-center">
-                            <i class="fa-solid fa-clapperboard text-rose-500 mr-2"></i> 基因图谱
-                        </h3>
-                        <div class="space-y-6">
-                            <div>
-                                <div class="flex justify-between text-sm font-bold mb-2">
-                                    <span class="text-gray-700 dark:text-gray-300"><i class="fa-solid fa-film mr-1.5 opacity-50"></i>电影</span>
-                                    <span id="movie-percent" class="text-rose-500">0%</span>
-                                </div>
-                                <div class="h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
-                                    <div id="movie-bar" class="h-full bg-gradient-to-r from-rose-400 to-rose-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-sm font-bold mb-2">
-                                    <span class="text-gray-700 dark:text-gray-300"><i class="fa-solid fa-tv mr-1.5 opacity-50"></i>剧集</span>
-                                    <span id="tv-percent" class="text-indigo-500">0%</span>
-                                </div>
-                                <div class="h-3 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
-                                    <div id="tv-bar" class="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <p id="preference-desc" class="mt-6 text-xs text-center text-gray-500 font-bold bg-gray-50 dark:bg-gray-900/50 py-2 rounded-xl">数据分析中...</p>
-                    </div>
-
-                    <div class="bento-card">
-                        <h3 class="text-base font-black mb-2 flex items-center">
-                            <i class="fa-solid fa-clock text-amber-500 mr-2"></i> 活跃生物钟
-                        </h3>
-                        <div id="hourlyChart" class="w-full h-[180px]"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                
-                <div class="bento-card !p-0 min-h-[160px] md:min-h-[200px] group cursor-pointer">
-                    <div id="top-fav-bg" class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15] dark:opacity-[0.25] group-hover:opacity-30 transition-opacity duration-500 blur-sm scale-110"></div>
-                    <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-white/60 to-transparent dark:from-gray-800/90 dark:via-gray-800/60 dark:to-transparent z-0"></div>
-                    
-                    <div class="relative z-10 p-6 h-full flex flex-col justify-between">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest flex items-center">
-                                <i class="fa-solid fa-fire-flame-curved text-red-500 mr-2"></i> 最爱 · 执念
-                            </h3>
-                            <span class="text-[10px] font-black bg-black/10 dark:bg-white/10 px-2 py-1 rounded-md text-gray-600 dark:text-gray-300">TOP 1</span>
-                        </div>
-                        <div id="top-fav-container" class="flex items-center gap-4 mt-auto">
-                            <div class="animate-pulse flex space-x-4 w-full">
-                                <div class="rounded-lg bg-gray-300 dark:bg-gray-600 h-24 w-16"></div>
-                                <div class="flex-1 space-y-4 py-1">
-                                    <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-                                    <div class="space-y-2">
-                                        <div class="h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                                        <div class="h-3 bg-gray-300 dark:bg-gray-600 rounded w-5/6"></div>
-                                    </div>
+                    <div id="top-fav-container" class="flex items-center gap-4 mt-auto">
+                        <div class="animate-pulse flex space-x-4 w-full">
+                            <div class="rounded-lg bg-gray-200 dark:bg-gray-700 h-24 w-16"></div>
+                            <div class="flex-1 space-y-4 py-1">
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                <div class="space-y-2">
+                                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="bento-card flex-1">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-base font-black flex items-center">
-                            <i class="fa-solid fa-laptop-mobile text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 mr-2"></i> 终端生态圈
-                        </h3>
-                        <span class="text-[10px] font-bold px-2 py-1 bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-full">生态分布</span>
-                    </div>
-                    <div id="deviceChart" class="w-full h-[240px] md:h-[280px]"></div>
-                </div>
-
-            </div>
-            
-            <div class="col-span-12 bento-card">
-                <h3 class="text-base font-black mb-6 flex items-center">
-                    <i class="fa-solid fa-clock-rotate-left text-teal-500 mr-2"></i> 历史足迹
-                </h3>
-                <div class="overflow-x-auto hide-scrollbar">
-                    <table class="w-full text-left border-collapse whitespace-nowrap">
-                        <thead>
-                            <tr class="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700/50">
-                                <th class="pb-3 font-bold pl-2">观影时间</th>
-                                <th class="pb-3 font-bold">影片名称</th>
-                                <th class="pb-3 font-bold">投入时长</th>
-                                <th class="pb-3 font-bold">播放终端</th>
-                            </tr>
-                        </thead>
-                        <tbody id="logs-body" class="text-sm font-medium">
-                            </tbody>
-                    </table>
-                </div>
             </div>
 
-        </div> </div>
+            <div class="bg-white dark:bg-gray-800 rounded-[24px] p-5 shadow-sm border border-gray-100 dark:border-gray-700/50 hover:border-violet-500/30 transition-all flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-2 z-10">
+                    <h3 class="text-base font-black flex items-center text-gray-800 dark:text-gray-100">
+                        <i class="fa-solid fa-laptop-mobile text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-fuchsia-500 mr-2"></i> 终端生态圈
+                    </h3>
+                    <span class="text-[10px] font-bold px-2 py-1 bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 rounded-full border border-violet-100 dark:border-violet-800">分布</span>
+                </div>
+                <div id="deviceChart" class="w-full h-[220px] md:flex-1"></div>
+            </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('user_id');
-        let myTrendChart, myDeviceChart, myHourlyChart;
+        </div>
+        
+        <div class="col-span-12 bg-white dark:bg-gray-800 rounded-[24px] p-5 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700/50">
+            <h3 class="text-base font-black mb-6 flex items-center text-gray-800 dark:text-gray-100">
+                <i class="fa-solid fa-clock-rotate-left text-teal-500 mr-2"></i> 历史足迹
+            </h3>
+            <div class="overflow-x-auto hide-scrollbar">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
+                    <thead>
+                        <tr class="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-700">
+                            <th class="pb-3 font-bold pl-2">观影时间</th>
+                            <th class="pb-3 font-bold">影片名称</th>
+                            <th class="pb-3 font-bold">投入时长</th>
+                            <th class="pb-3 font-bold">播放终端</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-body" class="text-sm font-medium">
+                        </tbody>
+                </table>
+            </div>
+        </div>
 
-        // ECharts 响应式适配
-        window.addEventListener('resize', () => {
-            if(myTrendChart) myTrendChart.resize();
-            if(myDeviceChart) myDeviceChart.resize();
-            if(myHourlyChart) myHourlyChart.resize();
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('user_id');
+    let myTrendChart, myDeviceChart, myHourlyChart;
+
+    // ECharts 响应式适配
+    window.addEventListener('resize', () => {
+        if(myTrendChart) myTrendChart.resize();
+        if(myDeviceChart) myDeviceChart.resize();
+        if(myHourlyChart) myHourlyChart.resize();
+    });
+
+    // 统一格式化时长
+    function formatDuration(seconds) {
+        if (!seconds) return '0秒';
+        if (seconds < 60) return `${seconds}秒`;
+        const m = Math.floor(seconds / 60);
+        if (m < 60) return `${m}分钟`;
+        const h = Math.floor(m / 60);
+        const rm = m % 60;
+        return rm > 0 ? `${h}小时${rm}分` : `${h}小时`;
+    }
+
+    // 初始化
+    async function init() {
+        if (!userId) {
+            alert("未提供用户 ID！"); return;
+        }
+        // 预加载头像
+        document.getElementById('user-avatar').src = `/api/proxy/user_image/${userId}?tag=${Date.now()}`;
+        
+        // 并发获取数据提速
+        Promise.all([
+            fetch(`/api/stats/user_details?user_id=${userId}`).then(r => r.json()),
+            fetch(`/api/stats/badges?user_id=${userId}`).then(r => r.json())
+        ]).then(([detailsRes, badgesRes]) => {
+            if(detailsRes.status === 'success') {
+                renderOverview(detailsRes.data);
+                renderTopFav(detailsRes.data.top_fav);
+                renderDeviceChart(detailsRes.data.devices);
+                renderHourlyChart(detailsRes.data.hourly);
+                renderLogs(detailsRes.data.logs);
+            }
+            if(badgesRes.status === 'success') {
+                renderBadges(badgesRes.data);
+            }
         });
 
-        // 统一格式化时长
-        function formatDuration(seconds) {
-            if (!seconds) return '0秒';
-            if (seconds < 60) return `${seconds}秒`;
-            const m = Math.floor(seconds / 60);
-            if (m < 60) return `${m}分钟`;
-            const h = Math.floor(m / 60);
-            const rm = m % 60;
-            return rm > 0 ? `${h}小时${rm}分` : `${h}小时`;
-        }
+        // 默认加载 30 天趋势
+        loadTrendChart('day');
+    }
 
-        // 初始化
-        async function init() {
-            if (!userId) {
-                alert("未提供用户 ID！"); return;
-            }
-            // 预加载头像
-            document.getElementById('user-avatar').src = `/api/proxy/user_image/${userId}?tag=${Date.now()}`;
+    function renderOverview(data) {
+        const ov = data.overview;
+        const logName = data.logs && data.logs.length > 0 ? data.logs[0].UserName : '神秘访客';
+        document.getElementById('user-name').textContent = logName;
+        document.getElementById('account-age').textContent = ov.account_age_days || 1;
+        
+        // 数字跳动动画
+        animateValue('total-plays', 0, ov.total_plays, 1000);
+        animateValue('total-hours', 0, Math.round((ov.total_duration || 0) / 3600), 1000);
+        animateValue('avg-mins', 0, Math.round((ov.avg_duration || 0) / 60), 1000);
+
+        // 偏好条
+        const pref = data.preference;
+        const totalPref = pref.movie_plays + pref.episode_plays;
+        if (totalPref > 0) {
+            const mp = Math.round((pref.movie_plays / totalPref) * 100);
+            const tp = 100 - mp;
+            document.getElementById('movie-percent').textContent = mp + '%';
+            document.getElementById('tv-percent').textContent = tp + '%';
+            setTimeout(() => {
+                document.getElementById('movie-bar').style.width = mp + '%';
+                document.getElementById('tv-bar').style.width = tp + '%';
+            }, 100);
+
+            let desc = "此人涉猎广泛，影视双修。";
+            if(mp > 70) desc = "妥妥的电影发烧友，沉浸式两小时的艺术。";
+            else if(tp > 70) desc = "追剧狂魔本魔，一集接一集根本停不下来。";
+            document.getElementById('preference-desc').innerHTML = `<i class="fa-solid fa-quote-left mr-1 opacity-50"></i> ${desc} <i class="fa-solid fa-quote-right ml-1 opacity-50"></i>`;
+        }
+    }
+
+    // 执念最爱影片
+    function renderTopFav(fav) {
+        const container = document.getElementById('top-fav-container');
+        const bg = document.getElementById('top-fav-bg');
+        if (fav && fav.ItemId) {
+            const imgUrl = `/api/proxy/smart_image?item_id=${fav.ItemId}&name=${encodeURIComponent(fav.ItemName)}&type=Primary`;
             
-            // 并发获取数据提速
-            Promise.all([
-                fetch(`/api/stats/user_details?user_id=${userId}`).then(r => r.json()),
-                fetch(`/api/stats/badges?user_id=${userId}`).then(r => r.json())
-            ]).then(([detailsRes, badgesRes]) => {
-                if(detailsRes.status === 'success') {
-                    renderOverview(detailsRes.data);
-                    renderTopFav(detailsRes.data.top_fav);
-                    renderDeviceChart(detailsRes.data.devices);
-                    renderHourlyChart(detailsRes.data.hourly);
-                    renderLogs(detailsRes.data.logs);
-                }
-                if(badgesRes.status === 'success') {
-                    renderBadges(badgesRes.data);
-                }
-            });
-
-            // 默认加载 30 天趋势
-            loadTrendChart('day');
-        }
-
-        function renderOverview(data) {
-            const ov = data.overview;
-            const logName = data.logs && data.logs.length > 0 ? data.logs[0].UserName : '神秘访客';
-            document.getElementById('user-name').textContent = logName;
-            document.getElementById('account-age').textContent = ov.account_age_days || 1;
-            
-            // 数字跳动动画 (极简实现)
-            animateValue('total-plays', 0, ov.total_plays, 1000);
-            animateValue('total-hours', 0, Math.round((ov.total_duration || 0) / 3600), 1000);
-            animateValue('avg-mins', 0, Math.round((ov.avg_duration || 0) / 60), 1000);
-
-            // 偏好条
-            const pref = data.preference;
-            const totalPref = pref.movie_plays + pref.episode_plays;
-            if (totalPref > 0) {
-                const mp = Math.round((pref.movie_plays / totalPref) * 100);
-                const tp = 100 - mp;
-                document.getElementById('movie-percent').textContent = mp + '%';
-                document.getElementById('tv-percent').textContent = tp + '%';
-                setTimeout(() => {
-                    document.getElementById('movie-bar').style.width = mp + '%';
-                    document.getElementById('tv-bar').style.width = tp + '%';
-                }, 100);
-
-                let desc = "此人涉猎广泛，影视双修。";
-                if(mp > 70) desc = "妥妥的电影发烧友，沉浸式两小时的艺术。";
-                else if(tp > 70) desc = "追剧狂魔本魔，一集接一集根本停不下来。";
-                document.getElementById('preference-desc').innerHTML = `<i class="fa-solid fa-quote-left mr-1 opacity-50"></i> ${desc} <i class="fa-solid fa-quote-right ml-1 opacity-50"></i>`;
-            }
-        }
-
-        // 执念最爱影片
-        function renderTopFav(fav) {
-            const container = document.getElementById('top-fav-container');
-            const bg = document.getElementById('top-fav-bg');
-            if (fav && fav.ItemId) {
-                // 此时后端的 resolve_poster_ids 已经发力，这里的 ItemId 已经是季ID或最优ID了
-                const imgUrl = `/api/proxy/smart_image?item_id=${fav.ItemId}&name=${encodeURIComponent(fav.ItemName)}&type=Primary`;
-                
-                container.innerHTML = `
-                    <img src="${imgUrl}" class="w-16 h-24 md:w-20 md:h-28 rounded-xl shadow-lg object-cover bg-gray-100 dark:bg-gray-800 shrink-0 border-2 border-white/50 dark:border-gray-700/50 relative z-10 transition-transform hover:scale-105 duration-300">
-                    <div class="flex-1 min-w-0 flex flex-col justify-center">
-                        <h4 class="font-black text-gray-900 dark:text-white text-base md:text-lg line-clamp-2 leading-tight drop-shadow-sm mb-2">${fav.ItemName}</h4>
-                        <div class="text-xs text-gray-600 dark:text-gray-300 font-bold space-y-1.5">
-                            <p class="flex items-center bg-white/50 dark:bg-black/20 w-max px-2 py-0.5 rounded-md backdrop-blur-sm"><i class="fa-solid fa-repeat mr-1.5 text-indigo-500"></i>N刷了 ${fav.c} 次</p>
-                            <p class="flex items-center bg-white/50 dark:bg-black/20 w-max px-2 py-0.5 rounded-md backdrop-blur-sm"><i class="fa-regular fa-clock mr-1.5 text-rose-500"></i>沉迷 ${Math.round(fav.d/3600)} 小时</p>
-                        </div>
-                    </div>
-                `;
-                bg.style.backgroundImage = `url('${imgUrl}')`;
-            } else {
-                container.innerHTML = `<p class="text-gray-400 text-sm font-bold w-full text-center py-8"><i class="fa-solid fa-ghost mr-2 opacity-50"></i>库里太干净，暂无执念</p>`;
-                bg.style.backgroundImage = 'none';
-            }
-        }
-
-        // 徽章渲染
-        function renderBadges(badges) {
-            const container = document.getElementById('badges-container');
-            if(!badges || badges.length === 0) {
-                container.innerHTML = '<span class="text-xs text-gray-400 font-bold px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg">萌新上路</span>';
-                return;
-            }
-            container.innerHTML = badges.map(b => `
-                <div class="group relative flex items-center ${b.bg} ${b.color} px-2.5 py-1 rounded-lg text-xs font-bold font-mono shadow-sm cursor-help hover:scale-105 transition-transform">
-                    <i class="fa-solid ${b.icon} mr-1.5"></i> ${b.name}
-                    <div class="opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-[10px] rounded-lg shadow-xl z-50 transition-all duration-200">
-                        ${b.desc}
-                        <svg class="absolute text-gray-900 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+            container.innerHTML = `
+                <img src="${imgUrl}" class="w-16 h-24 md:w-16 md:h-24 rounded-lg shadow-md object-cover bg-gray-100 dark:bg-gray-800 shrink-0 border border-gray-200/50 dark:border-gray-700/50 relative z-10 transition-transform hover:scale-105 duration-300">
+                <div class="flex-1 min-w-0 flex flex-col justify-center pl-2">
+                    <h4 class="font-black text-gray-900 dark:text-white text-base line-clamp-2 leading-tight drop-shadow-sm mb-2">${fav.ItemName}</h4>
+                    <div class="text-[11px] text-gray-600 dark:text-gray-300 font-bold space-y-1.5">
+                        <p class="flex items-center bg-gray-50/80 dark:bg-black/20 w-max px-2 py-0.5 rounded backdrop-blur-sm border border-gray-100 dark:border-gray-700/50"><i class="fa-solid fa-repeat mr-1.5 text-indigo-500"></i>N刷了 ${fav.c} 次</p>
+                        <p class="flex items-center bg-gray-50/80 dark:bg-black/20 w-max px-2 py-0.5 rounded backdrop-blur-sm border border-gray-100 dark:border-gray-700/50"><i class="fa-regular fa-clock mr-1.5 text-rose-500"></i>沉迷 ${Math.round(fav.d/3600)} 小时</p>
                     </div>
                 </div>
-            `).join('');
+            `;
+            bg.style.backgroundImage = `url('${imgUrl}')`;
+        } else {
+            container.innerHTML = `<p class="text-gray-400 text-xs font-bold w-full text-center py-8"><i class="fa-solid fa-ghost mr-2 opacity-50"></i>暂无执念</p>`;
+            bg.style.backgroundImage = 'none';
+        }
+    }
+
+    // 徽章渲染
+    function renderBadges(badges) {
+        const container = document.getElementById('badges-container');
+        if(!badges || badges.length === 0) {
+            container.innerHTML = '<span class="text-xs text-gray-400 font-bold px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-lg">萌新上路</span>';
+            return;
+        }
+        container.innerHTML = badges.map(b => `
+            <div class="group relative flex items-center ${b.bg} ${b.color} px-2.5 py-1 rounded-lg text-xs font-bold font-mono shadow-sm cursor-help hover:scale-105 transition-transform border border-white/50 dark:border-gray-800/50">
+                <i class="fa-solid ${b.icon} mr-1.5"></i> ${b.name}
+                <div class="opacity-0 invisible group-hover:opacity-100 group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-3 py-1.5 bg-gray-900 text-white text-[10px] rounded-lg shadow-xl z-50 transition-all duration-200">
+                    ${b.desc}
+                    <svg class="absolute text-gray-900 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon class="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 🔥 炫酷终端生态圈 (圆角环形图)
+    function renderDeviceChart(devicesData) {
+        const dom = document.getElementById('deviceChart');
+        if (!dom || !devicesData || devicesData.length === 0) {
+            dom.innerHTML = '<div class="h-full flex items-center justify-center text-gray-400 text-xs font-bold"><i class="fa-solid fa-ghost mr-2"></i>暂无终端数据</div>';
+            return;
         }
 
-        // 🔥 炫酷终端生态圈 (圆角环形图)
-        function renderDeviceChart(devicesData) {
-            const dom = document.getElementById('deviceChart');
-            if (!dom || !devicesData || devicesData.length === 0) {
-                dom.innerHTML = '<div class="h-full flex items-center justify-center text-gray-400 text-xs font-bold"><i class="fa-solid fa-ghost mr-2"></i>暂无终端数据</div>';
-                return;
+        myDeviceChart = echarts.init(dom, null, { renderer: 'svg' });
+        const chartData = devicesData.map(item => ({ value: item.Plays, name: item.Device }));
+        
+        const isDark = document.documentElement.classList.contains('dark');
+        const textColor = isDark ? '#9ca3af' : '#6b7280';
+        const borderColor = isDark ? '#1f2937' : '#ffffff';
+
+        const option = {
+            color: ['#8b5cf6', '#3b82f6', '#14b8a6', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#f43f5e', '#84cc16', '#64748b'],
+            tooltip: {
+                trigger: 'item',
+                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                borderColor: isDark ? '#374151' : '#f3f4f6',
+                textStyle: { color: isDark ? '#f9fafb' : '#1f2937', fontWeight: 'bold', fontSize: 12 },
+                padding: [8, 12],
+                borderRadius: 12,
+                formatter: '{b} <br/><span class="text-xs opacity-70">频次:</span> {c} ({d}%)'
+            },
+            legend: {
+                bottom: '0%', left: 'center', icon: 'circle', itemWidth: 8, itemHeight: 8,
+                textStyle: { color: textColor, fontSize: 10, fontWeight: 'bold' },
+                type: 'scroll'
+            },
+            series: [{
+                name: '播放终端', type: 'pie',
+                radius: ['50%', '75%'], center: ['50%', '42%'],
+                itemStyle: {
+                    borderRadius: 8, // 圆角切片
+                    borderColor: borderColor, // 切割线跟随背景
+                    borderWidth: 2
+                },
+                label: { show: false },
+                emphasis: {
+                    label: { show: true, fontSize: 14, fontWeight: 'black', color: textColor, formatter: '{b}' },
+                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' }
+                },
+                data: chartData
+            }]
+        };
+        myDeviceChart.setOption(option);
+    }
+
+    // 活跃时钟柱状图
+    function renderHourlyChart(hourlyData) {
+        const dom = document.getElementById('hourlyChart');
+        if(!hourlyData || Object.keys(hourlyData).length === 0) return;
+
+        myHourlyChart = echarts.init(dom, null, { renderer: 'svg' });
+        const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
+        const data = hours.map(h => hourlyData[h] || 0);
+        
+        const isDark = document.documentElement.classList.contains('dark');
+
+        const option = {
+            tooltip: {
+                trigger: 'axis', axisPointer: { type: 'shadow' },
+                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255,255,255,0.9)',
+                textStyle: { color: isDark ? '#fff' : '#000', fontSize: 12, fontWeight:'bold' },
+                formatter: '{b}:00 - {c} 次'
+            },
+            grid: { left: '2%', right: '2%', bottom: '5%', top: '10%', containLabel: true },
+            xAxis: { 
+                type: 'category', data: hours, 
+                axisLine: { show: false }, axisTick: { show: false },
+                axisLabel: { color: '#9ca3af', fontSize: 9, interval: 3 }
+            },
+            yAxis: { show: false, type: 'value' },
+            series: [{
+                data: data, type: 'bar',
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#f59e0b' }, { offset: 1, color: '#fbbf24' }
+                    ]),
+                    borderRadius: [4, 4, 0, 0]
+                },
+                emphasis: { itemStyle: { color: '#d97706' } }
+            }]
+        };
+        myHourlyChart.setOption(option);
+    }
+
+    // 历史日志列表
+    function renderLogs(logs) {
+        const tbody = document.getElementById('logs-body');
+        if (!logs || logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400 text-xs font-bold"><i class="fa-solid fa-wind mr-2"></i>随风而逝，了无痕迹</td></tr>';
+            return;
+        }
+        tbody.innerHTML = logs.map((log, index) => {
+            let dateStr = log.DateCreated ? log.DateCreated.split('.')[0].replace('T', ' ') : '-';
+            const bgClass = index % 2 === 0 ? 'bg-transparent' : 'bg-gray-50/50 dark:bg-gray-800/30';
+            return `
+            <tr class="${bgClass} hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors group">
+                <td class="py-3 pl-2 text-gray-500 text-xs font-mono group-hover:text-indigo-500 transition-colors">${dateStr}</td>
+                <td class="py-3 text-gray-900 dark:text-gray-100 font-bold max-w-[150px] md:max-w-[300px] truncate pr-4" title="${log.ItemName}">${log.ItemName}</td>
+                <td class="py-3 text-indigo-500 font-mono font-bold text-xs">${formatDuration(log.PlayDuration)}</td>
+                <td class="py-3 text-gray-500 text-xs"><span class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 font-medium shadow-sm">${log.Device}</span></td>
+            </tr>
+        `}).join('');
+    }
+
+    // 趋势图加载
+    async function loadTrendChart(dim) {
+        document.getElementById('btn-day').className = dim === 'day' ? 'px-3 py-1.5 rounded-md bg-white dark:bg-gray-600 shadow-sm text-indigo-600 dark:text-indigo-400 font-bold transition-all border border-gray-200 dark:border-gray-500' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all';
+        document.getElementById('btn-month').className = dim === 'month' ? 'px-3 py-1.5 rounded-md bg-white dark:bg-gray-600 shadow-sm text-indigo-600 dark:text-indigo-400 font-bold transition-all border border-gray-200 dark:border-gray-500' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all';
+
+        const endpoint = dim === 'month' ? `/api/stats/monthly_stats?user_id=${userId}` : `/api/stats/trend?user_id=${userId}&dimension=day`;
+        try {
+            const res = await fetch(endpoint).then(r => r.json());
+            if(res.status === 'success') {
+                renderTrendChart(res.data, dim);
             }
+        } catch(e) { console.error("趋势图拉取失败", e); }
+    }
 
-            myDeviceChart = echarts.init(dom, null, { renderer: 'svg' });
-            const chartData = devicesData.map(item => ({ value: item.Plays, name: item.Device }));
-            
-            // 响应深色模式文本颜色
-            const isDark = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const textColor = isDark ? '#9ca3af' : '#6b7280';
+    function renderTrendChart(dataObj, dim) {
+        const dom = document.getElementById('trendChart');
+        if (!myTrendChart) myTrendChart = echarts.init(dom, null, { renderer: 'svg' });
+        
+        const keys = Object.keys(dataObj);
+        const values = Object.values(dataObj).map(v => Math.round(v / 3600)); // 转小时
+        
+        const isDark = document.documentElement.classList.contains('dark');
 
-            const option = {
-                color: ['#8b5cf6', '#3b82f6', '#14b8a6', '#f59e0b', '#ec4899', '#6366f1', '#10b981', '#f43f5e', '#84cc16', '#64748b'],
-                tooltip: {
-                    trigger: 'item',
-                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                    borderColor: isDark ? '#374151' : '#f3f4f6',
-                    textStyle: { color: isDark ? '#f9fafb' : '#1f2937', fontWeight: 'bold', fontSize: 12 },
-                    padding: [8, 12],
-                    borderRadius: 12,
-                    formatter: '{b} <br/><span class="text-xs opacity-70">频次:</span> {c} ({d}%)'
+        const option = {
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255,255,255,0.95)',
+                borderColor: isDark ? '#374151' : '#f3f4f6',
+                textStyle: { color: isDark ? '#f9fafb' : '#1f2937', fontWeight: 'bold' },
+                borderRadius: 8,
+                formatter: '{b} <br/> 投入 {c} 小时'
+            },
+            grid: { left: '1%', right: '3%', bottom: '2%', top: '5%', containLabel: true },
+            xAxis: {
+                type: 'category', boundaryGap: false, data: keys,
+                axisLabel: { 
+                    color: '#9ca3af', fontSize: 10, fontStyle: 'italic',
+                    formatter: function (value) { return dim === 'day' ? value.substring(5) : value; }
                 },
-                legend: {
-                    bottom: '0%', left: 'center', icon: 'circle', itemWidth: 8, itemHeight: 8,
-                    textStyle: { color: textColor, fontSize: 10, fontWeight: 'bold' },
-                    type: 'scroll'
-                },
-                series: [{
-                    name: '播放终端', type: 'pie',
-                    radius: ['50%', '75%'], center: ['50%', '45%'],
-                    itemStyle: {
-                        borderRadius: 12, // 核心圆角
-                        borderColor: isDark ? '#1f2937' : '#ffffff', // 切割线跟随背景色
-                        borderWidth: 2
-                    },
-                    label: { show: false },
-                    emphasis: {
-                        label: { show: true, fontSize: 16, fontWeight: 'black', color: textColor, formatter: '{b}' },
-                        itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.3)' }
-                    },
-                    data: chartData
-                }]
-            };
-            myDeviceChart.setOption(option);
-        }
+                axisLine: { lineStyle: { color: isDark ? '#374151' : '#e5e7eb' } }
+            },
+            yAxis: { type: 'value', show: false },
+            series: [{
+                data: values, type: 'line', smooth: 0.4,
+                symbol: 'none',
+                lineStyle: { width: 3, color: '#6366f1' },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(99, 102, 241, 0.5)' },
+                        { offset: 1, color: 'rgba(99, 102, 241, 0.0)' }
+                    ])
+                }
+            }]
+        };
+        myTrendChart.setOption(option);
+    }
 
-        // 活跃时钟柱状图
-        function renderHourlyChart(hourlyData) {
-            const dom = document.getElementById('hourlyChart');
-            if(!hourlyData || Object.keys(hourlyData).length === 0) return;
+    // 极简数字动画
+    function animateValue(id, start, end, duration) {
+        if (start === end) { document.getElementById(id).innerHTML = end; return; }
+        var range = end - start;
+        var current = start;
+        var increment = end > start ? 1 : -1;
+        var stepTime = Math.abs(Math.floor(duration / range));
+        if(stepTime < 10) stepTime = 10; 
+        increment = Math.ceil(range / (duration/stepTime));
 
-            myHourlyChart = echarts.init(dom, null, { renderer: 'svg' });
-            const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
-            const data = hours.map(h => hourlyData[h] || 0);
-            
-            const isDark = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            const option = {
-                tooltip: {
-                    trigger: 'axis', axisPointer: { type: 'shadow' },
-                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.9)' : 'rgba(255,255,255,0.9)',
-                    textStyle: { color: isDark ? '#fff' : '#000', fontSize: 12, fontWeight:'bold' },
-                    formatter: '{b}:00 - {c} 次'
-                },
-                grid: { left: '2%', right: '2%', bottom: '5%', top: '10%', containLabel: true },
-                xAxis: { 
-                    type: 'category', data: hours, 
-                    axisLine: { show: false }, axisTick: { show: false },
-                    axisLabel: { color: '#9ca3af', fontSize: 9, interval: 3 }
-                },
-                yAxis: { show: false, type: 'value' },
-                series: [{
-                    data: data, type: 'bar',
-                    itemStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: '#f59e0b' }, { offset: 1, color: '#fbbf24' }
-                        ]),
-                        borderRadius: [4, 4, 0, 0]
-                    },
-                    emphasis: { itemStyle: { color: '#d97706' } }
-                }]
-            };
-            myHourlyChart.setOption(option);
-        }
-
-        // 历史日志列表
-        function renderLogs(logs) {
-            const tbody = document.getElementById('logs-body');
-            if (!logs || logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-400 text-xs font-bold"><i class="fa-solid fa-wind mr-2"></i>随风而逝，了无痕迹</td></tr>';
-                return;
+        var obj = document.getElementById(id);
+        var timer = setInterval(function() {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                current = end;
+                clearInterval(timer);
             }
-            tbody.innerHTML = logs.map((log, index) => {
-                let dateStr = log.DateCreated ? log.DateCreated.split('.')[0].replace('T', ' ') : '-';
-                // 增加斑马纹和轻微交互
-                const bgClass = index % 2 === 0 ? 'bg-transparent' : 'bg-gray-50/50 dark:bg-gray-800/20';
-                return `
-                <tr class="${bgClass} hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group">
-                    <td class="py-3 pl-2 text-gray-500 text-xs font-mono group-hover:text-indigo-500 transition-colors">${dateStr}</td>
-                    <td class="py-3 text-gray-900 dark:text-gray-100 font-bold max-w-[150px] md:max-w-[300px] truncate pr-4" title="${log.ItemName}">${log.ItemName}</td>
-                    <td class="py-3 text-indigo-500 font-mono font-bold">${formatDuration(log.PlayDuration)}</td>
-                    <td class="py-3 text-gray-500 text-xs"><span class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">${log.Device}</span></td>
-                </tr>
-            `}).join('');
-        }
+            obj.innerHTML = current;
+        }, stepTime);
+    }
 
-        // 趋势图加载 (提取出来为了切换按钮)
-        async function loadTrendChart(dim) {
-            // 更新按钮状态
-            document.getElementById('btn-day').className = dim === 'day' ? 'px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400 font-bold transition-all' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all';
-            document.getElementById('btn-month').className = dim === 'month' ? 'px-3 py-1.5 rounded-md bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400 font-bold transition-all' : 'px-3 py-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all';
-
-            const endpoint = dim === 'month' ? `/api/stats/monthly_stats?user_id=${userId}` : `/api/stats/trend?user_id=${userId}&dimension=day`;
-            try {
-                const res = await fetch(endpoint).then(r => r.json());
-                if(res.status === 'success') {
-                    renderTrendChart(res.data, dim);
-                }
-            } catch(e) { console.error("趋势图拉取失败", e); }
-        }
-
-        function renderTrendChart(dataObj, dim) {
-            const dom = document.getElementById('trendChart');
-            if (!myTrendChart) myTrendChart = echarts.init(dom, null, { renderer: 'svg' });
-            
-            const keys = Object.keys(dataObj);
-            const values = Object.values(dataObj).map(v => Math.round(v / 3600)); // 转小时
-            
-            const isDark = document.documentElement.classList.contains('dark') || window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-            const option = {
-                tooltip: {
-                    trigger: 'axis',
-                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255,255,255,0.95)',
-                    borderColor: isDark ? '#374151' : '#f3f4f6',
-                    textStyle: { color: isDark ? '#f9fafb' : '#1f2937', fontWeight: 'bold' },
-                    borderRadius: 8,
-                    formatter: '{b} <br/> 投入 {c} 小时'
-                },
-                grid: { left: '1%', right: '3%', bottom: '2%', top: '5%', containLabel: true },
-                xAxis: {
-                    type: 'category', boundaryGap: false, data: keys,
-                    axisLabel: { 
-                        color: '#9ca3af', fontSize: 10, fontStyle: 'italic',
-                        formatter: function (value) { return dim === 'day' ? value.substring(5) : value; }
-                    },
-                    axisLine: { lineStyle: { color: isDark ? '#374151' : '#e5e7eb' } }
-                },
-                yAxis: { type: 'value', show: false },
-                series: [{
-                    data: values, type: 'line', smooth: 0.4,
-                    symbol: 'none',
-                    lineStyle: { width: 3, color: '#6366f1' },
-                    areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: 'rgba(99, 102, 241, 0.5)' },
-                            { offset: 1, color: 'rgba(99, 102, 241, 0.0)' }
-                        ])
-                    }
-                }]
-            };
-            myTrendChart.setOption(option);
-        }
-
-        // 极简数字动画
-        function animateValue(id, start, end, duration) {
-            if (start === end) { document.getElementById(id).innerHTML = end; return; }
-            var range = end - start;
-            var current = start;
-            var increment = end > start ? 1 : -1;
-            // 简单的防抖步长计算
-            var stepTime = Math.abs(Math.floor(duration / range));
-            if(stepTime < 10) stepTime = 10; 
-            increment = Math.ceil(range / (duration/stepTime));
-
-            var obj = document.getElementById(id);
-            var timer = setInterval(function() {
-                current += increment;
-                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-                    current = end;
-                    clearInterval(timer);
-                }
-                obj.innerHTML = current;
-            }, stepTime);
-        }
-
-        init();
-    </script>
-</body>
-</html>
+    init();
+</script>
+{% endblock %}
