@@ -57,10 +57,12 @@ def ensure_db_schema():
             issue_type TEXT,
             description TEXT,
             status INTEGER DEFAULT 0,
+            poster_path TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
+    # 防止遗漏
     c.execute("PRAGMA table_info(media_feedback)")
     feed_cols = [col[1] for col in c.fetchall()]
     if 'poster_path' not in feed_cols:
@@ -343,7 +345,6 @@ def manage_request_action(data: AdminActionModel, request: Request):
     return batch_manage_action(BulkAdminActionModel(items=[{"tmdb_id": data.tmdb_id, "season": data.season}], action=data.action, reject_reason=data.reject_reason), request)
 
 
-# ================= 🔥 完美修复：后台铃铛与悬浮通知核心引擎 =================
 @router.get("/api/requests/pending_notify")
 def get_pending_notify(request: Request):
     if not request.session.get("user"): return {"status": "error"}
@@ -358,8 +359,7 @@ def get_pending_notify(request: Request):
         c.execute("SELECT COUNT(*) as cnt FROM media_feedback WHERE status = 0")
         feed_count = (c.fetchone() or {'cnt': 0})['cnt']
         
-        # 🔥 终极海报匹配 SQL：利用 LIKE 模糊匹配主剧集名，让 "权力的游戏 S01E01" 也能匹配到 "权力的游戏" 的封面
-        # 同时利用 COALESCE 智能回退机制
+        # 🔥 终极海报匹配 SQL：利用模糊查询，截取“权力的游戏 S01E01”里的主剧名去反查
         c.execute("""
             SELECT f.id, f.item_name, f.username, f.issue_type, f.created_at,
                    COALESCE(
@@ -400,16 +400,32 @@ def get_pending_notify(request: Request):
     except Exception as e: return {"status": "error", "message": str(e)}
 
 
-# ================= 资源报错反馈 API =================
 @router.post("/api/requests/feedback/submit")
 def submit_feedback(data: FeedbackSubmitModel, request: Request):
     user = request.session.get("req_user")
     if not user: return {"status": "error", "message": "请重新登录"}
     uid = str(user.get("Id", "")); uname = user.get("Name") or "未知用户"
     
+    # 🔥 修复相对路径海报在 Telegram 无法下载的 Bug
+    # 如果传来的是 /api/proxy 这种相对路径，强制拼上当前服务器的完整公网 URL
+    actual_poster = data.poster_path
+    if actual_poster and actual_poster.startswith("/"):
+        base_url = cfg.get("pulse_url") or str(request.base_url).rstrip('/')
+        actual_poster = f"{base_url}{actual_poster}"
+        
+    # 如果没传海报，智能从求片库里反查
+    if not actual_poster or 'undefined' in actual_poster:
+        conn = sqlite3.connect(DB_PATH); c = conn.cursor()
+        c.execute("SELECT poster_path FROM media_requests WHERE ? LIKE title || '%' LIMIT 1", (data.item_name,))
+        r = c.fetchone()
+        if r and r[0]: actual_poster = r[0]
+        conn.close()
+        
+    if not actual_poster or 'undefined' in actual_poster: actual_poster = ""
+
     conn = sqlite3.connect(DB_PATH); c = conn.cursor()
     c.execute("INSERT INTO media_feedback (item_name, user_id, username, issue_type, description, poster_path) VALUES (?, ?, ?, ?, ?, ?)",
-              (data.item_name, uid, uname, data.issue_type, data.description, data.poster_path))
+              (data.item_name, uid, uname, data.issue_type, data.description, actual_poster))
     feed_id = c.lastrowid
     conn.commit(); conn.close()
     
@@ -427,13 +443,10 @@ def submit_feedback(data: FeedbackSubmitModel, request: Request):
          {"text": "💻 网页处理", "url": f"{admin_url}/requests_admin"}]
     ]}
     
-    # 🔥 修复相对路径海报在 Telegram 无法下载的 Bug (拼装绝对 URL)
-    img_url = data.poster_path or REPORT_COVER_URL
-    if img_url.startswith("/"):
-        base = str(request.base_url).rstrip('/')
-        img_url = f"{base}{img_url}"
-        
+    img_url = actual_poster or REPORT_COVER_URL
+    # 发送图文消息给 TG / 企微
     bot.send_photo("sys_notify", img_url, msg, reply_markup=keyboard, platform="all")
+    
     return {"status": "success", "message": "反馈已提交，感谢您的协助！"}
 
 @router.get("/api/requests/feedback/my")

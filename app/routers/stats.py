@@ -59,11 +59,15 @@ def resolve_poster_ids(items_list):
             emby_items = res.json().get("Items", [])
             id_map = {}
             for e in emby_items:
-                best_id = e.get("SeasonId") or e.get("SeriesId") or e.get("Id")
+                # 优先获取主剧集的海报，降级为季，最后才是单集
+                best_id = e.get("SeriesId") or e.get("SeasonId") or e.get("Id")
                 id_map[str(e.get("Id"))] = best_id
             for x in items_list:
                 orig_id = str(x.get('ItemId'))
-                if orig_id in id_map: x['ItemId'] = id_map[orig_id]
+                if orig_id in id_map: 
+                    x['ItemId'] = id_map[orig_id]
+                    # 🔥 顺便给前端拼好绝对路径
+                    x['smart_poster'] = f"/api/proxy/smart_image?item_id={id_map[orig_id]}&type=Primary"
     except Exception: pass
 
 # --- 工具函数 ---
@@ -205,16 +209,21 @@ def api_user_details(user_id: Optional[str] = None):
         if h_res:
             for r in h_res: h_data[r['Hour']] = r['Plays']
             
-        # 🔥 核心拆分：分离 Device (硬件) 和 Client (播放器)
         d_res = query_db(f"SELECT COALESCE(DeviceName, 'Unknown') as Device, COUNT(*) as Plays FROM PlaybackActivity {where} GROUP BY DeviceName ORDER BY Plays DESC LIMIT 10", params)
         c_res = query_db(f"SELECT COALESCE(ClientName, 'Unknown') as Client, COUNT(*) as Plays FROM PlaybackActivity {where} GROUP BY ClientName ORDER BY Plays DESC LIMIT 10", params)
         
-        l_res = query_db(f"SELECT DateCreated, ItemName, PlayDuration, COALESCE(ClientName, DeviceName) as Device, UserId FROM PlaybackActivity {where} ORDER BY DateCreated DESC LIMIT 100", params)
+        # 🔥 记录列表也加入智能溯源，为前端直接提供正确的图片链接
+        l_res = query_db(f"SELECT DateCreated, ItemName, ItemId, ItemType, PlayDuration, COALESCE(ClientName, DeviceName) as Device, UserId FROM PlaybackActivity {where} ORDER BY DateCreated DESC LIMIT 100", params)
         u_map = get_user_map_local()
         logs = []
         if l_res:
             for r in l_res: 
-                l = dict(r); l['UserName'] = u_map.get(l['UserId'], "User"); logs.append(l)
+                l = dict(r)
+                l['UserName'] = u_map.get(l['UserId'], "User")
+                l['smart_poster'] = f"/api/proxy/smart_image?item_id={l['ItemId']}&type=Primary"
+                logs.append(l)
+            # 批量解析足迹的海报（把单集强行扭转为整剧的ID）
+            resolve_poster_ids(logs)
 
         overview = {"total_plays": 0, "total_duration": 0, "avg_duration": 0, "account_age_days": 1}
         pref = {"movie_plays": 0, "episode_plays": 0}
@@ -252,7 +261,6 @@ def api_user_details(user_id: Optional[str] = None):
             if top_fav: resolve_poster_ids([top_fav]) 
         except: pass
                 
-        # 将拆分后的 devices 和 clients 返回给前端
         return {"status": "success", "data": {
             "hourly": h_data, 
             "devices": [dict(r) for r in d_res] if d_res else [], 
