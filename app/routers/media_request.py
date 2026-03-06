@@ -358,7 +358,8 @@ def get_pending_notify(request: Request):
         c.execute("SELECT COUNT(*) as cnt FROM media_feedback WHERE status = 0")
         feed_count = (c.fetchone() or {'cnt': 0})['cnt']
         
-        # 🔥 终极海报匹配 SQL：如果本身没海报，去求片库查；由于电视剧是单集名(如 权游 S01E01)，用 LIKE 智能模糊匹配主剧集名！
+        # 🔥 终极海报匹配 SQL：利用 LIKE 模糊匹配主剧集名，让 "权力的游戏 S01E01" 也能匹配到 "权力的游戏" 的封面
+        # 同时利用 COALESCE 智能回退机制
         c.execute("""
             SELECT f.id, f.item_name, f.username, f.issue_type, f.created_at,
                    COALESCE(
@@ -426,11 +427,11 @@ def submit_feedback(data: FeedbackSubmitModel, request: Request):
          {"text": "💻 网页处理", "url": f"{admin_url}/requests_admin"}]
     ]}
     
-    # 🔥 修复相对路径海报在 Telegram 无法下载的 Bug
+    # 🔥 修复相对路径海报在 Telegram 无法下载的 Bug (拼装绝对 URL)
     img_url = data.poster_path or REPORT_COVER_URL
     if img_url.startswith("/"):
-        port = request.url.port or 10307 # 取不到 port 默认兜底 10307
-        img_url = f"http://127.0.0.1:{port}{img_url}"
+        base = str(request.base_url).rstrip('/')
+        img_url = f"{base}{img_url}"
         
     bot.send_photo("sys_notify", img_url, msg, reply_markup=keyboard, platform="all")
     return {"status": "success", "message": "反馈已提交，感谢您的协助！"}

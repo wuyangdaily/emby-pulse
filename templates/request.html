@@ -104,7 +104,7 @@
                         <span class="text-sm font-bold text-brand-600 dark:text-brand-400">📝 进度与反馈</span>
                     </div>
 
-                    <div x-show="currentTab === 'profile'" class="px-4 py-1.5 bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-full shadow-sm flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" @click="window.scrollTo({top:0, behavior:'smooth'})">
+                    <div x-show="currentTab === 'profile'" class="px-4 py-1.5 bg-white/80 dark:bg-[#18181b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-full shadow-sm flex items-center gap-2 cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors" @click="window.scrollTo(0, 0)">
                         <img :src="'/api/proxy/user_image/' + userId" class="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200 dark:ring-white/20" onerror="this.src='https://api.dicebear.com/9.x/notionists/png?seed=User'">
                         <span class="text-sm font-bold text-brand-600 dark:text-brand-400" x-text="userName"></span>
                     </div>
@@ -426,19 +426,19 @@
             </div>
         </main>
 
-        <div class="fixed bottom-6 w-[90%] left-[5%] z-50 sm:hidden transition-transform duration-300" :class="scrolled ? 'opacity-90 scale-95 shadow-2xl' : 'opacity-100 scale-100'">
-            <div class="glass-panel rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.5)] border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl px-2 py-2 flex justify-around items-center">
-                <button @click="switchTab('explore'); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+        <div class="fixed bottom-6 w-[90%] left-[5%] z-50 sm:hidden transition-all duration-300" :class="scrolled ? 'translate-y-2 shadow-2xl' : 'translate-y-0 shadow-lg'">
+            <div class="glass-panel rounded-full border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl px-2 py-2 flex justify-around items-center">
+                <button @click="switchTab('explore'); window.scrollTo(0, 0)" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
                     <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/20 rounded-full scale-0 transition-transform duration-300" :class="currentTab === 'explore' ? 'scale-100' : ''"></div>
                     <i class="fa-solid fa-film text-lg relative z-10"></i>
                     <span class="text-[10px] font-bold relative z-10">大厅</span>
                 </button>
-                <button @click="switchTab('queue'); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'queue' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+                <button @click="switchTab('queue'); window.scrollTo(0, 0)" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'queue' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
                     <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/20 rounded-full scale-0 transition-transform duration-300" :class="currentTab === 'queue' ? 'scale-100' : ''"></div>
                     <i class="fa-solid fa-list-check text-lg relative z-10"></i>
                     <span class="text-[10px] font-bold relative z-10">进度</span>
                 </button>
-                <button @click="switchTab('profile'); window.scrollTo({top:0, behavior:'smooth'})" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+                <button @click="switchTab('profile'); window.scrollTo(0, 0)" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
                     <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/20 rounded-full scale-0 transition-transform duration-300" :class="currentTab === 'profile' ? 'scale-100' : ''"></div>
                     <i class="fa-solid fa-user-astronaut text-lg relative z-10"></i>
                     <span class="text-[10px] font-bold relative z-10">我的</span>
@@ -451,13 +451,13 @@
                 <div class="absolute inset-y-1.5 left-1.5 w-[calc(33.33%-4px)] bg-slate-100 dark:bg-zinc-800 rounded-full transition-transform duration-300 ease-out shadow-sm border border-slate-200/50 dark:border-white/5" 
                      :class="currentTab === 'explore' ? 'translate-x-0' : (currentTab === 'queue' ? 'translate-x-full' : 'translate-x-[200%]')"></div>
                 
-                <button @click="switchTab('explore'); window.scrollTo({top:0, behavior:'smooth'})" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
+                <button @click="switchTab('explore'); window.scrollTo(0, 0)" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
                     <i class="fa-solid fa-film text-lg"></i> 找片大厅
                 </button>
-                <button @click="switchTab('queue'); window.scrollTo({top:0, behavior:'smooth'})" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'queue' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
+                <button @click="switchTab('queue'); window.scrollTo(0, 0)" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'queue' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
                     <i class="fa-solid fa-list-check text-lg"></i> 进度与反馈
                 </button>
-                <button @click="switchTab('profile'); window.scrollTo({top:0, behavior:'smooth'})" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
+                <button @click="switchTab('profile'); window.scrollTo(0, 0)" class="flex-1 relative z-10 py-3 text-sm font-bold transition-colors flex justify-center items-center gap-2" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white'">
                     <i class="fa-solid fa-user-astronaut text-lg"></i> 我的画像
                 </button>
             </div>
@@ -778,7 +778,7 @@
 
                 async searchMedia() {
                     if (!this.searchQuery.trim()) return;
-                    this.isSearching = true; this.currentTab = 'explore'; window.scrollTo({top:0, behavior:'smooth'});
+                    this.isSearching = true; this.currentTab = 'explore'; window.scrollTo(0, 0);
                     try {
                         const res = await fetch(`/api/requests/search?query=${encodeURIComponent(this.searchQuery)}`);
                         const data = await res.json();
@@ -804,7 +804,7 @@
                             const data = await res.json(); 
                             if (data.status === 'success') { 
                                 this.tvSeasons = data.seasons; 
-                                // 🔥 解决电视剧报错限制：只要有一季在库，就能报错！
+                                // 🔥 解绑电视剧报错限制：只要有一季在库就能报错！
                                 if (this.tvSeasons.some(s => s.exists_locally)) {
                                     this.activeItem = { ...this.activeItem, local_status: 2 };
                                 }
