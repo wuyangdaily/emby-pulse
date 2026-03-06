@@ -50,7 +50,7 @@ class TelegramBot:
         self.library_thread = threading.Thread(target=self._library_notify_loop, daemon=True)
         self.library_thread.start()
         
-        print("🤖 Bot Service Started (Dual Channel Interactive Mode - V4 Ultimate WeChat Compatible)")
+        print("🤖 Bot Service Started (Dual Channel Interactive Mode)")
 
     def stop(self): self.running = False
 
@@ -253,6 +253,7 @@ class TelegramBot:
             if tg_cid:
                 try:
                     data = {"chat_id": tg_cid, "caption": caption, "parse_mode": parse_mode}
+                    # 只有在这里使用 json.dumps，因为发送附件必须用 multipart/form-data，字段需要被强制转字符串
                     if reply_markup: data["reply_markup"] = json.dumps(reply_markup)
                     if photo_bytes: requests.post(f"https://api.telegram.org/bot{cfg.get('tg_bot_token')}/sendPhoto", data=data, files={"photo": ("image.jpg", io.BytesIO(photo_bytes), "image/jpeg")}, proxies=self._get_proxies(), timeout=20)
                     else: self.send_message(tg_cid, caption, parse_mode, reply_markup, platform="tg")
@@ -267,11 +268,11 @@ class TelegramBot:
             if tg_cid:
                 try:
                     data = {"chat_id": tg_cid, "text": text, "parse_mode": parse_mode}
-                    if reply_markup: data["reply_markup"] = json.dumps(reply_markup)
+                    if reply_markup: data["reply_markup"] = reply_markup # 修复：直接传字典
                     requests.post(f"https://api.telegram.org/bot{cfg.get('tg_bot_token')}/sendMessage", json=data, proxies=self._get_proxies(), timeout=10)
                 except: pass
 
-    # ================= 🚀 交互式回调与轮询引擎 =================
+    # ================= 🚀 交互式回调与轮询引擎 (已修复序列化Bug与代理) =================
     
     def _polling_loop(self):
         token = cfg.get("tg_bot_token"); admin_id = str(cfg.get("tg_chat_id"))
@@ -285,7 +286,6 @@ class TelegramBot:
                             cid = str(u["message"]["chat"]["id"]); 
                             if admin_id and cid != admin_id: continue
                             self._handle_message(u["message"].get("text", ""), cid, platform="tg")
-                        # 🔥 核心：增加对 callback_query (按钮点击) 的捕捉
                         elif "callback_query" in u:
                             cq = u["callback_query"]
                             cid = str(cq["message"]["chat"]["id"])
@@ -297,8 +297,9 @@ class TelegramBot:
     def _handle_callback(self, cq):
         data = cq.get("data", ""); cid = str(cq["message"]["chat"]["id"])
         mid = cq["message"]["message_id"]; cq_id = cq["id"]; token = cfg.get("tg_bot_token")
+        proxies = self._get_proxies() # 🔥 修复1：补全全局代理
         
-        try: requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={"callback_query_id": cq_id}, timeout=5)
+        try: requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={"callback_query_id": cq_id}, proxies=proxies, timeout=5)
         except: pass
 
         if data.startswith("req_"):
@@ -314,7 +315,8 @@ class TelegramBot:
                     [{"text": reasons[2], "callback_data": f"req_reject_do_{tid}_2"}, {"text": reasons[3], "callback_data": f"req_reject_do_{tid}_3"}],
                     [{"text": "🔙 取消返回", "callback_data": f"req_back_{tid}"}]
                 ]}
-                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": json.dumps(keyboard)}, timeout=5)
+                # 🔥 修复2：取消 json.dumps(keyboard)，在 JSON payload 中必须传递原生的 Python 字典！
+                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": keyboard}, proxies=proxies, timeout=5)
                 except: pass
                 return
             
@@ -325,11 +327,11 @@ class TelegramBot:
                     [{"text": "🚀 推送 MP", "callback_data": f"req_approve_{tid}"}, {"text": "✋ 手动接单", "callback_data": f"req_manual_{tid}"}],
                     [{"text": "❌ 拒绝求片", "callback_data": f"req_reject_menu_{tid}"}, {"text": "💻 网页审批", "url": f"{admin_url}/requests_admin"}]
                 ]}
-                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": json.dumps(keyboard)}, timeout=5)
+                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": keyboard}, proxies=proxies, timeout=5)
                 except: pass
                 return
 
-            # 🔥 执行实际操作 (approve, manual, reject_do)
+            # 🔥 执行实际操作
             tid = parts[2]; reject_reason = None
             if action == "reject" and len(parts) > 2 and parts[2] == "do":
                 tid = parts[3]; r_idx = int(parts[4])
@@ -340,7 +342,7 @@ class TelegramBot:
 
             rows = query_db("SELECT season, title, media_type, year FROM media_requests WHERE tmdb_id = ? AND status = 0", (tid,))
             if not rows:
-                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": json.dumps({"inline_keyboard": []})}, timeout=5)
+                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageReplyMarkup", json={"chat_id": cid, "message_id": mid, "reply_markup": {"inline_keyboard": []}}, proxies=proxies, timeout=5)
                 except: pass
                 return
                 
@@ -371,14 +373,13 @@ class TelegramBot:
             else: notify_msg = f"❌ <b>求片被拒</b>\n\n抱歉，{users_str} 求片的《{title}》未通过审批。\n原因: {reject_reason}"
             self.send_message("sys_notify", notify_msg, platform="all")
             
-            # 修改原本消息卡片状态
             orig_caption = cq["message"].get("caption", "求片请求")
             operator = cq.get('from', {}).get('first_name', 'Admin')
             new_caption = f"{orig_caption}\n\n━━━━━━━━━━━━━━\n{action_text}\n(操作人: {operator})"
-            try: requests.post(f"https://api.telegram.org/bot{token}/editMessageCaption", json={"chat_id": cid, "message_id": mid, "caption": new_caption, "reply_markup": json.dumps({"inline_keyboard": []})}, timeout=5)
+            # 🔥 这里同样改为传字典
+            try: requests.post(f"https://api.telegram.org/bot{token}/editMessageCaption", json={"chat_id": cid, "message_id": mid, "caption": new_caption, "reply_markup": {"inline_keyboard": []}}, proxies=proxies, timeout=5)
             except: pass
 
-    # ================= 下方方法保持不变... =================
     def _set_commands(self):
         token = cfg.get("tg_bot_token")
         if not token: return
