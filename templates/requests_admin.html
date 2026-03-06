@@ -2,7 +2,7 @@
 
 {% set active_page = 'requests_admin' %}
 
-{% block title %}资源求片大厅 - EmbyPulse{% endblock %}
+{% block title %}资源求片与反馈大厅 - EmbyPulse{% endblock %}
 
 {% block content %}
 <style>
@@ -21,120 +21,171 @@
         <div class="flex items-center gap-3">
             <div class="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center text-2xl text-red-500">🍿</div>
             <div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">资源求片大厅</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">多渠道精准接单 · 全场景闭环审批</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white" x-text="viewMode === 'request' ? '资源求片大厅' : '用户报错工单'"></h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5" x-text="viewMode === 'request' ? '多渠道精准接单 · 全场景闭环审批' : '追踪资源质量 · 及时修复用户反馈'"></p>
             </div>
         </div>
-        <div class="flex items-center gap-3 w-full sm:w-auto">
-            <button @click="loadData()" class="flex-1 sm:flex-none px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2">
-                <i class="fa-solid fa-rotate-right" :class="isOperating ? 'animate-spin' : ''"></i> 刷新数据
+        
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div class="flex bg-gray-100 dark:bg-gray-900 p-1 rounded-xl shadow-inner border border-gray-200 dark:border-gray-700">
+                <button @click="viewMode = 'request'; loadData()" class="px-4 py-2 rounded-lg text-sm font-bold transition-all" :class="viewMode === 'request' ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'">🎬 求片</button>
+                <button @click="viewMode = 'feedback'; loadFeedback()" class="px-4 py-2 rounded-lg text-sm font-bold transition-all" :class="viewMode === 'feedback' ? 'bg-white dark:bg-gray-700 shadow-sm text-red-600 dark:text-red-400' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'">⚠️ 报错</button>
+            </div>
+
+            <button @click="viewMode === 'request' ? loadData() : loadFeedback()" class="px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 dark:text-gray-200 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                <i class="fa-solid fa-rotate-right" :class="isOperating ? 'animate-spin' : ''"></i>
             </button>
-            <a href="/request" target="_blank" class="flex-1 sm:flex-none px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-green-500/20 flex items-center justify-center gap-2">
+            <a href="/request" target="_blank" class="px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl text-sm font-bold transition shadow-lg shadow-green-500/20 flex items-center gap-2">
                 👉 前往求片前台
             </a>
         </div>
     </div>
 
-    <div class="flex flex-col md:flex-row justify-between gap-4 items-center bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-        <div class="flex gap-2 overflow-x-auto hide-scrollbar w-full md:w-auto pl-2">
-            <button @click="filterStatus = 'all'" :class="filterStatus === 'all' ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900 shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">全部</button>
-            <button @click="filterStatus = 0" :class="filterStatus === 0 ? 'bg-blue-600 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">待审批 <span x-text="requests.filter(r => r.status===0).length" class="ml-1 opacity-70"></span></button>
-            <button @click="filterStatus = 1" :class="filterStatus === 1 ? 'bg-yellow-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">自动化下载中</button>
-            <button @click="filterStatus = 4" :class="filterStatus === 4 ? 'bg-purple-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">手动入库中</button>
-            <button @click="filterStatus = 2" :class="filterStatus === 2 ? 'bg-green-600 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">已入库</button>
-            <button @click="filterStatus = 3" :class="filterStatus === 3 ? 'bg-red-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">已拒绝</button>
+    <div x-show="viewMode === 'request'" x-transition>
+        <div class="flex flex-col md:flex-row justify-between gap-4 items-center bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+            <div class="flex gap-2 overflow-x-auto hide-scrollbar w-full md:w-auto pl-2">
+                <button @click="filterStatus = 'all'" :class="filterStatus === 'all' ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900 shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">全部</button>
+                <button @click="filterStatus = 0" :class="filterStatus === 0 ? 'bg-blue-600 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">待审批 <span x-text="requests.filter(r => r.status===0).length" class="ml-1 opacity-70"></span></button>
+                <button @click="filterStatus = 1" :class="filterStatus === 1 ? 'bg-yellow-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">自动化下载中</button>
+                <button @click="filterStatus = 4" :class="filterStatus === 4 ? 'bg-purple-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">手动入库中</button>
+                <button @click="filterStatus = 2" :class="filterStatus === 2 ? 'bg-green-600 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">已入库</button>
+                <button @click="filterStatus = 3" :class="filterStatus === 3 ? 'bg-red-500 text-white shadow-md' : 'bg-transparent text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'" class="px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap">已拒绝</button>
+            </div>
+            
+            <div x-show="selectedKeys.length > 0" x-transition class="flex items-center gap-2 pr-2">
+                <span class="text-sm font-bold text-blue-600 dark:text-blue-400 mr-2">已选 <span x-text="selectedKeys.length"></span> 项</span>
+                <button @click="batchAction('approve')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95" title="推送给 MP 下载"><i class="fa-solid fa-robot mr-1"></i>批量推MP</button>
+                <button @click="batchAction('manual')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95" title="不推送给 MP，自己找资源下载"><i class="fa-solid fa-hand mr-1"></i>批量接单</button>
+                <button @click="openBatchRejectModal()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95"><i class="fa-solid fa-ban mr-1"></i>批量拒绝</button>
+                <button @click="batchAction('delete')" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold transition active:scale-95"><i class="fa-regular fa-trash-can"></i></button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+            <div class="col-span-full flex items-center px-2 pb-1" x-show="filteredRequests.length > 0">
+                <label class="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" @click="toggleSelectAll()" :checked="selectedKeys.length === filteredRequests.length && filteredRequests.length > 0" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 transition">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 font-medium transition">全选当前列表</span>
+                </label>
+            </div>
+
+            <template x-for="item in filteredRequests" :key="item.tmdb_id + '_' + item.season">
+                <div class="pulse-list-row bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex gap-4 relative"
+                     :class="selectedKeys.includes(item.tmdb_id + '_' + item.season) ? 'ring-2 ring-blue-500 dark:ring-blue-400 bg-blue-50/30 dark:bg-blue-900/10' : ''">
+                    
+                    <div class="absolute top-4 left-4 z-10">
+                        <input type="checkbox" :value="item.tmdb_id + '_' + item.season" x-model="selectedKeys" class="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-500 cursor-pointer shadow-sm transition">
+                    </div>
+
+                    <div class="shrink-0 ml-6">
+                        <img :src="item.poster_path || 'https://via.placeholder.com/150'" class="w-16 h-24 rounded-lg object-cover shadow-sm bg-gray-100 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
+                    </div>
+
+                    <div class="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <h3 class="font-bold text-gray-900 dark:text-white truncate text-base mb-1" x-text="item.title"></h3>
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="px-1.5 py-0.5 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded font-bold uppercase" x-text="item.media_type === 'movie' ? 'Movie' : 'TV'"></span>
+                                        <span class="text-gray-400" x-text="item.year"></span>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">
+                                    <span x-show="item.status === 0" class="text-blue-500 text-[11px] font-bold bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-500/20">待审批</span>
+                                    <span x-show="item.status === 1" class="text-yellow-600 dark:text-yellow-500 text-[11px] font-bold bg-yellow-50 dark:bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-100 dark:border-yellow-500/20 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>自动下载中</span>
+                                    <span x-show="item.status === 4" class="text-purple-600 dark:text-purple-500 text-[11px] font-bold bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-100 dark:border-purple-500/20 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>手动接单中</span>
+                                    <span x-show="item.status === 2" class="text-green-600 dark:text-green-500 text-[11px] font-bold bg-green-50 dark:bg-green-500/10 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-500/20">已入库</span>
+                                    <span x-show="item.status === 3" class="text-red-500 text-[11px] font-bold bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full border border-red-100 dark:border-red-500/20">已拒绝</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 space-y-1">
+                                <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    <i class="fa-solid fa-users text-blue-400/80 w-4"></i>
+                                    <span class="truncate">支持者: <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.requested_by"></span></span>
+                                </div>
+                                <div x-show="item.status === 3 && item.reject_reason" class="flex items-start gap-1.5 text-[11px] text-red-500 mt-2 bg-red-50 dark:bg-red-500/5 p-1.5 rounded-lg border border-red-100 dark:border-red-900/30">
+                                    <i class="fa-solid fa-ban mt-0.5"></i>
+                                    <span>原因: <span x-text="item.reject_reason"></span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50">
+                            <div class="text-[10px] text-gray-400 font-mono" x-text="item.created_at.substring(5, 16)"></div>
+                            <div class="flex items-center gap-2">
+                                <template x-if="item.status === 0">
+                                    <div class="flex items-center gap-2">
+                                        <button @click="doAction(item.tmdb_id, item.season, 'approve')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95"><i class="fa-solid fa-robot mr-1"></i>推给 MP</button>
+                                        <button @click="doAction(item.tmdb_id, item.season, 'manual')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-purple-500/20 active:scale-95"><i class="fa-solid fa-hand mr-1"></i>手动接单</button>
+                                    </div>
+                                </template>
+                                <template x-if="item.status === 1 || item.status === 4">
+                                    <button @click="doAction(item.tmdb_id, item.season, 'finish')" class="px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-green-500/20 active:scale-95"><i class="fa-solid fa-check mr-1"></i>强制入库</button>
+                                </template>
+                                <template x-if="item.status === 0 || item.status === 1 || item.status === 4">
+                                    <button @click="openRejectModal([{tmdb_id: item.tmdb_id, season: item.season}])" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="拒绝">
+                                        <i class="fa-solid fa-circle-xmark"></i>
+                                    </button>
+                                </template>
+                                <button @click="if(confirm('彻底删除将无法恢复，确定吗？')) doAction(item.tmdb_id, item.season, 'delete')" class="p-1.5 text-gray-300 hover:text-gray-600 dark:hover:text-red-400 rounded-lg transition" title="删除">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="filteredRequests.length === 0" class="text-center py-24 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm" x-cloak>
+            <div class="text-6xl mb-4 opacity-20">📂</div>
+            <p class="text-gray-400 dark:text-gray-500 font-medium">当前分类下没有数据</p>
+        </div>
+    </div>
+
+    <div x-show="viewMode === 'feedback'" x-transition x-cloak>
+        <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
+            <template x-for="item in feedbacks" :key="item.id">
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <h3 class="font-bold text-gray-900 dark:text-white text-lg leading-tight" x-text="item.item_name"></h3>
+                            <div class="shrink-0">
+                                <span x-show="item.status === 0" class="text-red-500 text-[11px] font-bold bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded-md border border-red-100 dark:border-red-500/20">🔍 待核实</span>
+                                <span x-show="item.status === 1" class="text-blue-500 text-[11px] font-bold bg-blue-50 dark:bg-blue-500/10 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-500/20"><i class="fa-solid fa-wrench fa-spin mr-1"></i>修复中</span>
+                                <span x-show="item.status === 2" class="text-green-500 text-[11px] font-bold bg-green-50 dark:bg-green-500/10 px-2 py-1 rounded-md border border-green-100 dark:border-green-500/20">✅ 已解决</span>
+                                <span x-show="item.status === 3" class="text-gray-400 text-[11px] font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600">❌ 忽略</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-4">
+                            <p class="text-xs text-gray-600 dark:text-gray-400"><i class="fa-solid fa-user text-gray-400 w-4"></i> 反馈用户：<span class="font-bold text-gray-800 dark:text-gray-200" x-text="item.username"></span></p>
+                            <p class="text-xs text-rose-500 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-500/10 w-fit px-2 py-0.5 rounded border border-rose-100 dark:border-rose-900/30"><i class="fa-solid fa-tag w-4"></i> 问题：<span x-text="item.issue_type"></span></p>
+                            <div x-show="item.description" class="text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                                "<span x-text="item.description"></span>"
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <span class="text-[10px] text-gray-400 font-mono" x-text="item.created_at"></span>
+                        <div class="flex gap-2">
+                            <button x-show="item.status === 0 || item.status === 3" @click="feedAction(item.id, 'fix')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-lg text-xs font-bold transition">标记修复中</button>
+                            <button x-show="item.status === 0 || item.status === 1" @click="feedAction(item.id, 'done')" class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-bold transition shadow-sm">标记已解决</button>
+                            <button x-show="item.status === 0 || item.status === 1" @click="feedAction(item.id, 'reject')" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold transition">忽略</button>
+                            <button @click="if(confirm('删除工单？')) feedAction(item.id, 'delete')" class="p-1.5 text-gray-300 hover:text-red-500 rounded-lg transition" title="删除记录"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </template>
         </div>
         
-        <div x-show="selectedKeys.length > 0" x-transition class="flex items-center gap-2 pr-2">
-            <span class="text-sm font-bold text-blue-600 dark:text-blue-400 mr-2">已选 <span x-text="selectedKeys.length"></span> 项</span>
-            <button @click="batchAction('approve')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95" title="推送给 MP 下载"><i class="fa-solid fa-robot mr-1"></i>批量推MP</button>
-            <button @click="batchAction('manual')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition shadow-sm active:scale-95" title="不推送给 MP，自己找资源下载"><i class="fa-solid fa-hand mr-1"></i>批量接单</button>
-            <button @click="openBatchRejectModal()" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 rounded-lg text-xs font-bold transition active:scale-95"><i class="fa-solid fa-ban mr-1"></i>批量拒绝</button>
-            <button @click="batchAction('delete')" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold transition active:scale-95"><i class="fa-regular fa-trash-can"></i></button>
+        <div x-show="feedbacks.length === 0" class="text-center py-24 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm" x-cloak>
+            <div class="text-6xl mb-4 opacity-20">✨</div>
+            <p class="text-gray-400 dark:text-gray-500 font-medium">太棒了，目前没有任何资源报错！</p>
         </div>
-    </div>
-
-    <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
-        <div class="col-span-full flex items-center px-2 pb-1" x-show="filteredRequests.length > 0">
-            <label class="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" @click="toggleSelectAll()" :checked="selectedKeys.length === filteredRequests.length && filteredRequests.length > 0" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 transition">
-                <span class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-800 dark:group-hover:text-gray-200 font-medium transition">全选当前列表</span>
-            </label>
-        </div>
-
-        <template x-for="item in filteredRequests" :key="item.tmdb_id + '_' + item.season">
-            <div class="pulse-list-row bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex gap-4 relative"
-                 :class="selectedKeys.includes(item.tmdb_id + '_' + item.season) ? 'ring-2 ring-blue-500 dark:ring-blue-400 bg-blue-50/30 dark:bg-blue-900/10' : ''">
-                
-                <div class="absolute top-4 left-4 z-10">
-                    <input type="checkbox" :value="item.tmdb_id + '_' + item.season" x-model="selectedKeys" class="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-500 cursor-pointer shadow-sm transition">
-                </div>
-
-                <div class="shrink-0 ml-6">
-                    <img :src="item.poster_path || 'https://via.placeholder.com/150'" class="w-16 h-24 rounded-lg object-cover shadow-sm bg-gray-100 dark:bg-gray-900 border border-gray-100 dark:border-gray-700">
-                </div>
-
-                <div class="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0">
-                                <h3 class="font-bold text-gray-900 dark:text-white truncate text-base mb-1" x-text="item.title"></h3>
-                                <div class="flex items-center gap-2 text-[10px]">
-                                    <span class="px-1.5 py-0.5 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded font-bold uppercase" x-text="item.media_type === 'movie' ? 'Movie' : 'TV'"></span>
-                                    <span class="text-gray-400" x-text="item.year"></span>
-                                </div>
-                            </div>
-                            <div class="shrink-0">
-                                <span x-show="item.status === 0" class="text-blue-500 text-[11px] font-bold bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-500/20">待审批</span>
-                                <span x-show="item.status === 1" class="text-yellow-600 dark:text-yellow-500 text-[11px] font-bold bg-yellow-50 dark:bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-100 dark:border-yellow-500/20 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></span>自动下载中</span>
-                                <span x-show="item.status === 4" class="text-purple-600 dark:text-purple-500 text-[11px] font-bold bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-100 dark:border-purple-500/20 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>手动入库中</span>
-                                <span x-show="item.status === 2" class="text-green-600 dark:text-green-500 text-[11px] font-bold bg-green-50 dark:bg-green-500/10 px-2 py-0.5 rounded-full border border-green-100 dark:border-green-500/20">已入库</span>
-                                <span x-show="item.status === 3" class="text-red-500 text-[11px] font-bold bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-full border border-red-100 dark:border-red-500/20">已拒绝</span>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3 space-y-1">
-                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <i class="fa-solid fa-users text-blue-400/80 w-4"></i>
-                                <span class="truncate">支持者: <span class="font-medium text-gray-700 dark:text-gray-300" x-text="item.requested_by"></span></span>
-                            </div>
-                            <div x-show="item.status === 3 && item.reject_reason" class="flex items-start gap-1.5 text-[11px] text-red-500 mt-2 bg-red-50 dark:bg-red-500/5 p-1.5 rounded-lg border border-red-100 dark:border-red-900/30">
-                                <i class="fa-solid fa-ban mt-0.5"></i>
-                                <span>原因: <span x-text="item.reject_reason"></span></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 flex items-center justify-between pt-3 border-t border-gray-50 dark:border-gray-700/50">
-                        <div class="text-[10px] text-gray-400 font-mono" x-text="item.created_at.substring(5, 16)"></div>
-                        <div class="flex items-center gap-2">
-                            <template x-if="item.status === 0">
-                                <div class="flex items-center gap-2">
-                                    <button @click="doAction(item.tmdb_id, item.season, 'approve')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95"><i class="fa-solid fa-robot mr-1"></i>推给 MP</button>
-                                    <button @click="doAction(item.tmdb_id, item.season, 'manual')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-purple-500/20 active:scale-95"><i class="fa-solid fa-hand mr-1"></i>手动接单</button>
-                                </div>
-                            </template>
-                            <template x-if="item.status === 1 || item.status === 4">
-                                <button @click="doAction(item.tmdb_id, item.season, 'finish')" class="px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-lg text-xs font-bold transition shadow-md shadow-green-500/20 active:scale-95"><i class="fa-solid fa-check mr-1"></i>标记已入库</button>
-                            </template>
-                            <template x-if="item.status === 0 || item.status === 1 || item.status === 4">
-                                <button @click="openRejectModal([{tmdb_id: item.tmdb_id, season: item.season}])" class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition" title="拒绝">
-                                    <i class="fa-solid fa-circle-xmark"></i>
-                                </button>
-                            </template>
-                            <button @click="if(confirm('彻底删除将无法恢复，确定吗？')) doAction(item.tmdb_id, item.season, 'delete')" class="p-1.5 text-gray-300 hover:text-gray-600 dark:hover:text-red-400 rounded-lg transition" title="删除">
-                                <i class="fa-regular fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </template>
-    </div>
-
-    <div x-show="filteredRequests.length === 0" class="text-center py-24 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm" x-cloak>
-        <div class="text-6xl mb-4 opacity-20">📂</div>
-        <p class="text-gray-400 dark:text-gray-500 font-medium">当前分类下没有数据</p>
     </div>
 
     <div x-show="rejectModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-4" x-cloak>
@@ -185,7 +236,9 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('adminApp', () => ({
+            viewMode: 'request', // 'request' or 'feedback'
             requests: [],
+            feedbacks: [],
             filterStatus: 'all',
             isOperating: false,
             toast: { show: false, message: '', type: 'success' },
@@ -196,7 +249,11 @@
 
             init() {
                 this.loadData();
-                setInterval(() => this.loadData(), 30000);
+                this.loadFeedback();
+                setInterval(() => {
+                    if(this.viewMode === 'request') this.loadData();
+                    else this.loadFeedback();
+                }, 30000);
             },
 
             get filteredRequests() {
@@ -219,6 +276,28 @@
                         this.selectedKeys = this.selectedKeys.filter(k => currentKeys.includes(k));
                     }
                 } catch (e) { console.error(e); }
+            },
+
+            async loadFeedback() {
+                try {
+                    const res = await fetch('/api/manage/feedback');
+                    const data = await res.json();
+                    if (data.status === 'success') this.feedbacks = data.data;
+                } catch (e) {}
+            },
+
+            async feedAction(id, action) {
+                this.isOperating = true;
+                try {
+                    const res = await fetch('/api/manage/feedback/action', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: id, action: action })
+                    });
+                    const data = await res.json();
+                    this.showToast(data.message, data.status === 'success' ? 'success' : 'error');
+                    this.loadFeedback();
+                } catch(e) { this.showToast('操作失败', 'error'); }
+                finally { this.isOperating = false; }
             },
 
             toggleSelectAll() {

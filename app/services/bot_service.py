@@ -26,6 +26,7 @@ class TelegramBot:
         
         self.offset = 0
         self.last_check_min = -1
+        self.last_sync_min = -1 # 用于记录同步状态的时间
         self.user_cache = {}
         self.ip_cache = {} 
         
@@ -306,11 +307,30 @@ class TelegramBot:
         try: requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={"callback_query_id": cq_id}, proxies=proxies, timeout=5)
         except: pass
 
+        # 🔥 处理反馈工单 (Feedbacks)
+        if data.startswith("feed_"):
+            parts = data.split("_")
+            action = parts[1]
+            feed_id = int(parts[2])
+            status_map = {"fix": 1, "done": 2, "reject": 3}
+            status_text = {"fix": "🛠️ 已标记：修复中", "done": "✅ 已标记：修复完成", "reject": "❌ 已标记：暂不处理(忽略)"}
+            
+            if action in status_map:
+                query_db("UPDATE media_feedback SET status = ? WHERE id = ?", (status_map[action], feed_id))
+                
+                orig_text = cq["message"].get("text", "资源报错工单")
+                operator = cq.get('from', {}).get('first_name', 'Admin')
+                new_text = f"{orig_text}\n\n━━━━━━━━━━━━━━\n{status_text[action]}\n(操作人: {operator})"
+                
+                try: requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={"chat_id": cid, "message_id": mid, "text": new_text, "reply_markup": {"inline_keyboard": []}}, proxies=proxies, timeout=5)
+                except: pass
+            return
+
+        # 🎬 处理求片工单 (Requests)
         if data.startswith("req_"):
             parts = data.split("_")
             action = parts[1] 
             
-            # 🔥 展开拒绝菜单
             if action == "reject" and len(parts) > 2 and parts[2] == "menu":
                 tid = parts[3]
                 reasons = ["影片未上映", "剧集未开播", "未找到可用资源", "质量太差等待洗版"]
@@ -323,7 +343,6 @@ class TelegramBot:
                 except: pass
                 return
             
-            # 🔥 返回主菜单
             elif action == "back":
                 tid = parts[2]; admin_url = cfg.get("pulse_url") or "http://127.0.0.1:10307"
                 keyboard = {"inline_keyboard": [
@@ -334,7 +353,6 @@ class TelegramBot:
                 except: pass
                 return
 
-            # 🔥 执行实际操作
             tid = parts[2]; reject_reason = None
             if action == "reject" and len(parts) > 2 and parts[2] == "do":
                 tid = parts[3]; r_idx = int(parts[4])
@@ -366,7 +384,6 @@ class TelegramBot:
                 for r in rows: query_db("UPDATE media_requests SET status = 3, reject_reason = ? WHERE tmdb_id = ? AND season = ?", (reject_reason, tid, r['season']))
                 action_text = f"❌ 已拒绝 ({reject_reason})"
                 
-            # 🔥 删除了冗余的 sys_notify 通知逻辑，只在当前卡片上留下操作记录
             orig_caption = cq["message"].get("caption", "求片请求")
             operator = cq.get('from', {}).get('first_name', 'Admin')
             new_caption = f"{orig_caption}\n\n━━━━━━━━━━━━━━\n{action_text}\n(操作人: {operator})"
@@ -653,6 +670,7 @@ class TelegramBot:
         )
         self.send_message(cid, msg.strip(), platform=platform)
 
+    # 🔥 核心修复：后台调度器加入对“手动接单”的自动入库核实引擎
     def _scheduler_loop(self):
         while self.running:
             try:
@@ -663,8 +681,43 @@ class TelegramBot:
                         self._check_user_expiration()
                         if cfg.get("tg_chat_id") or cfg.get("wecom_corpid"): 
                             self._daily_report_task()
+                            
+                # 每 10 分钟自动核实一次是否有“接单中/下载中”的剧集已经成功入库
+                if now.minute % 10 == 0 and now.minute != self.last_sync_min:
+                    self.last_sync_min = now.minute
+                    self._sync_pending_requests()
+                    
                 time.sleep(5)
             except: time.sleep(60)
+            
+    def _sync_pending_requests(self):
+        try:
+            # 找到所有状态是 1 (自动下载中) 或 4 (手动接单中) 的请求
+            rows = query_db("SELECT tmdb_id, media_type, season FROM media_requests WHERE status IN (1, 4)")
+            if not rows: return
+            
+            host = cfg.get("emby_host"); key = cfg.get("emby_api_key")
+            admin_id = self._get_admin_id()
+            if not admin_id: return
+            
+            for r in rows:
+                tid = r['tmdb_id']; mtype = r['media_type']; sn = r['season']
+                type_filter = "Movie" if mtype == "movie" else "Series"
+                # 利用 Emby API 透穿查询
+                url = f"{host}/emby/Users/{admin_id}/Items?AnyProviderIdEquals=tmdb.{tid}&IncludeItemTypes={type_filter}&Recursive=true&api_key={key}"
+                res = requests.get(url, timeout=5).json()
+                
+                if res.get("Items"):
+                    if mtype == "movie":
+                        query_db("UPDATE media_requests SET status = 2, updated_at = CURRENT_TIMESTAMP WHERE tmdb_id = ?", (tid,))
+                    else:
+                        sid = res["Items"][0]["Id"]
+                        s_res = requests.get(f"{host}/emby/Shows/{sid}/Seasons?api_key={key}&UserId={admin_id}", timeout=5).json()
+                        local_seasons = [s.get("IndexNumber") for s in s_res.get("Items", [])]
+                        if sn in local_seasons:
+                            query_db("UPDATE media_requests SET status = 2, updated_at = CURRENT_TIMESTAMP WHERE tmdb_id = ? AND season = ?", (tid, sn))
+                time.sleep(0.5) # 防止把 Emby QPS 刷爆
+        except Exception as e: pass
 
     def _check_user_expiration(self):
         try:
