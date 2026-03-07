@@ -9,7 +9,12 @@ from app.core.database import query_db
 
 router = APIRouter(prefix="/api/gaps", tags=["gaps"])
 
-# 辅助函数：获取管理员用户ID，以便拥有最高权限扫库
+# 辅助函数：获取代理
+def _get_proxies():
+    proxy = cfg.get("proxy_url")
+    return {"http": proxy, "https": proxy} if proxy else None
+
+# 辅助函数：获取管理员用户ID
 def get_admin_user_id():
     host = cfg.get("emby_host")
     key = cfg.get("emby_api_key")
@@ -31,18 +36,20 @@ def scan_library_gaps():
     【深空雷达引擎】
     扫描 Emby 媒体库中的剧集，对比 TMDB 获取缺集情况
     """
+    print("\n🚀 [缺集雷达] 启动媒体库深度扫描任务...")
     host = cfg.get("emby_host")
     key = cfg.get("emby_api_key")
     tmdb_key = cfg.get("tmdb_api_key") 
     
     if not host or not key or not tmdb_key:
+        print("❌ [缺集雷达] 缺少 Emby 或 TMDB API_KEY 配置！")
         return {"status": "error", "message": "系统未配置 Emby 或 TMDB API_KEY"}
         
     admin_id = get_admin_user_id()
     if not admin_id:
+        print("❌ [缺集雷达] 无法获取 Emby 管理员身份")
         return {"status": "error", "message": "无法获取 Emby 管理员身份"}
 
-    # 获取所有数据库里的状态锁 (忽略/处理中)
     records = query_db("SELECT series_id, season_number, episode_number, status FROM gap_records")
     lock_map = {}
     if records:
@@ -54,26 +61,33 @@ def scan_library_gaps():
     try:
         series_res = requests.get(series_url, timeout=15).json()
         series_list = series_res.get("Items", [])
+        print(f"📡 [缺集雷达] 成功获取本地剧集，共计 {len(series_list)} 部，开始逐一穿透比对...")
     except Exception as e:
+        print(f"❌ [缺集雷达] 请求 Emby 剧集失败: {e}")
         return {"status": "error", "message": f"请求 Emby 剧集失败: {str(e)}"}
 
     gap_results = []
     today = datetime.now().strftime("%Y-%m-%d")
+    proxies = _get_proxies() # 获取代理配置
 
-    for series in series_list:
+    for idx, series in enumerate(series_list):
         series_id = series.get("Id")
         series_name = series.get("Name")
         tmdb_id = series.get("ProviderIds", {}).get("Tmdb")
         
-        if not tmdb_id: continue 
+        print(f"⏳ [{idx+1}/{len(series_list)}] 正在分析: {series_name} (TMDB ID: {tmdb_id})")
+        if not tmdb_id: 
+            print("   -> ⚠️ 无 TMDB ID，已跳过")
+            continue 
         
-        # 2. 拉取本地该剧集的所有实际存在的单集 (Episodes)
+        # 2. 拉取本地该剧集的所有实际存在的单集
         episodes_url = f"{host}/emby/Users/{admin_id}/Items?ParentId={series_id}&IncludeItemTypes=Episode&Recursive=true&Fields=IndexNumberEnd&api_key={key}"
         try:
             local_eps_data = requests.get(episodes_url, timeout=10).json().get("Items", [])
-        except: continue
+        except Exception as e: 
+            print(f"   -> ❌ 获取本地单集失败: {e}")
+            continue
 
-        # 建立本地已拥有的季集映射表
         local_inventory = {} 
         for ep in local_eps_data:
             s_num = ep.get("ParentIndexNumber") 
@@ -90,9 +104,12 @@ def scan_library_gaps():
         # 3. 穿透查询 TMDB 真实数据
         try:
             tmdb_series_url = f"https://api.themoviedb.org/3/tv/{tmdb_id}?language=zh-CN&api_key={tmdb_key}"
-            tmdb_series_data = requests.get(tmdb_series_url, timeout=10).json()
+            # 🔥 加上代理，防止超时！
+            tmdb_series_data = requests.get(tmdb_series_url, proxies=proxies, timeout=10).json()
             tmdb_seasons = tmdb_series_data.get("seasons", [])
-        except: continue
+        except Exception as e: 
+            print(f"   -> ❌ 请求 TMDB API 失败 (请检查代理或网络): {e}")
+            continue
 
         series_gaps = []
         
@@ -108,9 +125,11 @@ def scan_library_gaps():
             
             try:
                 tmdb_season_url = f"https://api.themoviedb.org/3/tv/{tmdb_id}/season/{s_num}?language=zh-CN&api_key={tmdb_key}"
-                tmdb_season_data = requests.get(tmdb_season_url, timeout=5).json()
+                tmdb_season_data = requests.get(tmdb_season_url, proxies=proxies, timeout=10).json()
                 tmdb_episodes = tmdb_season_data.get("episodes", [])
-            except: continue
+            except Exception as e: 
+                print(f"   -> ❌ 请求 TMDB 第 {s_num} 季数据失败: {e}")
+                continue
             
             for tmdb_ep in tmdb_episodes:
                 e_num = tmdb_ep.get("episode_number")
@@ -123,7 +142,7 @@ def scan_library_gaps():
                     status = lock_map.get(lock_key, 0)
                     
                     if status == 1:
-                        continue
+                        continue # 已被用户永久屏蔽
                         
                     series_gaps.append({
                         "season": s_num,
@@ -133,6 +152,7 @@ def scan_library_gaps():
                     })
         
         if series_gaps:
+            print(f"   -> 🚨 发现断层！共缺失 {len(series_gaps)} 集")
             gap_results.append({
                 "series_id": series_id,
                 "series_name": series_name,
@@ -140,7 +160,10 @@ def scan_library_gaps():
                 "poster": f"{host}/emby/Items/{series_id}/Images/Primary?maxHeight=400&maxWidth=300&api_key={key}",
                 "gaps": series_gaps
             })
+        else:
+            print(f"   -> ✅ 拼图完整")
 
+    print(f"🎉 [缺集雷达] 扫描完毕！共揪出 {len(gap_results)} 部残缺剧集。\n")
     return {"status": "success", "data": gap_results}
 
 @router.post("/ignore")
@@ -164,7 +187,6 @@ def ignore_gap(payload: dict):
         return {"status": "error", "message": str(e)}
 
 # ----------------- 第二阶段：联动枢纽 -----------------
-
 class GapSearchReq(BaseModel):
     series_id: str
     series_name: str
@@ -189,7 +211,6 @@ def search_mp_for_gap(req: GapSearchReq):
         return {"status": "error", "message": "系统未配置 MoviePilot 连接信息"}
 
     admin_id = get_admin_user_id()
-    
     genes = []
     if admin_id:
         try:
@@ -214,8 +235,6 @@ def search_mp_for_gap(req: GapSearchReq):
     if not genes: genes = ["未提取到特殊基因(默认)"]
 
     keyword = f"{req.series_name} S{str(req.season).zfill(2)}E{str(req.episode).zfill(2)}"
-    
-    # 🔥 修复报错：移除 f-string 内部的反斜杠
     clean_token = mp_token.strip().strip("'\"")
     headers = {
         "X-API-KEY": clean_token,
@@ -224,6 +243,7 @@ def search_mp_for_gap(req: GapSearchReq):
     
     try:
         mp_search_url = f"{mp_url.rstrip('/')}/api/v1/search/title?keyword={keyword}"
+        # MP 一般在内网，不走代理
         mp_res = requests.get(mp_search_url, headers=headers, timeout=20)
         if mp_res.status_code != 200:
             return {"status": "error", "message": f"MP搜索失败 (HTTP {mp_res.status_code})"}
@@ -278,7 +298,6 @@ def download_gap_item(req: GapDownloadReq):
     if not mp_url or not mp_token:
         return {"status": "error", "message": "系统未配置 MoviePilot 连接信息"}
 
-    # 🔥 修复报错：移除 f-string 内部的反斜杠
     clean_token = mp_token.strip().strip("'\"")
     headers = {
         "X-API-KEY": clean_token,

@@ -4,10 +4,8 @@
 {% block head %}
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
-    /* 🔥 核心修复：在框架加载前，强制隐藏带有 x-cloak 的弹窗元素 */
     [x-cloak] { display: none !important; }
-
-    /* 深空雷达扫描动画 */
+    
     @keyframes radar-spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
@@ -20,7 +18,6 @@
     .dark .radar-sweep {
         background: conic-gradient(from 0deg at 50% 50%, transparent 270deg, rgba(56, 189, 248, 0.4) 360deg);
     }
-    /* 瑞士奶酪小方块 */
     .ep-box { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .ep-box:hover { transform: scale(1.15) translateY(-2px); z-index: 10; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 </style>
@@ -39,7 +36,7 @@
             </div>
             <div>
                 <h2 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">媒体库光谱扫描</h2>
-                <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-medium">精准比对 TMDB，发现拼图断层 (已自动免疫未开播与花絮)</p>
+                <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-medium">精准比对 TMDB，发现拼图断层 (自动免疫花絮与未播出剧集)</p>
             </div>
         </div>
 
@@ -51,6 +48,16 @@
                 <span x-text="isScanning ? '深度扫描中...' : '立即执行扫描'"></span>
             </button>
         </div>
+    </div>
+
+    <div x-show="isScanning" class="text-center py-20" x-cloak>
+        <div class="relative w-32 h-32 mx-auto mb-8">
+            <div class="absolute inset-0 border-4 border-blue-100 dark:border-blue-900/30 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+            <i class="fa-solid fa-radar text-4xl text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">正在深度比对媒体库基因...</h3>
+        <p class="text-sm text-slate-500 dark:text-zinc-400">资源数量越多耗时越久，请关注后端 Docker 日志进度。</p>
     </div>
 
     <div x-show="!isScanning && gapData.length > 0" class="grid grid-cols-1 lg:grid-cols-2 gap-6" x-transition x-cloak>
@@ -84,7 +91,7 @@
                                                 <div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-blue-500/20 to-transparent animate-pulse"></div>
                                                 <span class="text-[11px] font-bold text-blue-600 dark:text-blue-400 relative z-10" x-text="ep.episode"></span>
                                             </div>
-                                            </template>
+                                        </template>
                                     </div>
                                 </div>
                             </template>
@@ -100,7 +107,7 @@
             <i class="fa-solid fa-check text-4xl text-green-500"></i>
         </div>
         <h3 class="text-xl font-bold text-slate-900 dark:text-white">媒体库完美无暇</h3>
-        <p class="text-sm text-slate-500 dark:text-zinc-400 mt-2">没有任何断层或缺失，强迫症大满足。</p>
+        <p class="text-sm text-slate-500 dark:text-zinc-400 mt-2">未发现任何可修补的断层，强迫症大满足。</p>
     </div>
 
     <div x-show="resolver.open" class="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4" x-cloak>
@@ -199,7 +206,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         init() {
-            // 默认加载一次
             this.startScan();
         },
 
@@ -224,15 +230,12 @@ document.addEventListener('alpine:init', () => {
                 if (!grouped[ep.season]) grouped[ep.season] = [];
                 grouped[ep.season].push(ep);
             });
-            // 排序保证顺序正确
-            for(let s in grouped) {
-                grouped[s].sort((a,b) => a.episode - b.episode);
-            }
+            for(let s in grouped) { grouped[s].sort((a,b) => a.episode - b.episode); }
             return grouped;
         },
 
         async openResolver(series, ep) {
-            if (ep.status === 2) return; // 处理中不弹
+            if (ep.status === 2) return; 
             this.resolver.open = true;
             this.resolver.isLoading = true;
             this.resolver.seriesId = series.series_id;
@@ -242,9 +245,8 @@ document.addEventListener('alpine:init', () => {
             this.resolver.genes = [];
             this.resolver.results = [];
             this.resolver.selectedTorrent = null;
-            this.resolver.sourceEpObj = ep; // 引用对象以便直接改状态
+            this.resolver.sourceEpObj = ep; 
 
-            // 调用第二阶段 API 提取基因并搜索 MP
             try {
                 const res = await fetch('/api/gaps/search_mp', {
                     method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -258,7 +260,7 @@ document.addEventListener('alpine:init', () => {
                     this.resolver.genes = data.data.genes;
                     this.resolver.results = data.data.results;
                     if(this.resolver.results.length > 0) {
-                        this.resolver.selectedTorrent = this.resolver.results[0]; // 默认选中分数最高的
+                        this.resolver.selectedTorrent = this.resolver.results[0]; 
                     }
                 }
             } catch(e) { console.error(e); }
@@ -281,7 +283,6 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    // UI 原地变成蓝灯状态！
                     if (this.resolver.sourceEpObj) this.resolver.sourceEpObj.status = 2;
                     this.closeResolver();
                 } else { alert(data.message); }
@@ -300,10 +301,8 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
-                    // UI 原地变成隐藏状态
                     if (this.resolver.sourceEpObj) this.resolver.sourceEpObj.status = 1;
                     this.closeResolver();
-                    // 过滤掉已忽略的数据刷新 UI
                     this.startScan();
                 }
             } catch(e) {}
