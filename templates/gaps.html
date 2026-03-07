@@ -18,22 +18,22 @@
 {% endblock %}
 
 {% block content %}
-<div x-data="gapManager()" x-init="init()" class="max-w-[1400px] mx-auto space-y-6 px-2 sm:px-4 py-4 sm:py-6">
+<div x-data="gapManager()" x-init="init()" class="max-w-7xl mx-auto space-y-6 px-4 md:px-8 py-6 pb-24">
 
-    <div class="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center relative overflow-hidden border border-indigo-100 dark:border-indigo-800 shrink-0">
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center relative overflow-hidden border border-indigo-100 dark:border-indigo-800 shrink-0">
                 <div x-show="isScanning" class="absolute inset-0 radar-sweep"></div>
-                <i class="fa-solid fa-tower-broadcast text-xl sm:text-2xl text-indigo-500 relative z-10" :class="isScanning ? 'animate-pulse' : ''"></i>
+                <i class="fa-solid fa-tower-broadcast text-xl text-indigo-500 relative z-10" :class="isScanning ? 'animate-pulse' : ''"></i>
             </div>
             <div>
-                <h2 class="text-lg sm:text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">媒体库光谱扫描</h2>
-                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 font-medium">10路高并发极速引擎 (自动免疫未开播与花絮)</p>
+                <h2 class="text-xl font-black text-gray-900 dark:text-white tracking-tight">媒体库光谱扫描</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">10路高并发极速引擎 (自动免疫未开播与花絮)</p>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl flex-1 md:flex-none justify-between">
+            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl flex-1 md:flex-none justify-between shadow-sm">
                 <span class="text-xs font-bold text-gray-600 dark:text-gray-400"><i class="fa-solid fa-clock mr-1"></i>自动巡检(3点)</span>
                 <label class="relative inline-flex items-center cursor-pointer shrink-0">
                     <input type="checkbox" x-model="autoScan" @change="toggleAutoScan()" class="sr-only peer">
@@ -45,11 +45,11 @@
                 <i class="fa-solid fa-trash-can-arrow-up"></i> <span class="hidden sm:inline">回收站</span>
             </button>
 
-            <button @click="startScan()" :disabled="isScanning" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl font-bold transition shadow-sm"
+            <button @click="startScan()" :disabled="isScanning" class="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition shadow-sm active:scale-95"
                     :class="isScanning ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'">
                 <i x-show="!isScanning" class="fa-solid fa-satellite-dish"></i>
                 <i x-show="isScanning" class="fa-solid fa-circle-notch fa-spin text-white"></i>
-                <span x-text="isScanning ? '雷达扫描中...' : '立即启动扫盘'"></span>
+                <span x-text="isScanning ? '雷达扫描中...' : '深度重扫'"></span>
             </button>
         </div>
     </div>
@@ -69,46 +69,46 @@
         </div>
     </div>
 
-    <div x-show="!isScanning && gapData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" x-transition x-cloak>
+    <div x-show="!isScanning && gapData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 xl:gap-5" x-transition x-cloak>
         <template x-for="series in gapData" :key="series.series_id">
             
-            <div class="relative rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-500 bg-white dark:bg-gray-800 overflow-hidden z-10 group hover:shadow-md">
+            <div class="relative rounded-2xl p-3 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300 bg-white dark:bg-gray-800 overflow-hidden z-10 group hover:shadow-md hover:-translate-y-1">
                 
-                <div :id="'tint-' + series.series_id" class="absolute inset-0 z-0 opacity-[0.06] dark:opacity-[0.15] pointer-events-none transition-colors duration-1000"></div>
+                <div :id="'tint-' + series.series_id" class="absolute inset-0 z-0 opacity-15 dark:opacity-20 pointer-events-none transition-colors duration-1000"></div>
 
-                <div class="relative z-10 flex gap-4">
-                    <a :href="series.emby_url" target="_blank" class="shrink-0 relative rounded-xl overflow-hidden shadow-sm aspect-[2/3] w-24 h-36 block group/poster">
+                <div class="relative z-10 flex gap-3 sm:gap-4 items-center w-full">
+                    <a :href="series.emby_url" target="_blank" class="shrink-0 relative rounded-lg overflow-hidden shadow-sm aspect-[2/3] w-14 h-20 sm:w-16 sm:h-24 block group/poster">
                         <img :src="series.poster" crossorigin="anonymous" loading="lazy" :onload="`extractCardColor(this, 'tint-${series.series_id}')`" class="w-full h-full object-cover group-hover/poster:scale-105 transition-transform duration-500 bg-gray-100 dark:bg-gray-900">
                         <div class="absolute inset-0 bg-black/30 opacity-0 group-hover/poster:opacity-100 transition-opacity flex items-center justify-center">
-                            <i class="fa-solid fa-play text-white/90 text-2xl"></i>
+                            <i class="fa-solid fa-play text-white/90 text-sm sm:text-base"></i>
                         </div>
                     </a>
 
-                    <div class="flex-1 min-w-0 flex flex-col py-1">
-                        <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1 min-w-0 flex flex-col h-full justify-between">
+                        <div class="flex justify-between items-start w-full">
                             <div class="min-w-0 pr-2">
-                                <h3 class="text-base font-bold text-gray-900 dark:text-white truncate" x-text="series.series_name"></h3>
-                                <div class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mt-0.5">发现 <span class="text-rose-500 font-bold" x-text="series.gaps.length"></span> 处断层</div>
+                                <h3 class="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="series.series_name"></h3>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5">
+                                    发现 <span class="text-rose-500 font-bold bg-rose-50 dark:bg-rose-500/10 px-1 rounded" x-text="series.gaps.length"></span> 处断层
+                                </div>
                             </div>
-                            <div class="flex gap-1.5 shrink-0">
-                                <button @click.prevent="ignoreSeries(series)" class="w-7 h-7 rounded-full bg-white/50 dark:bg-black/20 flex items-center justify-center text-gray-400 hover:text-rose-500 transition-colors border border-gray-200 dark:border-gray-600 backdrop-blur-md" title="永久忽略该剧">
-                                    <i class="fa-solid fa-eye-slash text-[10px]"></i>
-                                </button>
-                            </div>
+                            <button @click.prevent="ignoreSeries(series)" class="w-6 h-6 rounded-full bg-white/60 dark:bg-black/20 flex items-center justify-center text-gray-400 hover:text-rose-500 transition-colors border border-gray-200 dark:border-gray-600 backdrop-blur-md shrink-0 shadow-sm" title="永久忽略该剧全集">
+                                <i class="fa-solid fa-eye-slash text-[10px]"></i>
+                            </button>
                         </div>
 
-                        <div class="flex-1 overflow-y-auto pr-1 space-y-2.5 gap-scrollbar max-h-20">
+                        <div class="mt-2.5 overflow-y-auto pr-1 space-y-1.5 gap-scrollbar max-h-12 sm:max-h-16 w-full">
                             <template x-for="(eps, s_num) in groupGaps(series.gaps)" :key="s_num">
-                                <div class="flex items-start gap-2">
-                                    <div class="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 w-6 pt-0.5 shrink-0">S<span x-text="String(s_num).padStart(2,'0')"></span></div>
-                                    <div class="flex flex-wrap gap-1.5">
+                                <div class="flex items-center gap-1.5 w-full">
+                                    <div class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 w-5 shrink-0 pt-0.5">S<span x-text="String(s_num).padStart(2,'0')"></span></div>
+                                    <div class="flex flex-wrap gap-1 flex-1">
                                         <template x-for="ep in eps" :key="ep.episode">
-                                            <div x-show="ep.status === 0" @click="openResolver(series, ep)" 
-                                                 class="px-2 py-0.5 rounded flex items-center justify-center cursor-pointer text-[11px] font-bold bg-white dark:bg-[#0a0a0a] text-rose-600 border border-rose-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 dark:text-rose-400 dark:border-rose-500/30 dark:hover:bg-rose-500 dark:hover:text-white transition-colors shadow-sm" title="点击补全该集">
+                                            <button x-show="ep.status === 0" @click="openResolver(series, ep)" 
+                                                    class="px-1.5 sm:px-2 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-[#0a0a0a] text-rose-600 border border-rose-200 hover:bg-rose-500 hover:text-white hover:border-rose-500 dark:text-rose-400 dark:border-rose-500/30 dark:hover:bg-rose-500 dark:hover:text-white transition-colors shadow-sm" title="点击补全该集">
                                                 <span x-text="ep.episode"></span>
-                                            </div>
+                                            </button>
                                             <div x-show="ep.status === 2" 
-                                                 class="px-2 py-0.5 rounded flex items-center justify-center cursor-help text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 relative overflow-hidden" title="MP 处理中">
+                                                 class="px-1.5 sm:px-2 py-0.5 rounded flex items-center justify-center cursor-help text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 relative overflow-hidden" title="MP 处理中">
                                                 <div class="absolute inset-x-0 bottom-0 bg-blue-200 dark:bg-blue-500/40 animate-pulse h-1/2"></div>
                                                 <span class="relative z-10" x-text="ep.episode"></span>
                                             </div>
@@ -199,11 +199,11 @@
                             </label>
                         </template>
                     </div>
-                    <div x-show="!resolver.isLoading && resolver.results.length === 0" class="text-center py-10"><i class="fa-solid fa-ghost text-4xl text-gray-200 dark:text-gray-700 mb-3 block"></i><p class="text-xs font-bold text-gray-400">未捕获到符合该集的资源星尘</p></div>
+                    <div x-show="!resolver.isLoading && resolver.results.length === 0" class="text-center py-10"><i class="fa-solid fa-ghost text-4xl text-gray-200 dark:text-gray-700 mb-3 block"></i><p class="text-xs font-bold text-gray-400 mt-2">雷达未捕获到符合该集的资源星尘</p></div>
                 </div>
             </div>
             <div class="p-4 sm:p-5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 flex gap-3 pb-[env(safe-area-inset-bottom)]">
-                <button @click="ignoreGap()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 transition shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-eye-slash"></i> <span class="hidden sm:inline">永久忽略</span></button>
+                <button @click="ignoreGap()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 transition shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-eye-slash"></i> <span class="hidden sm:inline">永久忽略单集</span></button>
                 <button @click="sendToMP()" :disabled="!resolver.selectedTorrent || resolver.isSubmitting" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" :class="resolver.selectedTorrent ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-400 dark:bg-gray-600 shadow-none'">
                     <span x-show="resolver.isSubmitting" class="animate-spin w-4 h-4 border-2 border-white/30 border-t-white dark:border-black/30 dark:border-t-black rounded-full"></span><span x-show="!resolver.isSubmitting">发送至 MP 下载</span>
                 </button>
@@ -213,7 +213,7 @@
 </div>
 
 <script>
-// 🔥 全局初始化 ColorThief 极速取色器
+// 🔥 全局初始化 ColorThief，直接把 RGB 注射进背景渐变，彻底剥离吃显卡的模糊滤镜！
 const globalColorThief = new ColorThief();
 window.extractCardColor = function(imgElement, tintId) {
     if (imgElement.complete) {
@@ -221,8 +221,7 @@ window.extractCardColor = function(imgElement, tintId) {
             const color = globalColorThief.getColor(imgElement);
             const tint = document.getElementById(tintId);
             if (tint) {
-                // 直接将提取的 RGB 赋给底盘，彻底抛弃吃显卡的 CSS Blur
-                tint.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+                tint.style.background = `linear-gradient(135deg, rgb(${color[0]}, ${color[1]}, ${color[2]}) 0%, transparent 80%)`;
             }
         } catch(e) {}
     }
@@ -316,7 +315,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async ignoreSeries(series) {
-            if(!confirm(`确定要永久忽略《${series.series_name}》吗？`)) return;
+            if(!confirm(`确定要永久忽略《${series.series_name}》的全部缺集提醒吗？\n(后续可在回收站恢复)`)) return;
             try {
                 const res = await fetch('/api/gaps/ignore/series', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ series_id: series.series_id, series_name: series.series_name }) });
                 if ((await res.json()).status === 'success') { this.gapData = this.gapData.filter(s => s.series_id !== series.series_id); }

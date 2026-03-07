@@ -179,7 +179,6 @@ def ignore_entire_series(payload: dict):
         return {"status": "success"}
     except Exception as e: return {"status": "error"}
 
-# 🔥 新增：回收站接口
 @router.get("/ignores")
 def get_ignored_list():
     try:
@@ -230,10 +229,11 @@ def search_mp_for_gap(req: GapSearchReq):
     keyword = f"{req.series_name} S{str(req.season).zfill(2)}E{str(req.episode).zfill(2)}"
     clean_token = mp_token.strip().strip("'\"")
     
-    # 🔥 终极修复 MP 403: 注入双重认证头，并利用 requests 的 params 自动处理安全的 URL 编码
+    # 🔥 终极修复 MP 403: 拔除 Authorization: Bearer，只使用 X-API-KEY。因为如果传入了 Bearer，
+    # MP 底层的 FastAPI 框架会强行去解密 JWT，解密失败就直接返回 403 Forbidden！
     headers = {
-        "Authorization": f"Bearer {clean_token}",
         "X-API-KEY": clean_token,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
         "Accept": "application/json"
     }
     
@@ -246,7 +246,7 @@ def search_mp_for_gap(req: GapSearchReq):
             mp_res = requests.get(mp_search_url, params={"keyword": keyword}, headers=headers, timeout=20)
             
         if mp_res.status_code != 200:
-            return {"status": "error", "message": f"被 MoviePilot 拦截或报错 (HTTP {mp_res.status_code})"}
+            return {"status": "error", "message": f"被 MoviePilot 拦截 (HTTP {mp_res.status_code})"}
             
         results = mp_res.json()
         for r in results:
