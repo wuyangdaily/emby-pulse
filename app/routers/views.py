@@ -162,8 +162,12 @@ async def about_page(request: Request):
 
 @router.get("/gaps", response_class=HTMLResponse)
 async def gaps_page(request: Request):
-    # 缺集管理页面，注意这里传递的是 active_page
-    return templates.TemplateResponse("gaps.html", {"request": request, "active_page": "gaps"})
+    # 🔥 补齐了 version 参数，底部版本号就会显示了！
+    return templates.TemplateResponse("gaps.html", {
+        "request": request, 
+        "active_page": "gaps",
+        "version": VERSION 
+    })
 
 @router.get("/api/wallpaper")
 async def get_wallpaper():

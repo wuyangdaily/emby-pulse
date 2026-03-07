@@ -92,7 +92,6 @@ def run_scan_task():
             use_new_route = is_new_emby_router(sys_info)
         except: server_id = ""; use_new_route = True
 
-        # 🔥 初始化所有的必要数据库表 (包括缓存表)
         query_db("CREATE TABLE IF NOT EXISTS gap_perfect_series (series_id TEXT PRIMARY KEY, tmdb_id TEXT, series_name TEXT, marked_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
         query_db("CREATE TABLE IF NOT EXISTS gap_scan_cache (id INTEGER PRIMARY KEY, result_json TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
 
@@ -129,8 +128,6 @@ def run_scan_task():
                 if res: results.append(res)
         
         with state_lock: scan_state["results"] = results
-
-        # 🔥 核心：保存结果快照，防重启丢失
         if results:
             try: query_db("INSERT OR REPLACE INTO gap_scan_cache (id, result_json, updated_at) VALUES (1, ?, datetime('now', 'localtime'))", (json.dumps(results),))
             except: pass
@@ -152,7 +149,6 @@ def daily_scan_scheduler():
 
 threading.Thread(target=daily_scan_scheduler, daemon=True).start()
 
-# ----------------- API 接口 -----------------
 @router.post("/scan/start")
 def start_scan(bg_tasks: BackgroundTasks):
     with state_lock:
@@ -164,7 +160,6 @@ def start_scan(bg_tasks: BackgroundTasks):
 @router.get("/scan/progress")
 def get_progress():
     with state_lock:
-        # 🔥 核心：如果内存为空且没有在扫描，尝试从数据库恢复快照
         if not scan_state["is_scanning"] and not scan_state["results"]:
             try:
                 row = query_db("SELECT result_json FROM gap_scan_cache WHERE id = 1")
@@ -188,14 +183,14 @@ def ignore_gap(payload: dict):
     try:
         query_db("INSERT INTO gap_records (series_id, series_name, season_number, episode_number, status) VALUES (?, ?, ?, ?, 1) ON CONFLICT(series_id, season_number, episode_number) DO UPDATE SET status = 1", (payload.get("series_id"), payload.get("series_name", ""), int(payload.get("season_number", 0)), int(payload.get("episode_number", 0))))
         return {"status": "success"}
-    except Exception as e: return {"status": "error"}
+    except: return {"status": "error"}
 
 @router.post("/ignore/series")
 def ignore_entire_series(payload: dict):
     try:
         query_db("INSERT INTO gap_records (series_id, series_name, season_number, episode_number, status) VALUES (?, ?, -1, -1, 1) ON CONFLICT(series_id, season_number, episode_number) DO UPDATE SET status = 1", (payload.get("series_id"), payload.get("series_name", "")))
         return {"status": "success"}
-    except Exception as e: return {"status": "error"}
+    except: return {"status": "error"}
 
 @router.get("/ignores")
 def get_ignored_list():
@@ -208,11 +203,10 @@ def get_ignored_list():
                 typ = "全剧集" if r['season_number'] == -1 else f"S{str(r['season_number']).zfill(2)}E{str(r['episode_number']).zfill(2)}"
                 data.append({"type": "record", "id": r['id'], "series_name": r['series_name'], "target": typ, "time": r['created_at']})
         if perfects:
-            for r in perfects:
-                data.append({"type": "perfect", "id": r['series_id'], "series_name": r['series_name'], "target": "完结免检金牌", "time": r['marked_at']})
+            for r in perfects: data.append({"type": "perfect", "id": r['series_id'], "series_name": r['series_name'], "target": "完结免检金牌", "time": r['marked_at']})
         data.sort(key=lambda x: x['time'], reverse=True)
         return {"status": "success", "data": data}
-    except Exception as e: return {"status": "error", "message": str(e)}
+    except: return {"status": "error"}
 
 @router.post("/unignore")
 def unignore_item(payload: dict):
@@ -220,7 +214,7 @@ def unignore_item(payload: dict):
         if payload.get("type") == "record": query_db("DELETE FROM gap_records WHERE id = ?", (payload.get("id"),))
         elif payload.get("type") == "perfect": query_db("DELETE FROM gap_perfect_series WHERE series_id = ?", (payload.get("id"),))
         return {"status": "success"}
-    except Exception as e: return {"status": "error"}
+    except: return {"status": "error"}
 
 class GapSearchReq(BaseModel): series_id: str; series_name: str; season: int; episode: int
 class GapDownloadReq(BaseModel): series_id: str; series_name: str; season: int; episode: int; torrent_info: dict
@@ -248,18 +242,15 @@ def search_mp_for_gap(req: GapSearchReq):
     headers = {"X-API-KEY": clean_token, "User-Agent": "Mozilla/5.0", "Accept": "application/json"}
     
     try:
-        # 🔥 第 1 波：正常精准搜单集
         keyword = f"{req.series_name} S{str(req.season).zfill(2)}E{str(req.episode).zfill(2)}"
         encoded_keyword = urllib.parse.quote(keyword)
         mp_res = requests.get(f"{mp_url.rstrip('/')}/api/v1/search/title?keyword={encoded_keyword}", headers=headers, timeout=20)
         results = mp_res.json() if mp_res.status_code == 200 else []
         
-        # 🔥 类型护盾：防止 MP 返回报错 dict 导致 get 异常
         if isinstance(results, dict): results = results.get("data") or results.get("results") or []
         if not isinstance(results, list): results = []
 
         is_pack = False
-        # 🔥 第 2 波：智能降级搜整季 (如果单集搜不到)
         if len(results) == 0:
             fallback_kw = f"{req.series_name} S{str(req.season).zfill(2)}"
             mp_res2 = requests.get(f"{mp_url.rstrip('/')}/api/v1/search/title?keyword={urllib.parse.quote(fallback_kw)}", headers=headers, timeout=20)
@@ -267,17 +258,29 @@ def search_mp_for_gap(req: GapSearchReq):
             if isinstance(results2, dict): results2 = results2.get("data") or results2.get("results") or []
             if not isinstance(results2, list): results2 = []
             results = results2
-            is_pack = True  # 标记为整季包
+            is_pack = True
 
         for r in results:
-            score = 0; combined_text = r.get("title", "").upper() + " " + r.get("description", "").upper()
+            score = 0
+            # 🔥 彻底修复 undefined: 多字段智能探测提取标题
+            title_str = str(r.get("name") or r.get("title") or r.get("torrent_name") or "未知标题")
+            desc_str = str(r.get("description") or "")
+            combined_text = title_str.upper() + " " + desc_str.upper()
+            
+            # 🔥 彻底修复 NaN: 多字段智能探测提取体积
+            size_val = r.get("size") or r.get("enclosure_size") or 0
+            
             if "4K" in genes: score += 50 if ("2160P" in combined_text or "4K" in combined_text) else -20
             if "1080P" in genes and "1080P" in combined_text: score += 50
             if "DoVi" in genes and ("DOVI" in combined_text or "VISION" in combined_text): score += 30
             if "HDR" in genes and "HDR" in combined_text: score += 20
             if "WEB" in combined_text: score += 10
+            
+            r["ui_title"] = title_str   # 赋值给前端统一调用
+            r["ui_size"] = float(size_val) # 赋值给前端统一调用
             r["match_score"] = score
-            r["is_pack"] = is_pack # 🔥 传给前端 UI 显示徽章
+            r["is_pack"] = is_pack 
+            
             tags = []
             if "2160P" in combined_text or "4K" in combined_text: tags.append("4K")
             elif "1080P" in combined_text: tags.append("1080P")
@@ -296,11 +299,10 @@ def download_gap_item(req: GapDownloadReq):
     clean_token = mp_token.strip().strip("'\""); headers = {"X-API-KEY": clean_token}
     
     torrent_info = req.torrent_info
-    # 🔥 核心技术：手术刀级提取！如果是季包，强行写入单集参数，逼迫 MP/QB 仅下载这一集
     if torrent_info.get("is_pack"):
         torrent_info["season"] = req.season
         torrent_info["episodes"] = [req.episode]
-        torrent_info["episode"] = [req.episode] # 兼容双参数规范
+        torrent_info["episode"] = [req.episode]
 
     try:
         res = requests.post(f"{mp_url.rstrip('/')}/api/v1/download/", headers=headers, json=torrent_info, timeout=10)
