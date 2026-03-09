@@ -207,18 +207,20 @@ def api_user_details(user_id: Optional[str] = None):
         where, params = get_base_filter(user_id)
         mode = cfg.get("playback_data_mode", "sqlite")
         
-        # 🚀 降维打击 1：抛弃 SQL 算小时分布，全拉到 Python 内存算，绝对精准，彻底避免时区偏差
+        # 🚀 修正点：将 DateCreated 完全拉到 Python 里处理，并加入 dict(row) 防止原生 SQLite 崩溃
         h_data = {str(i).zfill(2): 0 for i in range(24)}
         raw_logs = query_db(f"SELECT DateCreated FROM PlaybackActivity {where}", params)
         if raw_logs:
             for row in raw_logs:
-                dc = row.get('DateCreated')
+                # 这一句是拯救大盘的核心：强转 dict，让 .get() 方法生效
+                r = dict(row)
+                dc = r.get('DateCreated')
                 if dc:
                     m = re.search(r'(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})', str(dc))
                     if m:
                         dt = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)))
-                        # SQLite 存的是 UTC，需转回东八区。API 接口已是本地。
-                        if mode != 'api': dt = dt + datetime.timedelta(hours=8)
+                        if mode != 'api': 
+                            dt = dt + datetime.timedelta(hours=8)
                         h_data[str(dt.hour).zfill(2)] += 1
             
         c_res = query_db(f"SELECT COALESCE(ClientName, 'Unknown') as Client, COUNT(*) as Plays FROM PlaybackActivity {where} GROUP BY ClientName ORDER BY Plays DESC LIMIT 10", params)
@@ -251,13 +253,12 @@ def api_user_details(user_id: Optional[str] = None):
             overview['total_duration'] = ov_res[0]['Dur'] or 0
             overview['avg_duration'] = round(overview['total_duration'] / overview['total_plays'])
             
-        # 🚀 降维打击 2：回归初心！彻底斩断和 PlaybackActivity 的联系，只向 Emby 官方查询账号原生注册时间
+        # 🚀 终极回调：直接读取 Emby 官方账号真实 DateCreated！不再受本地库任何限制
         try:
             host = cfg.get("emby_host")
             key = cfg.get("emby_api_key")
             if host and key:
                 if user_id and user_id != 'all':
-                    # 精准查询单个用户的注册时间
                     u_res = requests.get(f"{host}/emby/Users/{user_id}?api_key={key}", timeout=5)
                     if u_res.status_code == 200:
                         dc = u_res.json().get("DateCreated")
@@ -267,7 +268,6 @@ def api_user_details(user_id: Optional[str] = None):
                                 fd = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)))
                                 overview['account_age_days'] = max(1, (datetime.datetime.now() - fd).days)
                 else:
-                    # 全站大盘：查询全服最早的账号注册时间
                     u_res = requests.get(f"{host}/emby/Users?api_key={key}", timeout=5)
                     if u_res.status_code == 200:
                         earliest_dt = None
@@ -384,8 +384,6 @@ def api_badges(user_id: Optional[str] = None):
     try:
         where, params = get_base_filter(user_id)
         
-        # 🚀 降维打击 3：彻底弃用 SQL 时间算成就！全放 Python 里解析
-        # 不管是 SQLite 的 UTC，还是带有毫秒的奇葩格式，统统一网打尽！
         raw_data = query_db(f"SELECT DateCreated, PlayDuration, COALESCE(ClientName, DeviceName) as Client, ItemId, ItemName, ItemType FROM PlaybackActivity {where}", params)
         if raw_data is None: 
             raw_data = query_db(f"SELECT DateCreated, PlayDuration, COALESCE(Client, DeviceName) as Client, ItemId, ItemName, ItemType FROM PlaybackActivity {where}", params)
@@ -421,20 +419,16 @@ def api_badges(user_id: Optional[str] = None):
                 m = re.search(r'(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})', str(dc))
                 if m:
                     dt = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4)), int(m.group(5)), int(m.group(6)))
-                    
-                    # 强时区对齐：SQLite 存的永远是 UTC，必须 +8 小时；API 取出的已经是本地时间
-                    if mode != 'api': 
-                        dt = dt + datetime.timedelta(hours=8)
+                    if mode != 'api': dt = dt + datetime.timedelta(hours=8)
                         
                     hour = dt.hour
-                    weekday = dt.weekday() # 0 是周一, 6 是周日
+                    weekday = dt.weekday()
                     
                     if 2 <= hour <= 5: night_c += 1
                     if weekday in (5, 6): weekend_c += 1
                     if 0 <= weekday <= 4 and 9 <= hour <= 17: fish_c += 1
                     if 5 <= hour <= 8: morning_c += 1
 
-        # 结算徽章 (门槛降低，不再高冷)
         badges = []
         if night_c >= 2: badges.append({"id": "night", "name": "深夜修仙", "icon": "fa-moon", "color": "text-indigo-500", "bg": "bg-indigo-100", "desc": "深夜是灵魂最自由的时刻"})
         if weekend_c >= 5: badges.append({"id": "weekend", "name": "周末狂欢", "icon": "fa-champagne-glasses", "color": "text-pink-500", "bg": "bg-pink-100", "desc": "工作日唯唯诺诺，周末重拳出击"})
