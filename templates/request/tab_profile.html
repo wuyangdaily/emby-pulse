@@ -1,60 +1,31 @@
 <div class="w-full" x-transition.opacity.duration.300ms>
-    
-    <div x-show="isStatsLoading" class="flex justify-center py-20">
-        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-500"></i>
-    </div>
-
+    <div x-show="isStatsLoading" class="flex justify-center py-20"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-500"></i></div>
     <div x-show="!isStatsLoading">
-        
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <div class="lg:col-span-1 glass-panel p-6 sm:p-8 rounded-3xl flex flex-col items-center justify-center gap-3 relative overflow-hidden text-center border-t border-white/40 dark:border-white/5 shadow-lg">
                 <div class="absolute inset-0 bg-gradient-to-b from-brand-500/5 to-transparent z-0"></div>
-
                 <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full shadow-xl overflow-hidden shrink-0 bg-slate-200 ring-4 ring-white dark:ring-[#0f0f0f] z-10 relative">
                     <img :src="'/api/proxy/user_image/' + userId" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/9.x/notionists/png?seed=User'">
                 </div>
-
                 <div class="z-10 mt-1">
-                    <h3 class="text-2xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
-                        <span x-text="userName"></span>
-                        <i class="fa-solid fa-circle-check text-brand-500 text-sm" title="认证用户"></i>
-                    </h3>
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2"><span x-text="userName"></span><i class="fa-solid fa-circle-check text-brand-500 text-sm"></i></h3>
                     <div class="mt-2 space-y-1">
                         <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">入驻天数：<span x-text="userStats?.overview?.account_age_days || 1"></span> 天</div>
                         <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">账号有效期：<span x-text="expireDate" :class="expireDate === '永久有效' ? 'text-brand-500' : 'text-rose-500'"></span></div>
                     </div>
                 </div>
-                
-                <button @click="openMyPosterStudio()" class="w-full mt-3 py-3 rounded-2xl font-black text-white bg-slate-900 dark:bg-brand-600 shadow-xl transition-transform active:scale-95 z-10 flex items-center justify-center gap-2 btn-glow">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    生成专属观影海报
-                </button>
-                
+                <button @click="openMyPosterStudio()" class="w-full mt-3 py-3 rounded-2xl font-black text-white bg-slate-900 dark:bg-brand-600 shadow-xl transition-transform active:scale-95 z-10 flex items-center justify-center gap-2 btn-glow"><i class="fa-solid fa-wand-magic-sparkles"></i> 生成专属观影海报</button>
                 <div class="w-full mt-2 z-10 bg-slate-50 dark:bg-[#111] p-3 rounded-xl border border-slate-200 dark:border-white/5 text-left relative group">
                     <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1">🔗 服务器直连地址</div>
-                    <div class="text-xs font-mono font-bold text-slate-800 dark:text-zinc-300 truncate pr-16 flex items-center gap-2">
-                        <span x-show="showServerUrl" x-text="serverUrl"></span>
-                        <span x-show="!showServerUrl" class="tracking-[0.3em] text-slate-400 mt-1">••••••••••••••••</span>
-                    </div>
+                    <div class="text-xs font-mono font-bold text-slate-800 dark:text-zinc-300 truncate pr-16 flex items-center gap-2"><span x-show="showServerUrl" x-text="serverUrl"></span><span x-show="!showServerUrl" class="tracking-[0.3em] text-slate-400 mt-1">••••••••••••••••</span></div>
                     <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                        <button @click="showServerUrl = !showServerUrl" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
-                            <i class="fa-regular" :class="showServerUrl ? 'fa-eye-slash' : 'fa-eye'"></i>
-                        </button>
-                        <button @click="copyToClipboard(serverUrl); showToast('地址已复制')" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">
-                            <i class="fa-regular fa-copy"></i>
-                        </button>
+                        <button @click="showServerUrl = !showServerUrl" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"><i class="fa-regular" :class="showServerUrl ? 'fa-eye-slash' : 'fa-eye'"></i></button>
+                        <button @click="copyToClipboard(serverUrl); showToast('地址已复制')" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"><i class="fa-regular fa-copy"></i></button>
                     </div>
                 </div>
-                
                 <div class="w-full mt-2 grid grid-cols-2 gap-2 z-10">
-                    <button @click="openQueueModal('request')" class="py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-blue-200 dark:border-blue-500/20">
-                        <i class="fa-solid fa-list-check text-lg mb-1"></i>
-                        我的求片
-                    </button>
-                    <button @click="openQueueModal('feedback')" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-rose-200 dark:border-rose-500/20">
-                        <i class="fa-solid fa-triangle-exclamation text-lg mb-1"></i>
-                        我的报错
-                    </button>
+                    <button @click="openQueueModal('request')" class="py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-blue-200 dark:border-blue-500/20"><i class="fa-solid fa-list-check text-lg mb-1"></i> 我的求片</button>
+                    <button @click="openQueueModal('feedback')" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-rose-200 dark:border-rose-500/20"><i class="fa-solid fa-triangle-exclamation text-lg mb-1"></i> 我的报错</button>
                 </div>
             </div>
 
@@ -66,21 +37,15 @@
                         <div class="text-[11px] font-black text-rose-500 tracking-widest uppercase mb-1.5"><i class="fa-solid fa-heart mr-1 text-sm"></i> 执念最爱</div>
                         <h4 class="font-black text-xl text-slate-900 dark:text-white line-clamp-2 leading-tight mb-3" x-text="userStats?.top_fav?.ItemName"></h4>
                         <div class="flex gap-2">
-                            <span class="text-xs bg-white/60 dark:bg-black/60 px-2 py-1 rounded border border-slate-200 dark:border-white/10 font-bold text-slate-600 dark:text-zinc-300 shadow-sm"><i class="fa-solid fa-repeat text-brand-500 mr-1"></i>N刷 <span x-text="userStats?.top_fav?.c"></span> 次</span>
-                            <span class="text-xs bg-white/60 dark:bg-black/60 px-2 py-1 rounded border border-slate-200 dark:border-white/10 font-bold text-slate-600 dark:text-zinc-300 shadow-sm"><i class="fa-solid fa-clock text-blue-500 mr-1"></i>沉迷 <span x-text="Math.round((userStats?.top_fav?.d || 0) / 3600)"></span> 小时</span>
+                            <span class="text-xs bg-white/60 dark:bg-black/60 px-2 py-1 rounded border border-slate-200 dark:border-white/10 font-bold text-slate-600 dark:text-zinc-300 shadow-sm"><i class="fa-solid fa-repeat text-brand-500 mr-1"></i>N刷 <span x-text="userStats?.top_fav?.c || userStats?.top_fav?.Count"></span> 次</span>
+                            <span class="text-xs bg-white/60 dark:bg-black/60 px-2 py-1 rounded border border-slate-200 dark:border-white/10 font-bold text-slate-600 dark:text-zinc-300 shadow-sm"><i class="fa-solid fa-clock text-blue-500 mr-1"></i>沉迷 <span x-text="Math.round((userStats?.top_fav?.d || userStats?.top_fav?.Duration || 0) / 3600)"></span> 小时</span>
                         </div>
                     </div>
                 </div>
-                
                 <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 flex flex-col flex-1">
                     <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-3"><i class="fa-solid fa-award text-yellow-500 mr-1.5 text-lg"></i> 观影成就</h4>
                     <div class="flex flex-wrap gap-2 items-start" x-show="userBadges.length > 0">
-                        <template x-for="b in userBadges" :key="b.id">
-                            <div @click="showToast(b.name + '：' + (b.desc || '已解锁该成就'))" class="cursor-pointer hover:scale-105 active:scale-95 transition-transform px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm dark:bg-opacity-20 border border-transparent flex items-center gap-1.5" :class="b.bg + ' ' + b.color">
-                                <i :class="'fa-solid ' + b.icon"></i>
-                                <span x-text="b.name"></span>
-                            </div>
-                        </template>
+                        <template x-for="b in userBadges" :key="b.id"><div @click="showToast(b.name + '：' + (b.desc || '已解锁该成就'))" class="cursor-pointer hover:scale-105 active:scale-95 transition-transform px-3 py-1.5 rounded-xl text-[11px] font-black shadow-sm dark:bg-opacity-20 border border-transparent flex items-center gap-1.5" :class="b.bg + ' ' + b.color"><i :class="'fa-solid ' + b.icon"></i><span x-text="b.name"></span></div></template>
                     </div>
                     <div x-show="userBadges.length === 0" class="text-xs font-bold text-slate-400 py-4 flex-1 flex items-center justify-center bg-slate-100/50 dark:bg-white/5 rounded-xl">尚在探索中...</div>
                 </div>
@@ -110,56 +75,39 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
             <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 flex flex-col justify-center shadow-sm">
                 <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-scale-balanced text-teal-500 mr-1.5 text-lg"></i> 偏好天平</h4>
-                <div class="flex justify-between text-[11px] font-black mb-2">
-                    <span class="text-blue-500 tracking-wider">电影 <span x-text="getMoviePct()"></span>%</span>
-                    <span class="text-purple-500 tracking-wider"><span x-text="100 - getMoviePct()"></span>% 剧集</span>
-                </div>
+                <div class="flex justify-between text-[11px] font-black mb-2"><span class="text-blue-500 tracking-wider">电影 <span x-text="getMoviePct()"></span>%</span><span class="text-purple-500 tracking-wider"><span x-text="100 - getMoviePct()"></span>% 剧集</span></div>
                 <div class="h-4 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex border border-slate-300 dark:border-white/5 shadow-inner">
                     <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-full transition-all duration-1000" :style="`width: ${getMoviePct()}%`"></div>
                     <div class="bg-gradient-to-r from-purple-400 to-purple-600 h-full transition-all duration-1000" :style="`width: ${100 - getMoviePct()}%`"></div>
                 </div>
                 <p class="text-[10px] text-center text-slate-500 dark:text-zinc-500 font-bold mt-4" x-text="getPrefText()"></p>
             </div>
-
-            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm">
-                <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-1.5 text-lg"></i> 24H 生物钟</h4>
-                <div class="relative h-32 w-full"><canvas id="profileHourChart"></canvas></div>
-            </div>
-            
-            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm">
-                <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-desktop text-emerald-500 mr-1.5 text-lg"></i> 终端分布</h4>
-                <div class="relative h-32 w-full"><canvas id="profileDeviceChart"></canvas></div>
-            </div>
-            
-            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm">
-                <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-clapperboard text-fuchsia-500 mr-1.5 text-lg"></i> 播放软件偏好</h4>
-                <div class="relative h-32 w-full"><canvas id="profileClientChart"></canvas></div>
-            </div>
+            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm"><h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-1.5 text-lg"></i> 24H 生物钟</h4><div class="relative h-32 w-full"><canvas id="profileHourChart"></canvas></div></div>
+            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm"><h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-desktop text-emerald-500 mr-1.5 text-lg"></i> 终端分布</h4><div class="relative h-32 w-full"><canvas id="profileDeviceChart"></canvas></div></div>
+            <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm"><h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-clapperboard text-fuchsia-500 mr-1.5 text-lg"></i> 播放软件偏好</h4><div class="relative h-32 w-full"><canvas id="profileClientChart"></canvas></div></div>
         </div>
 
         <div class="glass-panel p-5 rounded-3xl mt-5 mb-10 border-t border-white/40 dark:border-white/5 shadow-sm">
             <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-shoe-prints text-gray-400 mr-1.5 text-lg"></i> 最近播放足迹</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <template x-for="log in (userStats?.logs || []).slice(0, 14)" :key="log.DateCreated">
-                    <div class="flex justify-between items-center bg-white/50 dark:bg-white/5 p-3 rounded-2xl border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors group">
+                    <div class="flex justify-between items-center bg-white/50 dark:bg-white/5 p-2.5 rounded-2xl border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors group cursor-pointer" @click="openShowcaseModal(log.ItemId, {Name: log.ItemName})">
+                        <img :src="`/api/proxy/smart_image?item_id=${log.ItemId}&type=Primary`" class="w-10 h-14 rounded-lg object-cover bg-slate-200 dark:bg-[#111] shrink-0 mr-3 shadow-sm" @error="window.fallbackPoster($el, log.ItemName)">
                         <div class="min-w-0 flex-1">
-                            <div class="font-bold text-sm text-slate-800 dark:text-zinc-200 truncate cursor-pointer hover:text-brand-500 transition-colors" @click="openShowcaseModal(log.ItemId, {Name: log.ItemName})" x-text="log.ItemName"></div>
-                            <div class="text-[10px] text-slate-500 mt-1 flex gap-2 items-center">
+                            <div class="font-bold text-sm text-slate-800 dark:text-zinc-200 truncate group-hover:text-brand-500 transition-colors" x-text="log.ItemName"></div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 flex gap-2 items-center">
                                 <span x-text="log.DateCreated.substring(5, 16).replace('T', ' ')"></span>
-                                <span class="bg-slate-200 dark:bg-black/50 text-slate-600 dark:text-zinc-300 px-1.5 py-0.5 rounded font-bold" x-text="log.Device"></span>
+                                <span class="bg-slate-200 dark:bg-black/50 text-slate-600 dark:text-zinc-300 px-1.5 py-0.5 rounded font-bold" x-text="log.Client || log.Device"></span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 ml-3">
-                            <div class="text-xs font-black text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-lg border border-brand-100 dark:border-brand-500/20" x-text="Math.round(log.PlayDuration/60) + 'm'"></div>
-                            <button @click="openFeedbackModal(log.ItemName, log.smart_poster)" class="w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center border border-rose-100 dark:border-rose-500/20 opacity-0 group-hover:opacity-100 sm:opacity-100" title="资源有问题？点此报错">
-                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                            </button>
+                        <div class="flex items-center gap-2 shrink-0 ml-2">
+                            <div class="text-[10px] font-black text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-md border border-brand-100 dark:border-brand-500/20" x-text="Math.round(log.PlayDuration/60) + 'm'"></div>
+                            <button @click.stop="openFeedbackModal(log.ItemName, log.smart_poster)" class="w-7 h-7 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center border border-rose-100 dark:border-rose-500/20 opacity-0 group-hover:opacity-100 sm:opacity-100" title="资源有问题？点此报错"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i></button>
                         </div>
                     </div>
                 </template>
             </div>
             <div x-show="!userStats?.logs || userStats.logs.length === 0" class="text-xs font-bold text-slate-400 py-4 text-center bg-slate-100/50 dark:bg-white/5 rounded-xl">暂无播放记录</div>
         </div>
-
     </div>
 </div>

@@ -1,64 +1,34 @@
-<div class="fixed bottom-6 w-[92%] left-[4%] z-50 sm:hidden transition-all duration-500 ease-in-out" 
-     :class="isScrollingDown ? 'translate-y-32 opacity-0' : 'translate-y-0 opacity-100'">
-    
+<div class="fixed bottom-6 w-[92%] left-[4%] z-50 sm:hidden transition-all duration-500 ease-in-out" :class="isScrollingDown ? 'translate-y-32 opacity-0' : 'translate-y-0 opacity-100'">
     <div class="glass-panel rounded-full shadow-[0_15px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl px-2 py-2 flex justify-around items-center">
-        
-        <button @click="switchTab('explore');" 
-                class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" 
-                :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
-            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" 
-                 :class="currentTab === 'explore' ? 'scale-100' : ''"></div>
+        <button @click="switchTab('explore');" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" :class="currentTab === 'explore' ? 'scale-100' : ''"></div>
             <i class="fa-solid fa-house text-lg relative z-10"></i>
-            <span class="text-[9px] font-black relative z-10 uppercase tracking-wider">全站</span>
+            <span class="text-[9px] font-black relative z-10 uppercase tracking-wider">首页</span>
         </button>
-
-        <button @click="switchTab('request');" 
-                class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" 
-                :class="currentTab === 'request' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
-            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" 
-                 :class="currentTab === 'request' ? 'scale-100' : ''"></div>
+        <button @click="switchTab('request');" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" :class="currentTab === 'request' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" :class="currentTab === 'request' ? 'scale-100' : ''"></div>
             <i class="fa-solid fa-wand-magic-sparkles text-lg relative z-10"></i>
-            <span class="text-[9px] font-black relative z-10 uppercase tracking-wider">求片</span>
+            <span class="text-[9px] font-black relative z-10 uppercase tracking-wider">心愿</span>
         </button>
-
-        <button @click="switchTab('profile');" 
-                class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" 
-                :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
-            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" 
-                 :class="currentTab === 'profile' ? 'scale-100' : ''"></div>
+        <button @click="switchTab('profile');" class="flex flex-col items-center justify-center w-full space-y-1 transition-all relative py-1" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 dark:text-zinc-500'">
+            <div class="absolute inset-0 bg-brand-50 dark:bg-brand-500/10 rounded-full scale-0 transition-transform duration-500" :class="currentTab === 'profile' ? 'scale-100' : ''"></div>
             <i class="fa-solid fa-user-astronaut text-lg relative z-10"></i>
             <span class="text-[9px] font-black relative z-10 uppercase tracking-wider">我的</span>
         </button>
-        
     </div>
 </div>
 
 <div class="hidden sm:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 hover:-translate-y-1 group">
     <div class="glass-panel p-1.5 rounded-full inline-flex relative w-[460px] bg-white/90 dark:bg-[#0a0a0a]/90 shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.8)] border border-slate-200/80 dark:border-white/10 backdrop-blur-2xl">
-        
-        <div class="absolute inset-y-1.5 left-1.5 w-[calc(33.33%-4px)] bg-slate-100/80 dark:bg-[#1f1f1f] rounded-full transition-all duration-500 cubic-bezier(0.25, 1, 0.5, 1) shadow-sm border border-slate-200/50 dark:border-white/5" 
-             :class="currentTab === 'explore' ? 'translate-x-0' : (currentTab === 'request' ? 'translate-x-full' : 'translate-x-[200%]')"></div>
-        
-        <button @click="switchTab('explore');" 
-                class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" 
-                :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
-            <i class="fa-solid fa-house text-lg"></i> 
-            <span class="tracking-widest">发现大厅</span>
+        <div class="absolute inset-y-1.5 left-1.5 w-[calc(33.33%-4px)] bg-slate-100/80 dark:bg-[#1f1f1f] rounded-full transition-all duration-500 cubic-bezier(0.25, 1, 0.5, 1) shadow-sm border border-slate-200/50 dark:border-white/5" :class="currentTab === 'explore' ? 'translate-x-0' : (currentTab === 'request' ? 'translate-x-full' : 'translate-x-[200%]')"></div>
+        <button @click="switchTab('explore');" class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" :class="currentTab === 'explore' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
+            <i class="fa-solid fa-house text-lg"></i> <span class="tracking-widest">首页大厅</span>
         </button>
-
-        <button @click="switchTab('request');" 
-                class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" 
-                :class="currentTab === 'request' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
-            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i> 
-            <span class="tracking-widest">心愿工坊</span>
+        <button @click="switchTab('request');" class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" :class="currentTab === 'request' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i> <span class="tracking-widest">心愿工坊</span>
         </button>
-
-        <button @click="switchTab('profile');" 
-                class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" 
-                :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
-            <i class="fa-solid fa-user-astronaut text-lg"></i> 
-            <span class="tracking-widest">我的画像</span>
+        <button @click="switchTab('profile');" class="flex-1 relative z-10 py-3 text-sm font-black transition-colors duration-300 flex justify-center items-center gap-2.5" :class="currentTab === 'profile' ? 'text-brand-600 dark:text-brand-400' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-zinc-200'">
+            <i class="fa-solid fa-user-astronaut text-lg"></i> <span class="tracking-widest">我的画像</span>
         </button>
-        
     </div>
 </div>
