@@ -317,7 +317,6 @@ class TelegramBot:
         try: requests.post(f"https://api.telegram.org/bot{token}/answerCallbackQuery", json={"callback_query_id": cq_id}, proxies=proxies, timeout=5)
         except: pass
 
-        # 🔥 完美修复：Telegram 报错工单状态更新 (同时兼容纯文本与图文结构)
         if data.startswith("feed_"):
             parts = data.split("_")
             action = parts[1]
@@ -332,13 +331,11 @@ class TelegramBot:
                 operator = cq.get('from', {}).get('first_name', 'Admin')
                 
                 if "caption" in msg_obj:
-                    # 图片消息必须用 editMessageCaption
                     orig_text = msg_obj.get("caption", "资源报错工单")
                     new_text = f"{orig_text}\n\n━━━━━━━━━━━━━━\n{status_text[action]}\n(操作人: {operator})"
                     try: requests.post(f"https://api.telegram.org/bot{token}/editMessageCaption", json={"chat_id": cid, "message_id": mid, "caption": new_text, "reply_markup": {"inline_keyboard": []}}, proxies=proxies, timeout=5)
                     except: pass
                 else:
-                    # 纯文本降级消息必须用 editMessageText
                     orig_text = msg_obj.get("text", "资源报错工单")
                     new_text = f"{orig_text}\n\n━━━━━━━━━━━━━━\n{status_text[action]}\n(操作人: {operator})"
                     try: requests.post(f"https://api.telegram.org/bot{token}/editMessageText", json={"chat_id": cid, "message_id": mid, "text": new_text, "reply_markup": {"inline_keyboard": []}}, proxies=proxies, timeout=5)
@@ -759,13 +756,33 @@ class TelegramBot:
     def _library_notify_loop(self):
         while self.running:
             try:
-                has_data = False
-                with self.library_lock: has_data = len(self.library_queue) > 0
+                with self.library_lock:
+                    if len(self.library_queue) == 0:
+                        has_data = False
+                    else:
+                        has_data = True
+                
                 if not has_data:
                     time.sleep(2)
                     continue
 
-                time.sleep(15)
+                # 🔥 动态防抖引擎 (Dynamic Debounce)
+                # 等待 Emby 的 Webhook 狂暴轰炸平息，再进行统一结算
+                idle_time = 0
+                last_len = 0
+                max_wait = 0
+                
+                while idle_time < 15 and max_wait < 120:
+                    time.sleep(3)
+                    idle_time += 3
+                    max_wait += 3
+                    
+                    with self.library_lock:
+                        curr_len = len(self.library_queue)
+                        if curr_len > last_len:
+                            idle_time = 0  # 只要有新集数进来，发呆时间清零，继续等
+                            last_len = curr_len
+                
                 items_to_process = []
                 with self.library_lock:
                     items_to_process = self.library_queue[:]
@@ -793,14 +810,18 @@ class TelegramBot:
 
         for group_id, group_items in groups.items():
             try:
-                episodes_only = [x for x in group_items if x.get('Type') == 'Episode']
-                if len(episodes_only) > 0:
-                    self._push_episode_group(group_id, episodes_only)
-                elif len(group_items) == 1 and group_items[0].get('Type') == 'Series':
-                    series_item = group_items[0]
+                is_tv = any(x.get('Type') in ['Episode', 'Season', 'Series'] for x in group_items)
+                if is_tv:
+                    # 🚀 斩断乱局：直接用 SeriesId 去 API 查最新的连贯集数，无视 Webhook 碎件！
                     fresh_episodes = self._check_fresh_episodes(group_id)
-                    if fresh_episodes: self._push_episode_group(group_id, fresh_episodes)
-                    else: self._push_single_item(series_item)
+                    if fresh_episodes: 
+                        self._push_episode_group(group_id, fresh_episodes)
+                    else:
+                        series_item = next((x for x in group_items if x.get('Type') == 'Series'), None)
+                        if series_item: self._push_single_item(series_item)
+                        else:
+                            episodes_only = [x for x in group_items if x.get('Type') == 'Episode']
+                            if episodes_only: self._push_episode_group(group_id, episodes_only)
                 else:
                     self._push_single_item(group_items[0])
                 time.sleep(2) 
@@ -813,9 +834,10 @@ class TelegramBot:
         
         try:
             url = f"{host}/emby/Users/{admin_id}/Items"
+            # 🔥 解除 20 集封印，提升到 1000 集
             params = {
                 "ParentId": series_id, "Recursive": "true", "IncludeItemTypes": "Episode",
-                "Limit": 20, "SortBy": "DateCreated", "SortOrder": "Descending",
+                "Limit": 1000, "SortBy": "DateCreated", "SortOrder": "Descending",
                 "Fields": "DateCreated,Name,ParentIndexNumber,IndexNumber", "api_key": key
             }
             res = requests.get(url, params=params, timeout=10)
@@ -837,7 +859,8 @@ class TelegramBot:
                     last_time = curr_time
                 else:
                     delta = abs((last_time - curr_time).total_seconds())
-                    if delta <= 60:
+                    # 🔥 容错时间拉长到 120 秒，防范大包刮削卡顿
+                    if delta <= 120:  
                         fresh_list.append(item)
                         last_time = curr_time 
                     else: break 
@@ -853,18 +876,14 @@ class TelegramBot:
         except: return None
 
     def _push_episode_group(self, series_id, episodes):
-        # ----------------- [缺集管理：自动核销闭环] -----------------
         try:
             for ep in episodes:
                 s_idx = ep.get('ParentIndexNumber')
                 e_idx = ep.get('IndexNumber')
                 if s_idx is None or e_idx is None: continue
-                # 检查该集是否是“处理中(status=2)”的缺集工单
                 res = query_db("SELECT id FROM gap_records WHERE series_id=? AND season_number=? AND episode_number=? AND status=2", (series_id, s_idx, e_idx))
                 if res:
-                    # 发现目标！删除缺集记录（核销）
                     query_db("DELETE FROM gap_records WHERE id=?", (res[0]['id'],))
-                    # 发送专属捷报给服主
                     success_msg = (f"🎉 <b>残卷补全成功！</b>\n\n"
                                    f"📺 剧集已刮削：<b>S{str(s_idx).zfill(2)}E{str(e_idx).zfill(2)}</b>\n"
                                    f"✅ 状态：缺集工单已自动核销闭环\n"
