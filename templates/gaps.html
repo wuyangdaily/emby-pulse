@@ -14,14 +14,20 @@
     .gap-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .gap-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 4px; }
     .dark .gap-scrollbar::-webkit-scrollbar-thumb { background: rgba(82, 82, 91, 0.5); }
+    
+    /* 极致亚克力模糊材质 */
+    .glass-header { 
+        backdrop-filter: blur(24px) saturate(160%); 
+        -webkit-backdrop-filter: blur(24px) saturate(160%);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div x-data="gapManager()" x-init="init()" class="max-w-7xl mx-auto space-y-4 sm:space-y-6 px-1 sm:px-4 md:px-8 py-4 sm:py-6 pb-24">
 
-    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm border border-gray-100 dark:border-gray-700 w-full">
-        <div class="flex items-center gap-3 w-full md:w-auto">
+    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-4 shadow-sm border border-gray-100 dark:border-gray-700 w-full">
+        <div class="flex items-center gap-3 w-full lg:w-auto shrink-0">
             <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center relative overflow-hidden border border-indigo-100 dark:border-indigo-800 shrink-0">
                 <div x-show="isScanning" class="absolute inset-0 radar-sweep"></div>
                 <i class="fa-solid fa-tower-broadcast text-xl text-indigo-500 relative z-10" :class="isScanning ? 'animate-pulse' : ''"></i>
@@ -32,28 +38,38 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap md:flex-nowrap items-center gap-2 sm:gap-3 w-full md:w-auto shrink-0">
-            <div class="w-full md:w-auto flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl justify-between shadow-sm">
-                <span class="text-xs font-bold text-gray-600 dark:text-gray-400"><i class="fa-solid fa-clock mr-1"></i>自动巡检</span>
+        <div class="w-full lg:flex-1 lg:max-w-md relative group">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 group-focus-within:text-indigo-500 transition-colors"></i>
+            </div>
+            <input type="text" x-model="searchQuery" placeholder="搜索缺失的剧集名称..." class="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all dark:text-white placeholder-gray-400">
+            <button x-show="searchQuery" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" x-cloak>
+                <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+        </div>
+
+        <div class="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-2 sm:gap-3 w-full lg:w-auto shrink-0">
+            <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl shadow-sm flex-1 sm:flex-none justify-between sm:justify-start">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-400"><i class="fa-solid fa-clock mr-1"></i>自动</span>
                 <label class="relative inline-flex items-center cursor-pointer shrink-0">
                     <input type="checkbox" x-model="autoScan" @change="toggleAutoScan()" class="sr-only peer">
                     <div class="w-8 h-4 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all dark:border-gray-500 peer-checked:bg-indigo-500"></div>
                 </label>
             </div>
             
-            <button @click="openIgnoreModal()" class="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm border border-transparent hover:border-gray-300 dark:hover:border-gray-500 whitespace-nowrap">
-                <i class="fa-solid fa-trash-can-arrow-up"></i> <span class="hidden sm:inline">回收站</span>
+            <button @click="openIgnoreModal()" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition shadow-sm border border-transparent hover:border-gray-300 dark:hover:border-gray-500 whitespace-nowrap">
+                <i class="fa-solid fa-trash-can-arrow-up"></i>
             </button>
             
-            <button @click="openConfigModal()" class="flex-1 md:flex-none flex items-center justify-center px-3 sm:px-3 py-2 rounded-xl text-xs sm:text-sm text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition shadow-sm border border-indigo-200 dark:border-indigo-700">
+            <button @click="openConfigModal()" class="flex items-center justify-center px-3 py-2 rounded-xl text-xs text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 transition shadow-sm border border-indigo-200 dark:border-indigo-700">
                 <i class="fa-solid fa-gear"></i>
             </button>
 
-            <button @click="startScan()" :disabled="isScanning" class="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition shadow-sm active:scale-95 whitespace-nowrap"
+            <button @click="startScan()" :disabled="isScanning" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm active:scale-95 whitespace-nowrap"
                     :class="isScanning ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'">
                 <i x-show="!isScanning" class="fa-solid fa-satellite-dish"></i>
                 <i x-show="isScanning" class="fa-solid fa-circle-notch fa-spin text-white"></i>
-                <span x-text="isScanning ? '雷达扫描中...' : '深度重扫'"></span>
+                <span x-text="isScanning ? '扫描中...' : '重扫'"></span>
             </button>
         </div>
     </div>
@@ -73,7 +89,15 @@
         </div>
     </div>
 
-    <div x-show="!isScanning && gapData.length > 0" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 xl:gap-5" x-transition x-cloak>
+    <div x-show="!isScanning && hasScanned && filteredGaps.length === 0 && searchQuery" class="text-center py-20 sm:py-32" x-cloak>
+        <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100 dark:border-gray-700">
+            <i class="fa-solid fa-magnifying-glass text-3xl sm:text-4xl text-gray-300 dark:text-gray-600"></i>
+        </div>
+        <h3 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">未找到匹配剧集</h3>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">试试更换关键词，或者该剧并没有缺集。</p>
+    </div>
+
+    <div x-show="!isScanning && filteredGaps.length > 0" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 xl:gap-5" x-transition x-cloak>
         <template x-for="series in displayedGaps" :key="series.series_id">
             <div class="relative rounded-2xl p-2.5 sm:p-3 shadow-sm border border-gray-100 dark:border-gray-700 transition-all duration-300 bg-white dark:bg-gray-800 overflow-hidden z-10 group hover:shadow-md hover:-translate-y-1">
                 <div :id="'tint-' + series.series_id" class="absolute inset-0 z-0 opacity-15 dark:opacity-20 pointer-events-none transition-colors duration-1000"></div>
@@ -130,9 +154,9 @@
         </template>
     </div>
 
-    <div x-show="!isScanning && displayLimit < gapData.length" class="text-center mt-8 pb-10" x-cloak>
+    <div x-show="!isScanning && displayLimit < filteredGaps.length" class="text-center mt-8 pb-10" x-cloak>
         <button @click="loadMore()" class="px-6 py-2.5 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold transition shadow-sm flex items-center justify-center gap-2 mx-auto">
-            <span>继续加载剩余 <span x-text="gapData.length - displayLimit" class="text-indigo-500"></span> 部剧集</span> <i class="fa-solid fa-angle-down"></i>
+            <span>继续加载剩余 <span x-text="filteredGaps.length - displayLimit" class="text-indigo-500"></span> 部剧集</span> <i class="fa-solid fa-angle-down"></i>
         </button>
     </div>
 
@@ -146,38 +170,36 @@
 
     <div x-show="configModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-cloak>
         <div @click.away="closeConfigModal()" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100">
-            <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl rounded-t-2xl z-10 sticky top-0">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 glass-header z-10">
                 <h3 class="font-black text-gray-900 dark:text-white flex items-center gap-2">
-                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> 下载器底层截胡配置
+                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> 下载器底层接管配置
                 </h3>
                 <button @click="closeConfigModal()" class="text-gray-400 hover:text-rose-500 transition w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-200 dark:border-gray-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">配置后，系统将在向 MP 发送整季包种子后，秘密潜入下载器中精确切除非必要集数。</p>
-                
                 <div>
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">下载器类型</label>
-                    <select x-model="configModal.client_type" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <select x-model="configModal.client_type" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm outline-none">
                         <option value="">（不启用截胡，让 MP 处理）</option>
                         <option value="qbittorrent">qBittorrent</option>
                         <option value="transmission">Transmission</option>
                     </select>
                 </div>
-                
                 <div x-show="configModal.client_type !== ''">
                     <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">下载器地址 (带端口)</label>
-                    <input type="text" x-model="configModal.client_url" placeholder="http://192.168.31.2:8080" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <input type="text" x-model="configModal.client_url" placeholder="http://192.168.31.2:8080" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm outline-none">
                 </div>
                 <div x-show="configModal.client_type !== ''">
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">账号 (没有留空)</label>
-                    <input type="text" x-model="configModal.client_user" placeholder="admin" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">账号</label>
+                    <input type="text" x-model="configModal.client_user" placeholder="admin" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm outline-none">
                 </div>
                 <div x-show="configModal.client_type !== ''">
-                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">密码 (没有留空)</label>
-                    <input type="password" x-model="configModal.client_pass" placeholder="••••••••" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">密码</label>
+                    <input type="password" x-model="configModal.client_pass" placeholder="••••••••" class="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm outline-none">
                 </div>
             </div>
-            <div class="p-5 border-t border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl rounded-b-2xl flex justify-end gap-3 sticky bottom-0 z-10">
+            <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/90 glass-header flex justify-end gap-3">
                 <button @click="closeConfigModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 transition shadow-sm">取消</button>
                 <button @click="saveConfig()" class="px-6 py-2 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition shadow-sm">保存引擎配置</button>
             </div>
@@ -185,27 +207,43 @@
     </div>
 
     <div x-show="ignoreModal.open" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" x-cloak>
-        <div @click.away="closeIgnoreModal()" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] overflow-hidden" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100">
-            <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl rounded-t-2xl z-10 sticky top-0">
+        <div @click.away="closeIgnoreModal()" class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] overflow-hidden relative" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100">
+            <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 glass-header z-20 sticky top-0">
                 <h3 class="font-black text-gray-900 dark:text-white flex items-center gap-2 text-sm sm:text-base">
                     <i class="fa-solid fa-trash-can-arrow-up text-indigo-500"></i> 忽略与免检清单
                 </h3>
                 <button @click="closeIgnoreModal()" class="text-gray-400 hover:text-rose-500 transition w-8 h-8 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-200 dark:border-gray-600"><i class="fa-solid fa-xmark"></i></button>
             </div>
+            
+            <div class="flex items-center gap-1 p-2 bg-gray-50/80 dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-700 sticky z-10 backdrop-blur-md">
+                <button @click="ignoreFilter = 'all'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-colors" :class="ignoreFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' : 'text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-800'">全部</button>
+                <button @click="ignoreFilter = 'perfect'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-colors" :class="ignoreFilter === 'perfect' ? 'bg-white dark:bg-gray-700 shadow-sm text-amber-600 dark:text-amber-400' : 'text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-800'">🥇 免检金牌</button>
+                <button @click="ignoreFilter = 'ignored'" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-colors" :class="ignoreFilter === 'ignored' ? 'bg-white dark:bg-gray-700 shadow-sm text-rose-600 dark:text-rose-400' : 'text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-800'">🙈 手动忽略</button>
+            </div>
+
             <div class="flex-1 overflow-y-auto p-3 gap-scrollbar space-y-2">
-                <template x-for="item in ignoreModal.items" :key="item.id + item.target">
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 hover:bg-white dark:hover:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-700 transition">
+                <template x-for="item in filteredIgnoreItems" :key="item.id + item.target">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 hover:bg-white dark:hover:bg-gray-700 rounded-xl border border-gray-100 dark:border-gray-700 transition shadow-sm">
                         <div>
                             <div class="text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-200" x-text="item.series_name"></div>
-                            <div class="text-[10px] text-gray-500 mt-1 flex gap-2 items-center">
-                                <span class="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-gray-700 dark:text-gray-300 font-bold" x-text="item.target"></span>
-                                <span x-text="item.time"></span>
+                            <div class="text-[10px] mt-1.5 flex flex-wrap gap-2 items-center">
+                                <template x-if="item.type === 'perfect'">
+                                    <span class="px-1.5 py-0.5 rounded font-black bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 flex items-center gap-1 shadow-sm"><i class="fa-solid fa-medal"></i> 完结免检</span>
+                                </template>
+                                <template x-if="item.type === 'record' && item.target === '全剧集'">
+                                    <span class="px-1.5 py-0.5 rounded font-black bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 flex items-center gap-1 shadow-sm"><i class="fa-solid fa-ban"></i> 忽略全剧</span>
+                                </template>
+                                <template x-if="item.type === 'record' && item.target !== '全剧集'">
+                                    <span class="px-1.5 py-0.5 rounded font-black bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 flex items-center gap-1 shadow-sm"><i class="fa-solid fa-eye-slash"></i> <span x-text="item.target"></span></span>
+                                </template>
+                                
+                                <span class="text-gray-400 font-mono flex items-center gap-1"><i class="fa-regular fa-clock"></i> <span x-text="item.time ? item.time.split('.')[0] : '未知时间'"></span></span>
                             </div>
                         </div>
-                        <button @click="unignoreItem(item)" class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-lg text-xs font-bold transition shadow-sm">取消忽略</button>
+                        <button @click="unignoreItem(item)" class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-lg text-[11px] font-bold transition shadow-sm shrink-0 flex items-center gap-1"><i class="fa-solid fa-rotate-left"></i> 恢复</button>
                     </div>
                 </template>
-                <div x-show="ignoreModal.items.length === 0" class="text-center py-10 text-gray-400 text-sm tracking-widest"><i class="fa-solid fa-box-open text-4xl opacity-20 mb-3 block"></i>回收站是空的</div>
+                <div x-show="filteredIgnoreItems.length === 0" class="text-center py-10 text-gray-400 text-sm tracking-widest"><i class="fa-solid fa-box-open text-4xl opacity-20 mb-3 block"></i>列表为空</div>
             </div>
         </div>
     </div>
@@ -214,7 +252,7 @@
         <div x-show="resolver.open" x-transition.opacity @click="closeResolver()" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
         <div x-show="resolver.open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-full md:translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" 
              class="relative w-full md:w-[700px] max-h-[90vh] bg-white dark:bg-gray-800 rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-            <div class="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl z-10 sticky top-0">
+            <div class="px-4 py-4 sm:px-5 sm:py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/80 dark:bg-gray-800/90 glass-header z-10">
                 <div>
                     <h3 class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-dna text-indigo-500"></i> 基因配型中心</h3>
                     <p class="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">为 <span class="font-bold text-gray-700 dark:text-gray-200" x-text="resolver.targetDesc"></span> 寻找最佳片源</p>
@@ -246,7 +284,7 @@
                                     
                                     <template x-if="res.is_pack">
                                         <div class="mt-1 mb-0.5 inline-block text-[9px] px-1.5 py-0.5 rounded font-black border bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30">
-                                            📦 包含目标集的整季包 (将自动向下载器发送底层截胡指令)
+                                            📦 包含目标集的整季包 (将自动下发截胡指令)
                                         </div>
                                     </template>
 
@@ -275,7 +313,7 @@
                     <div x-show="!resolver.isLoading && resolver.results.length === 0" class="text-center py-10"><i class="fa-solid fa-ghost text-4xl text-gray-200 dark:text-gray-700 mb-3 block"></i><p class="text-xs font-bold text-gray-400 mt-2">未捕获到符合该集的资源星尘</p></div>
                 </div>
             </div>
-            <div class="p-4 sm:p-5 border-t border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl flex gap-3 pb-[env(safe-area-inset-bottom)] sticky bottom-0 z-10">
+            <div class="px-4 py-4 sm:px-5 sm:py-5 border-t border-gray-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/90 glass-header flex gap-3 pb-[env(safe-area-inset-bottom)]">
                 <button x-show="resolver.targetType === 'single'" @click="ignoreGap()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 transition shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-eye-slash"></i> <span class="hidden sm:inline">忽略单集</span></button>
                 <button @click="sendToMP()" :disabled="resolver.selectedIndex === null || resolver.isSubmitting" class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" :class="resolver.selectedIndex !== null ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-400 dark:bg-gray-600 shadow-none'">
                     <span x-show="resolver.isSubmitting" class="animate-spin w-4 h-4 border-2 border-white/30 border-t-white dark:border-black/30 dark:border-t-black rounded-full"></span>
@@ -305,18 +343,77 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('gapManager', () => ({
         isScanning: false, hasScanned: false, autoScan: false,
         scanProgress: 0, scanTotal: 0, scanItem: '等待启航...',
-        pollInterval: null, gapData: [],
+        pollInterval: null, 
+        silentPollInterval: null, // 🔥 静默刷新定时器
+        _lastResultsJson: '',     // 🔥 用于比对数据是否真正发生变化的快照
+        
+        gapData: [],
+        searchQuery: '',          // 🔥 本地搜索词
         displayLimit: 24, 
+        
         ignoreModal: { open: false, items: [] },
+        ignoreFilter: 'all',      // 🔥 回收站筛选 (all, perfect, ignored)
         
         configModal: { open: false, client_type: '', client_url: '', client_user: '', client_pass: '' },
-        
         resolver: { open: false, isLoading: false, isSubmitting: false, tmdbId: null, seriesId: '', seriesName: '', season: 0, episodes: [], targetDesc: '', targetType: 'single', genes: [], results: [], selectedIndex: null, sourceEpObj: null, sourceEpsArray: [] },
 
-        init() { this.checkStatus(); this.fetchAutoScan(); },
+        init() { 
+            this.checkStatus(); 
+            this.fetchAutoScan(); 
+            this.startSilentPolling();
+            
+            // 🔥 焦点唤醒：当用户从 qB 切回本网页时，顺手无感刷新一次
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && !this.isScanning) {
+                    this.checkStatusSilent();
+                }
+            });
+        },
 
-        get displayedGaps() { return this.gapData.slice(0, this.displayLimit); },
+        // 🔥 动态计算属性：过滤后的缺集数据
+        get filteredGaps() {
+            if (!this.searchQuery) return this.gapData;
+            const q = this.searchQuery.toLowerCase();
+            return this.gapData.filter(s => s.series_name.toLowerCase().includes(q));
+        },
+
+        // 最终展示在页面上的数据 (应用了过滤和分页)
+        get displayedGaps() { 
+            return this.filteredGaps.slice(0, this.displayLimit); 
+        },
+        
         loadMore() { this.displayLimit += 24; },
+
+        // 🔥 动态计算属性：回收站过滤
+        get filteredIgnoreItems() {
+            if (this.ignoreFilter === 'perfect') return this.ignoreModal.items.filter(i => i.type === 'perfect');
+            if (this.ignoreFilter === 'ignored') return this.ignoreModal.items.filter(i => i.type === 'record');
+            return this.ignoreModal.items;
+        },
+
+        // 🔥 静默轮询系统：每10秒在后台悄悄检查一次，如果 Emby 已经入库，页面上的缺集会自动消失
+        startSilentPolling() {
+            if (this.silentPollInterval) clearInterval(this.silentPollInterval);
+            this.silentPollInterval = setInterval(() => {
+                if (document.hidden || this.isScanning) return;
+                this.checkStatusSilent();
+            }, 10000);
+        },
+
+        async checkStatusSilent() {
+            try {
+                const res = await fetch('/api/gaps/scan/progress');
+                const data = await res.json();
+                if (data.status === 'success' && !data.data.is_scanning) {
+                    const newJson = JSON.stringify(data.data.results);
+                    // 只有当数据真正发生改变时（比如某集被剔除了），才触发 Vue 的重渲染
+                    if (this._lastResultsJson !== newJson) {
+                        this._lastResultsJson = newJson;
+                        this.mountData(data.data.results);
+                    }
+                }
+            } catch(e) {}
+        },
 
         async openConfigModal() {
             try {
@@ -336,19 +433,13 @@ document.addEventListener('alpine:init', () => {
         async saveConfig() {
             try {
                 const res = await fetch('/api/gaps/config', { 
-                    method: 'POST', 
-                    headers: {'Content-Type': 'application/json'}, 
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, 
                     body: JSON.stringify({ 
-                        client_type: this.configModal.client_type,
-                        client_url: this.configModal.client_url,
-                        client_user: this.configModal.client_user,
-                        client_pass: this.configModal.client_pass
+                        client_type: this.configModal.client_type, client_url: this.configModal.client_url,
+                        client_user: this.configModal.client_user, client_pass: this.configModal.client_pass
                     }) 
                 });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    this.closeConfigModal();
-                }
+                if ((await res.json()).status === 'success') { this.closeConfigModal(); }
             } catch(e) { alert('保存失败'); }
         },
 
@@ -367,6 +458,7 @@ document.addEventListener('alpine:init', () => {
                 if (data.status === 'success') {
                     if (data.data.is_scanning) { this.startPolling(); } 
                     else if (data.data.results && data.data.results.length > 0) {
+                        this._lastResultsJson = JSON.stringify(data.data.results);
                         this.mountData(data.data.results);
                     }
                 }
@@ -395,7 +487,10 @@ document.addEventListener('alpine:init', () => {
                         if (!this.isScanning) {
                             clearInterval(this.pollInterval);
                             if (state.error) alert("扫描出错: " + state.error);
-                            else this.mountData(state.results);
+                            else {
+                                this._lastResultsJson = JSON.stringify(state.results);
+                                this.mountData(state.results);
+                            }
                         }
                     }
                 } catch(e) {}
@@ -442,7 +537,10 @@ document.addEventListener('alpine:init', () => {
             if(!confirm(`确定要永久忽略《${series.series_name}》的全部缺集提醒吗？\n(后续可在回收站恢复)`)) return;
             try {
                 const res = await fetch('/api/gaps/ignore/series', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ series_id: series.series_id, series_name: series.series_name }) });
-                if ((await res.json()).status === 'success') { this.gapData = this.gapData.filter(s => s.series_id !== series.series_id); }
+                if ((await res.json()).status === 'success') { 
+                    this.gapData = this.gapData.filter(s => s.series_id !== series.series_id); 
+                    this._lastResultsJson = JSON.stringify(this.gapData);
+                }
             } catch(e) {}
         },
 

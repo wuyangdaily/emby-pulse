@@ -191,13 +191,35 @@ def get_ignored_list():
         records = query_db("SELECT id, series_id, series_name, season_number, episode_number, created_at FROM gap_records WHERE status = 1 AND series_id != 'SYSTEM'")
         perfects = query_db("SELECT series_id, series_name, marked_at FROM gap_perfect_series")
         data = []
+        
         if records:
-            for r in records: data.append({"type": "record", "id": r['id'], "series_name": r['series_name'], "target": "全剧集" if r['season_number'] == -1 else f"S{str(r['season_number']).zfill(2)}E{str(r['episode_number']).zfill(2)}", "time": r['created_at']})
+            for r in records: 
+                data.append({
+                    "type": "record", 
+                    "id": r['id'], 
+                    "series_name": r['series_name'], 
+                    "target": "全剧集" if r['season_number'] == -1 else f"S{str(r['season_number']).zfill(2)}E{str(r['episode_number']).zfill(2)}", 
+                    "time": r['created_at']
+                })
+                
         if perfects:
-            for r in perfects: data.append({"type": "perfect", "id": r['series_id'], "series_name": r['series_name'], "target": "完结免检金牌", "time": r['marked_at']})
-        data.sort(key=lambda x: x['time'], reverse=True)
+            for r in perfects: 
+                data.append({
+                    "type": "perfect", 
+                    "id": r['series_id'], 
+                    "series_name": r['series_name'], 
+                    "target": "完结免检金牌", 
+                    "time": r['marked_at']
+                })
+        
+        # 🔥 核心防御加固：按时间倒序排列，即使有历史脏数据时间为空(None)，也会被 '0000-00-00' 兜底，绝不报错
+        data.sort(key=lambda x: str(x['time'] or '0000-00-00'), reverse=True)
+        
         return {"status": "success", "data": data}
-    except Exception as e: return {"status": "error"}
+    except Exception as e: 
+        import logging
+        logging.getLogger("uvicorn").error(f"回收站读取失败: {e}")
+        return {"status": "error"}
 
 @router.post("/unignore")
 def unignore_item(payload: dict):
