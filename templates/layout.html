@@ -32,16 +32,20 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap');
         body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Noto Sans SC", sans-serif; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 🔥 优化1：Apple 风格极细滚动条，解决小屏幕看不全的问题 */
-        .mac-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        /* 🔥 全局 Apple 级极简悬浮滚动条 (5px 宽度，确保能看到且不占空间) */
+        .mac-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+        }
+        .mac-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
         .mac-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.4); border-radius: 4px; }
-        .mac-scrollbar:hover::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.8); }
-        html.dark .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); }
-        html.dark .mac-scrollbar:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
+        .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.4); border-radius: 10px; }
+        .mac-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(107, 114, 128, 0.8); }
+        
+        html.dark .mac-scrollbar { scrollbar-color: rgba(255, 255, 255, 0.15) transparent; }
+        html.dark .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.15); }
+        html.dark .mac-scrollbar::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.3); }
 
         #bottom-sheet { transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
     </style>
@@ -140,7 +144,7 @@
         </div>
     </aside>
 
-    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto hide-scrollbar relative">
+    <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto mac-scrollbar relative">
         
         <header class="h-[72px] shrink-0 bg-apple-cardLight/80 dark:bg-apple-cardDark/80 backdrop-blur-[24px] saturate-[1.5] flex items-center justify-between px-4 md:px-8 z-40 sticky top-0 border-b border-apple-borderLight/50 dark:border-apple-borderDark/50">
             
@@ -161,13 +165,13 @@
                     <i class="fa-solid fa-satellite-dish"></i>
                     <span id="global-live-badge" class="hidden absolute top-[6px] right-[6px] flex h-2.5 w-2.5">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-apple-bgLight dark:border-apple-bgDark"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-apple-cardDark"></span>
                     </span>
                 </button>
 
                 <button onclick="toggleNotifyDropdown()" class="notify-bell-btn relative w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-apple-hoverDark transition-colors">
                     <i class="fa-regular fa-bell"></i>
-                    <span id="notify-badge-desktop" class="hidden absolute top-[6px] right-[6px] h-2.5 w-2.5 bg-brand-500 rounded-full border-2 border-apple-bgLight dark:border-apple-bgDark animate-pulse"></span>
+                    <span id="notify-badge-desktop" class="hidden absolute top-[6px] right-[6px] h-2.5 w-2.5 bg-brand-500 rounded-full border-2 border-white dark:border-apple-cardDark animate-pulse"></span>
                 </button>
 
                 <button onclick="toggleTheme()" class="w-10 h-10 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-apple-hoverDark transition-colors">
@@ -181,16 +185,17 @@
                     <h4 class="font-bold text-[13px] flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 animate-pulse"></span>正在热播</h4>
                     <span class="text-[10px] font-medium text-gray-400" id="global-live-status-text">空闲中</span>
                 </div>
-                <div id="global-live-list" class="max-h-[50vh] overflow-y-auto hide-scrollbar p-2 space-y-1">
+                <div id="global-live-list" class="max-h-[50vh] overflow-y-auto mac-scrollbar p-2 space-y-1">
                     <div class="py-10 text-center text-xs text-gray-400 font-medium">当前无人观看</div>
                 </div>
             </div>
+
             <div id="notify-panel" class="absolute top-[100%] right-0 md:right-8 mt-2 w-[320px] bg-white/90 dark:bg-apple-cardDark/90 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.6)] border border-gray-100 dark:border-white/5 overflow-hidden z-[100] transform scale-95 opacity-0 hidden transition-all duration-200 origin-top-right">
                 <div class="px-4 py-3 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/20">
                     <h3 class="font-bold text-[13px]">待处理工单</h3>
                     <span id="notify-count-text" class="text-[10px] font-medium bg-gray-100 dark:bg-apple-hoverDark px-2 py-0.5 rounded-full">0 条</span>
                 </div>
-                <div id="notify-list" class="max-h-[50vh] overflow-y-auto hide-scrollbar p-2 flex flex-col gap-1"></div>
+                <div id="notify-list" class="max-h-[50vh] overflow-y-auto mac-scrollbar p-2 flex flex-col gap-1"></div>
             </div>
         </header>
 
@@ -232,7 +237,7 @@
     <div id="bottom-sheet" class="fixed inset-x-0 bottom-0 z-[70] bg-apple-bgLight/80 dark:bg-apple-bgDark/80 backdrop-blur-[24px] saturate-[1.5] rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.15)] transform translate-y-full transition-transform duration-400 ease-out border-t border-gray-200/50 dark:border-white/10 md:hidden pb-10 flex flex-col max-h-[85vh]">
         <div class="flex justify-center pt-4 pb-3 shrink-0"><div class="w-10 h-1.5 bg-gray-400/50 dark:bg-gray-600/50 rounded-full"></div></div>
         
-        <div class="px-5 py-2 overflow-y-auto hide-scrollbar space-y-5 flex-1" id="sheet-scroll-content">
+        <div class="px-5 py-2 overflow-y-auto mac-scrollbar space-y-5 flex-1" id="sheet-scroll-content">
             <div class="bg-white/60 dark:bg-apple-cardDark/60 backdrop-blur-md rounded-2xl overflow-hidden shadow-sm border border-white/50 dark:border-white/5">
                 <a href="/details" class="flex items-center justify-between p-3.5 active:bg-gray-50/50 dark:active:bg-apple-hoverDark/50 border-b border-gray-200/50 dark:border-white/5"><div class="flex items-center gap-3"><div class="w-7 h-7 rounded-[8px] bg-blue-500 text-white flex justify-center items-center"><i class="fa-solid fa-magnifying-glass-chart"></i></div><span class="text-[15px] font-medium">数据洞察</span></div><i class="fa-solid fa-chevron-right text-[12px] text-gray-300 dark:text-gray-600"></i></a>
                 <a href="/insight" class="flex items-center justify-between p-3.5 active:bg-gray-50/50 dark:active:bg-apple-hoverDark/50 border-b border-gray-200/50 dark:border-white/5"><div class="flex items-center gap-3"><div class="w-7 h-7 rounded-[8px] bg-green-500 text-white flex justify-center items-center"><i class="fa-solid fa-chart-pie"></i></div><span class="text-[15px] font-medium">质量盘点</span></div><i class="fa-solid fa-chevron-right text-[12px] text-gray-300 dark:text-gray-600"></i></a>
@@ -268,7 +273,7 @@
                     <button onclick="closeGlobalSearch()" class="px-2 py-1 text-[11px] font-mono font-medium bg-gray-200/50 dark:bg-white/10 text-gray-500 dark:text-gray-300 rounded border border-gray-200 dark:border-white/5 hover:bg-gray-200 transition hidden sm:inline-block">ESC</button>
                 </div>
             </div>
-            <div id="ep-search-results" class="max-h-[60vh] overflow-y-auto hide-scrollbar p-2">
+            <div id="ep-search-results" class="max-h-[60vh] overflow-y-auto mac-scrollbar p-2">
                 <div class="text-center py-16 text-gray-400" id="ep-search-empty"><i class="fa-solid fa-clapperboard text-5xl mb-4 opacity-20"></i><p class="text-[15px] font-medium">全局检索 Emby 媒体库</p></div>
             </div>
         </div>
@@ -360,7 +365,7 @@
             searchResults.innerHTML = html;
         }
 
-        /* ===== 🔥 首创：纯前端移动端底栏自定义系统 ===== */
+        /* ===== 🔥 纯前端移动端底栏自定义系统 ===== */
         const NAV_MAP = {
             'requests_admin': { icon: 'fa-clapperboard', text: '工单', url: '/requests_admin' },
             'users': { icon: 'fa-users-gear', text: '用户', url: '/users_manage' },
@@ -401,11 +406,10 @@
             renderMobileDynamicNav();
             
             // 注入配置入口
-            const sheetContent = document.querySelector('#bottom-sheet .overflow-y-auto');
+            const sheetContent = document.querySelector('#bottom-sheet #sheet-scroll-content');
             if(sheetContent) {
-                const configBtnHtml = `<button onclick="openNavConfigModal()" class="w-full flex items-center justify-center gap-2 py-3 bg-white/60 dark:bg-apple-cardDark/60 backdrop-blur-md text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-[13px] shadow-sm mt-4 border border-white/50 dark:border-white/10"><i class="fa-solid fa-pen-to-square"></i> 自定义底部导航</button>`;
-                const logoutBtn = sheetContent.querySelector('a[href="/logout"]');
-                if(logoutBtn) logoutBtn.insertAdjacentHTML('beforebegin', configBtnHtml);
+                const configBtnHtml = `<button onclick="openNavConfigModal()" class="w-full flex items-center justify-center gap-2 py-3 bg-white/60 dark:bg-apple-cardDark/60 backdrop-blur-md text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-[13px] shadow-sm mt-4 border border-white/50 dark:border-white/10 active:scale-95 transition-transform"><i class="fa-solid fa-pen-to-square"></i> 自定义底部导航</button>`;
+                sheetContent.insertAdjacentHTML('beforeend', configBtnHtml);
             }
 
             // 注入配置弹窗
@@ -428,7 +432,7 @@
                         </div>
                         <div class="flex gap-3 mt-8">
                             <button onclick="closeNavConfigModal()" class="flex-1 py-3 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm transition-colors active:bg-gray-200 dark:active:bg-[#3A3A3C]">取消</button>
-                            <button onclick="saveNavConfig()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold text-sm shadow-md transition-colors">保存配置</button>
+                            <button onclick="saveNavConfig()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold text-sm shadow-md transition-colors active:scale-95">保存配置</button>
                         </div>
                     </div>
                 </div>
