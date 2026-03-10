@@ -55,20 +55,20 @@
         </button>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 md:gap-6 items-stretch">
         
-        <div class="apple-card flex flex-col p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
+        <div class="apple-card flex flex-col h-full p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center shrink-0">
                 <div class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-500 flex items-center justify-center mr-3 shadow-sm"><i class="fa-solid fa-toggle-on text-sm"></i></div> 
                 推送场景总控
             </h3>
-            <div class="flex flex-col space-y-6">
+            <div class="flex-1 flex flex-col justify-start space-y-6">
                 <div class="flex items-center justify-between">
                     <div>
                         <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">启用底层引擎</h4>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">总开关，必须开启才能生效</p>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="enable_bot" class="sr-only peer">
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-[#3A3A3C] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 shadow-inner"></div>
                     </label>
@@ -78,7 +78,7 @@
                         <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">播放状态通知</h4>
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">有人开始或停止播放时发送</p>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
                         <input type="checkbox" id="enable_notify" class="sr-only peer">
                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-[#3A3A3C] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 shadow-inner"></div>
                     </label>
@@ -89,7 +89,7 @@
                             <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">新资源入库通知</h4>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">需配合 Emby Webhook 使用</p>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="enable_library_notify" class="sr-only peer" onchange="toggleWebhookInfo(this)">
                             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-[#3A3A3C] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500 shadow-inner"></div>
                         </label>
@@ -102,8 +102,8 @@
             </div>
         </div>
 
-        <div class="apple-card flex flex-col p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center justify-between">
+        <div class="apple-card flex flex-col h-full p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center justify-between shrink-0">
                 <span class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center shadow-sm"><i class="fa-brands fa-telegram text-sm"></i></div> 
                     Telegram 通道
@@ -112,12 +112,12 @@
                     发送测试
                 </button>
             </h3>
-            <div class="flex flex-col space-y-5">
+            <div class="flex-1 flex flex-col justify-start space-y-5">
                 <div>
                     <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">Bot Token</label>
                     <div class="relative">
                         <input type="password" id="tg_bot_token" class="w-full px-4 py-3 rounded-xl border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all placeholder-gray-400" placeholder="从 @BotFather 获取">
-                        <button type="button" onclick="toggleShow('tg_bot_token')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-blue-500 transition-colors">
+                        <button type="button" onclick="toggleShow('tg_bot_token')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-blue-500 transition-colors flex items-center justify-center">
                             <i id="icon-tg_bot_token" class="fa-solid fa-eye text-sm"></i>
                         </button>
                     </div>
@@ -129,8 +129,8 @@
             </div>
         </div>
 
-        <div class="apple-card flex flex-col p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center justify-between">
+        <div class="apple-card flex flex-col h-full p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center justify-between shrink-0">
                 <span class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-500/10 text-green-500 flex items-center justify-center shadow-sm"><i class="fa-brands fa-weixin text-sm"></i></div> 
                     企业微信 (推送)
@@ -139,7 +139,7 @@
                     发送测试
                 </button>
             </h3>
-            <div class="flex flex-col space-y-5">
+            <div class="flex-1 flex flex-col justify-start space-y-5">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">企业 ID</label>
@@ -155,7 +155,7 @@
                         <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">Secret</label>
                         <div class="relative">
                             <input type="password" id="wecom_corpsecret" class="w-full px-4 pr-10 py-3 rounded-xl border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] font-mono text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-green-500/50 outline-none transition-all">
-                            <button type="button" onclick="toggleShow('wecom_corpsecret')" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-green-500 transition-colors">
+                            <button type="button" onclick="toggleShow('wecom_corpsecret')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-green-500 transition-colors flex items-center justify-center">
                                 <i id="icon-wecom_corpsecret" class="fa-solid fa-eye text-sm"></i>
                             </button>
                         </div>
@@ -168,17 +168,17 @@
             </div>
         </div>
 
-        <div class="apple-card flex flex-col p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
+        <div class="apple-card flex flex-col h-full p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center shrink-0">
                 <div class="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-500 flex items-center justify-center mr-3 shadow-sm"><i class="fa-solid fa-link text-sm"></i></div> 
                 企微交互指令回调
             </h3>
-            <div class="flex flex-col space-y-5">
+            <div class="flex-1 flex flex-col justify-start space-y-5">
                 <div>
                     <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">回调 Token (选填)</label>
                     <div class="relative">
                         <input type="password" id="wecom_token" class="w-full px-4 pr-10 py-3 rounded-xl border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] font-mono text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-teal-500/50 outline-none transition-all">
-                        <button type="button" onclick="toggleShow('wecom_token')" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-teal-500 transition-colors">
+                        <button type="button" onclick="toggleShow('wecom_token')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-teal-500 transition-colors flex items-center justify-center">
                             <i id="icon-wecom_token" class="fa-solid fa-eye text-sm"></i>
                         </button>
                     </div>
@@ -187,39 +187,38 @@
                     <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">Encoding AESKey (选填)</label>
                     <div class="relative">
                         <input type="password" id="wecom_aeskey" class="w-full px-4 pr-10 py-3 rounded-xl border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] font-mono text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-teal-500/50 outline-none transition-all">
-                        <button type="button" onclick="toggleShow('wecom_aeskey')" class="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-teal-500 transition-colors">
+                        <button type="button" onclick="toggleShow('wecom_aeskey')" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 text-gray-400 hover:text-teal-500 transition-colors flex items-center justify-center">
                             <i id="icon-wecom_aeskey" class="fa-solid fa-eye text-sm"></i>
                         </button>
                     </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-black/20 p-3 rounded-xl border border-gray-100 dark:border-white/5 mt-1 shadow-sm">
+                <div class="bg-gray-50 dark:bg-black/20 p-3 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm mt-1">
                     <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider pl-1">企微后台回调 URL 填入：</p>
                     <input type="text" id="wecom-webhook-url" readonly onclick="this.select()" class="w-full bg-white dark:bg-[#1C1C1E] border border-gray-200/80 dark:border-white/5 text-teal-600 dark:text-teal-400 rounded-lg px-3 py-2 text-[11px] font-mono cursor-pointer shadow-sm outline-none">
                 </div>
             </div>
         </div>
 
-        <div class="apple-card flex flex-col p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
+        <div class="apple-card flex flex-col h-full p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center shrink-0">
                 <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 flex items-center justify-center mr-3 shadow-sm border border-gray-200/50 dark:border-white/5"><i class="fa-solid fa-globe text-sm"></i></div> 
                 企业微信 API 代理
             </h3>
-            <div class="flex flex-col space-y-4">
+            <div class="flex-1 flex flex-col justify-start space-y-4">
                 <div>
                     <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">API 转发地址</label>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-3 leading-relaxed bg-blue-50/50 dark:bg-blue-900/10 p-2 rounded-lg border border-blue-100 dark:border-blue-900/30">企微限制了企业可信 IP 白名单。如果你的公网 IP 会变动，建议使用反向代理转发 qyapi 域名。</p>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-4 leading-relaxed bg-blue-50/50 dark:bg-blue-900/10 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30">企微限制了企业可信 IP 白名单。如果你的公网 IP 会变动，建议使用反向代理转发 qyapi 域名。</p>
                     <input type="text" id="wecom_proxy_url" class="w-full px-4 py-3 rounded-xl border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] font-mono text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-gray-500/50 outline-none transition-all placeholder-gray-400" placeholder="https://qyapi.weixin.qq.com">
                 </div>
             </div>
         </div>
 
-        <div class="apple-card flex flex-col lg:col-span-2 2xl:col-span-1 p-5 md:p-6">
-            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center">
+        <div class="apple-card flex flex-col h-full lg:col-span-2 2xl:col-span-1 p-5 md:p-6">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center shrink-0">
                 <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#2C2C2E] text-slate-500 flex items-center justify-center mr-3 shadow-sm border border-gray-200/50 dark:border-white/5"><i class="fa-solid fa-terminal text-sm"></i></div> 
                 内置指令速查
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-2 gap-3 content-start">
-                
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-2 gap-3 content-start">
                 <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-black/20 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm transition-colors hover:bg-gray-100 dark:hover:bg-[#2C2C2E]">
                     <span class="font-mono text-brand-600 bg-brand-50 dark:bg-brand-500/10 dark:text-brand-400 px-2 py-1 rounded-md text-[11px] font-bold w-16 text-center border border-brand-100 dark:border-brand-500/20">/stats</span>
                     <div class="text-[12px] font-medium text-gray-600 dark:text-gray-400 leading-tight">每日/周 播放统计报表</div>
@@ -244,7 +243,6 @@
                     <span class="font-mono text-brand-600 bg-brand-50 dark:bg-brand-500/10 dark:text-brand-400 px-2 py-1 rounded-md text-[11px] font-bold w-16 text-center border border-brand-100 dark:border-brand-500/20">/check</span>
                     <div class="text-[12px] font-medium text-gray-600 dark:text-gray-400 leading-tight">服务器网络连通性检查</div>
                 </div>
-
             </div>
         </div>
 
@@ -263,11 +261,12 @@
             const json = await res.json();
             if(json.status === 'success') {
                 const d = json.data;
+                
                 // TG
                 document.getElementById('tg_bot_token').value = d.tg_bot_token || '';
                 document.getElementById('tg_chat_id').value = d.tg_chat_id || '';
                 
-                // 企微
+                // WeCom
                 document.getElementById('wecom_corpid').value = d.wecom_corpid || '';
                 document.getElementById('wecom_corpsecret').value = d.wecom_corpsecret || '';
                 document.getElementById('wecom_agentid').value = d.wecom_agentid || '';
@@ -276,7 +275,7 @@
                 document.getElementById('wecom_token').value = d.wecom_token || '';
                 document.getElementById('wecom_aeskey').value = d.wecom_aeskey || '';
 
-                // 开关
+                // Switches
                 document.getElementById('enable_bot').checked = d.enable_bot || false;
                 document.getElementById('enable_notify').checked = d.enable_notify || false;
                 const libNotify = document.getElementById('enable_library_notify');
@@ -284,7 +283,7 @@
                 
                 globalToken = d.webhook_token || 'embypulse';
                 
-                // 动态生成 Wecom Webhook
+                // Webhook URLs
                 const host = window.location.protocol + "//" + window.location.host;
                 document.getElementById('wecom-webhook-url').value = `${host}/api/bot/wecom_webhook`;
                 
