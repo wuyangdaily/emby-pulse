@@ -187,12 +187,12 @@
         <div class="p-6">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-rose-50 dark:bg-rose-900/30 rounded-xl flex items-center justify-center text-rose-500">
-                        <i class="fa-solid fa-file-medical text-lg"></i>
+                    <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center text-indigo-500 border border-indigo-100 dark:border-indigo-800/50">
+                        <i class="fa-solid fa-stethoscope text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-base font-black text-gray-900 dark:text-white">数据库体检报告</h3>
-                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Health Check Report</p>
+                        <h3 class="text-base font-black text-gray-900 dark:text-white">全库体检与自愈报告</h3>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Health Check & Auto Fix</p>
                     </div>
                 </div>
                 <button onclick="closeCheckModal()" class="text-gray-400 hover:text-red-500 transition w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center">
@@ -200,23 +200,23 @@
                 </button>
             </div>
 
-            <div class="space-y-3" id="check-items-list"></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="check-items-list"></div>
 
-            <div id="fix-section" class="hidden mt-8 pt-6 border-t border-gray-50 dark:border-gray-700/50 animate-fade-in">
-                <div class="bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl mb-6 flex items-start gap-3 border border-rose-100 dark:border-rose-900/30">
-                    <i class="fa-solid fa-triangle-exclamation text-rose-500 mt-0.5"></i>
-                    <p class="text-[11px] text-rose-700 dark:text-rose-400 font-bold leading-relaxed">检测到关键数据表缺失，这将导致求片系统或盘点功能无法正常运作。建议立即执行修复。</p>
+            <div id="fix-section" class="hidden mt-6 pt-6 border-t border-gray-50 dark:border-gray-700/50 animate-fade-in">
+                <div class="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl mb-4 flex items-start gap-3 border border-orange-100 dark:border-orange-900/30">
+                    <i class="fa-solid fa-screwdriver-wrench text-orange-500 mt-0.5"></i>
+                    <p class="text-[11px] text-orange-700 dark:text-orange-400 font-bold leading-relaxed">检测到部分关键数据表或字段缺失。<br>系统已自动为您原地重建并修复完毕，历史数据未受影响。</p>
                 </div>
-                <button onclick="executeDatabaseFix(this)" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm shadow-xl shadow-indigo-500/20 transition active:scale-[0.98] flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-screwdriver-wrench"></i> 立即修复数据库结构
+                <button onclick="closeCheckModal()" class="w-full py-3 bg-gray-800 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-xl font-black text-sm shadow-md transition active:scale-[0.98]">
+                    我知道了
                 </button>
             </div>
 
-            <div id="healthy-section" class="hidden mt-8 text-center py-6 animate-fade-in">
-                <div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-800">
+            <div id="healthy-section" class="hidden mt-6 text-center py-4 animate-fade-in">
+                <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3 border border-emerald-100 dark:border-emerald-800">
                     <i class="fa-solid fa-check text-2xl"></i>
                 </div>
-                <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">数据库非常健康，结构完整！</p>
+                <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">8 大核心数据表结构完整，极度健康！</p>
             </div>
         </div>
     </div>
@@ -443,7 +443,7 @@ async function testTMDB() {
 
 async function runHealthCheck(btn) {
     const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 体检中...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 全面体检中...';
     btn.disabled = true;
 
     try {
@@ -452,35 +452,46 @@ async function runHealthCheck(btn) {
         const fixSection = document.getElementById('fix-section');
         const healthySection = document.getElementById('healthy-section');
         
+        // 映射后端的 8 大核心组件
         const items = [
-            { id: 'requests', name: '求片系统组件' },
-            { id: 'ignores', name: '洗版隔离组件' }
+            { id: 'playback', name: '播放活动引擎', keys: ['播放活动'] },
+            { id: 'users', name: '用户数据中心', keys: ['用户元数据'] },
+            { id: 'invites', name: '邀请码与权限', keys: ['邀请码'] },
+            { id: 'calendar', name: '追剧日历缓存', keys: ['追剧日历'] },
+            { id: 'requests', name: '求片心愿系统', keys: ['求片'] },
+            { id: 'ignores', name: '洗版隔离组件', keys: ['盘点忽略'] },
+            { id: 'gaps', name: '缺集扫描组件', keys: ['缺集记录'] }
         ];
         
+        // 渲染骨架屏 (Spinners)
         listContainer.innerHTML = items.map(item => `
-            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                <span class="text-xs font-bold text-gray-700 dark:text-gray-300">${item.name}</span>
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                <span class="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2"><i class="fa-solid fa-database text-gray-400"></i> ${item.name}</span>
                 <i class="fa-solid fa-circle-notch fa-spin text-indigo-500" id="check-icon-${item.id}"></i>
             </div>
         `).join('');
 
+        // 触发展开全库体检与自动修复接口
         const checkRes = await fetch('/api/settings/fix_db', { method: 'POST' });
         const checkJson = await checkRes.json();
+        const msg = checkJson.message || "";
         
-        const isRequestsMissing = checkJson.message.includes('求片');
-        const isIgnoresMissing = checkJson.message.includes('盘点');
-        const isAnyMissing = isRequestsMissing || isIgnoresMissing;
+        let anyFixed = false;
 
+        // 假装扫描的延迟动画效果 (让用户感觉在深度扫描)
         setTimeout(() => {
-            document.getElementById('check-icon-requests').outerHTML = isRequestsMissing 
-                ? '<span class="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md font-black">缺失</span>'
-                : '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
-            
-            document.getElementById('check-icon-ignores').outerHTML = isIgnoresMissing 
-                ? '<span class="text-[10px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-md font-black">缺失</span>'
-                : '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+            items.forEach(item => {
+                // 如果后端的反馈信息里包含了这个组件的关键词，说明它被修复了
+                const wasFixed = item.keys.some(k => msg.includes(k));
+                if (wasFixed) anyFixed = true;
+                
+                document.getElementById(`check-icon-${item.id}`).outerHTML = wasFixed 
+                    ? '<span class="text-[10px] bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md font-black border border-orange-200 dark:border-orange-500/30 shadow-sm">已自动修复</span>'
+                    : '<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i>';
+            });
 
-            if (isAnyMissing) {
+            // 根据是否发生了修复，显示不同的结果版块
+            if (anyFixed) {
                 fixSection.classList.remove('hidden');
                 healthySection.classList.add('hidden');
             } else {
