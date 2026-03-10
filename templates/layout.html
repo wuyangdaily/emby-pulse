@@ -34,27 +34,19 @@
         body { font-family: 'Noto Sans SC', sans-serif; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* 移动端侧边栏动画 */
-        #mobile-sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .sidebar-open { transform: translateX(0) !important; }
-        .sidebar-closed { transform: translateX(-100%); }
-        /* 卡片悬浮过渡 */
-        .hover-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .hover-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -8px rgba(0,0,0,0.05); }
     </style>
     {% block head %}{% endblock %}
 </head>
 
-<body class="bg-[#F0F4F8] dark:bg-midnight-900 text-slate-800 dark:text-slate-200 min-h-screen flex overflow-hidden transition-colors duration-300">
+<body class="bg-gradient-to-br from-[#e8f0fe] via-[#f0f5ff] to-[#f8fbff] dark:from-[#0a0f1d] dark:via-[#0f1525] dark:to-[#131c31] bg-fixed text-slate-800 dark:text-slate-200 min-h-screen flex overflow-hidden transition-colors duration-300">
 
-    <aside class="w-[240px] bg-white/90 dark:bg-midnight-800/90 backdrop-blur-2xl border-r border-slate-200/60 dark:border-white/5 hidden md:flex flex-col shrink-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+    <aside class="w-[240px] bg-white/80 dark:bg-midnight-800/80 backdrop-blur-3xl border-r border-slate-200/60 dark:border-white/5 hidden md:flex flex-col shrink-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
         <div class="h-[72px] flex items-center px-6 border-b border-slate-100 dark:border-white/5 shrink-0">
-            <img src="/static/img/logo-app-2.png" class="w-8 h-8 mr-3 drop-shadow-sm">
+            <img src="/static/img/logo-app.png" class="w-8 h-8 mr-3 drop-shadow-sm">
             <span class="font-black text-lg tracking-tight text-slate-900 dark:text-white">Emby<span class="text-brand-500">Pulse</span></span>
         </div>
 
         <nav class="flex-1 overflow-y-auto hide-scrollbar py-6 px-4 space-y-6">
-            
             <div>
                 <p class="px-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">数据与质量</p>
                 <div class="space-y-1">
@@ -123,27 +115,27 @@
         </nav>
         
         <div class="p-4 border-t border-slate-100 dark:border-white/5 text-center">
-            <span class="text-[10px] font-mono text-slate-400 bg-slate-50 dark:bg-midnight-700 px-3 py-1 rounded-full border border-slate-100 dark:border-white/5 shadow-sm">
-                v{{ version }}
-            </span>
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-50/50 dark:bg-midnight-700 px-3 py-1 rounded-full border border-slate-200/50 dark:border-white/5 shadow-sm">v{{ version }}</span>
         </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0 h-screen relative">
         
-        <header class="h-[72px] shrink-0 bg-white/70 dark:bg-midnight-800/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-white/5 flex items-center justify-between px-4 md:px-6 z-40">
+        <header class="h-[72px] shrink-0 bg-white/70 dark:bg-midnight-800/70 backdrop-blur-3xl border-b border-white/40 dark:border-white/5 flex items-center justify-between px-4 md:px-6 z-40 shadow-[0_2px_20px_rgba(0,0,0,0.01)]">
             <div class="flex items-center gap-3 md:hidden">
-                <button onclick="toggleSidebar()" class="text-slate-500 hover:text-brand-500"><i class="fa-solid fa-bars text-xl"></i></button>
+                <img src="/static/img/logo-app.png" class="w-8 h-8">
                 <span class="font-black text-lg">EmbyPulse</span>
             </div>
 
             <div class="hidden md:block">
-                <h2 class="text-base font-black text-slate-800 dark:text-white" id="top-bar-title">管理控制台</h2>
+                <h2 class="text-base font-black text-slate-800 dark:text-white flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500"></span> <span id="top-bar-title">管理控制台</span>
+                </h2>
             </div>
 
-            <div class="flex items-center gap-2 md:gap-4 relative">
+            <div class="flex items-center gap-2 md:gap-3 relative">
                 
-                <button onclick="openGlobalSearch()" class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-full text-sm text-slate-500 dark:text-slate-400 transition-colors mr-2">
+                <button onclick="openGlobalSearch()" class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-100/50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 rounded-full text-sm text-slate-500 dark:text-slate-400 transition-colors mr-1">
                     <i class="fa-solid fa-magnifying-glass"></i> <span class="text-xs">搜索媒体库...</span>
                     <kbd class="text-[9px] font-mono font-bold bg-white dark:bg-black/30 px-1.5 py-0.5 rounded shadow-sm">Cmd+K</kbd>
                 </button>
@@ -151,9 +143,29 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
 
+                <button onclick="toggleLiveDropdown()" id="global-live-btn" class="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-500/20 transition-colors">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span id="global-live-badge" class="hidden absolute top-[2px] right-[2px] flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 border-2 border-white dark:border-midnight-800"></span>
+                    </span>
+                </button>
+
+                <div id="global-live-panel" class="absolute top-[110%] right-0 md:right-24 mt-2 w-[280px] sm:w-[320px] bg-white/95 dark:bg-midnight-800/95 backdrop-blur-2xl rounded-2xl shadow-[0_15px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.7)] border border-slate-200/60 dark:border-white/10 overflow-hidden z-[100] transform scale-95 opacity-0 hidden transition-all duration-200 origin-top-right">
+                    <div class="px-4 py-3 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-slate-50/50 dark:bg-black/10">
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200 tracking-wider flex items-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2 animate-pulse"></span>正在热播
+                        </h4>
+                        <span class="text-[10px] font-bold text-slate-500" id="global-live-status-text">空闲中</span>
+                    </div>
+                    <div id="global-live-list" class="max-h-[50vh] overflow-y-auto hide-scrollbar p-2 space-y-1">
+                        <div class="py-10 text-center text-xs text-slate-400 italic font-medium">当前无人观看</div>
+                    </div>
+                </div>
+
                 <button onclick="toggleNotifyDropdown()" class="notify-bell-btn relative w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-indigo-500 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/20 transition-colors">
                     <i class="fa-regular fa-bell"></i>
-                    <span id="notify-badge-desktop" class="hidden absolute top-[4px] right-[4px] h-2 w-2 bg-red-500 rounded-full border border-white dark:border-midnight-800 animate-pulse"></span>
+                    <span id="notify-badge-desktop" class="hidden absolute top-[2px] right-[2px] h-2.5 w-2.5 bg-indigo-500 rounded-full border-2 border-white dark:border-midnight-800 animate-pulse"></span>
                 </button>
 
                 <div id="notify-panel" class="absolute top-[110%] right-0 md:right-12 mt-2 w-[320px] bg-white/95 dark:bg-midnight-800/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden z-[100] transform scale-95 opacity-0 hidden transition-all duration-200 origin-top-right">
@@ -172,7 +184,7 @@
                     <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
                 </button>
 
-                <div class="h-5 w-px bg-slate-200 dark:bg-white/10 mx-1 hidden md:block"></div>
+                <div class="h-5 w-px bg-slate-200 dark:bg-white/10 mx-0.5 hidden md:block"></div>
 
                 <div class="hidden md:flex items-center gap-2">
                     <div class="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center font-bold text-brand-600 dark:text-brand-400 shrink-0 text-sm border border-brand-200 dark:border-brand-800/50">
@@ -185,34 +197,15 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-6 pb-24 md:pb-6 relative">
+        <main class="flex-1 overflow-y-auto hide-scrollbar relative">
             {% block content %}{% endblock %}
         </main>
     </div>
 
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-[60] hidden backdrop-blur-sm transition-opacity"></div>
-    <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-[260px] bg-white dark:bg-midnight-800 z-[70] shadow-2xl flex flex-col sidebar-closed md:hidden border-r border-slate-100 dark:border-white/5">
-        <div class="h-20 flex items-center px-5 border-b border-slate-100 dark:border-white/5">
-            <img src="/static/img/logo-app-2.png" class="w-8 h-8 mr-3">
-            <span class="font-black text-lg">EmbyPulse</span>
-        </div>
-        <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-            <a href="/" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'dashboard' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-chart-line w-6"></i> 仪表盘</a>
-            <a href="/requests_admin" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'requests_admin' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-clapperboard w-6"></i> 工单大厅</a>
-            <a href="/users_manage" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'users' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-users-gear w-6"></i> 用户管理</a>
-            <a href="/details" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'details' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-magnifying-glass-chart w-6"></i> 数据洞察</a>
-            <a href="/insight" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'insight' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-chart-pie w-6"></i> 质量盘点</a>
-            <a href="/gaps" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'gaps' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-puzzle-piece w-6"></i> 缺集管理</a>
-            <a href="/settings" class="nav-item flex items-center px-4 py-3 rounded-xl transition-colors {% if active_page == 'settings' %}bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 font-bold{% else %}text-slate-600 dark:text-slate-400{% endif %}"><i class="fa-solid fa-gear w-6"></i> 系统设置</a>
-            <div class="h-px bg-slate-100 dark:bg-white/5 my-2"></div>
-            <a href="/logout" class="nav-item flex items-center px-4 py-3 rounded-xl text-rose-500"><i class="fa-solid fa-right-from-bracket w-6"></i> 退出系统</a>
-        </nav>
-    </aside>
-
-    <div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] z-50">
-        <div class="bg-white/95 dark:bg-midnight-800/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 rounded-full shadow-2xl px-2 py-2 flex justify-between items-center">
+    <div class="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] z-50">
+        <div class="bg-white/95 dark:bg-midnight-800/95 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 rounded-[1.5rem] shadow-2xl px-2 py-2 flex justify-between items-center">
             <a href="/" class="flex flex-col items-center flex-1 py-1 transition-colors {% if active_page == 'dashboard' %}text-brand-600 dark:text-brand-400{% else %}text-slate-400{% endif %}">
-                <i class="fa-solid fa-chart-line text-[17px] mb-0.5"></i><span class="text-[9px] font-black">数据</span>
+                <i class="fa-solid fa-chart-pie text-[17px] mb-0.5"></i><span class="text-[9px] font-black">数据</span>
             </a>
             <a href="/requests_admin" class="flex flex-col items-center flex-1 py-1 transition-colors relative {% if active_page == 'requests_admin' %}text-brand-600 dark:text-brand-400{% else %}text-slate-400{% endif %}">
                 <i class="fa-solid fa-clapperboard text-[17px] mb-0.5"></i><span class="text-[9px] font-black">工单</span>
@@ -221,9 +214,56 @@
             <a href="/users_manage" class="flex flex-col items-center flex-1 py-1 transition-colors {% if active_page == 'users' %}text-brand-600 dark:text-brand-400{% else %}text-slate-400{% endif %}">
                 <i class="fa-solid fa-users-gear text-[17px] mb-0.5"></i><span class="text-[9px] font-black">用户</span>
             </a>
-            <button onclick="toggleSidebar()" class="flex flex-col items-center flex-1 py-1 text-slate-400 transition-colors">
-                <i class="fa-solid fa-bars text-[17px] mb-0.5"></i><span class="text-[9px] font-black">菜单</span>
+            <button onclick="toggleBottomSheet()" class="flex flex-col items-center flex-1 py-1 text-slate-400 transition-colors">
+                <i class="fa-solid fa-grid-2 pl-[2px] fas fa-th-large text-[17px] mb-0.5"></i><span class="text-[9px] font-black">菜单</span>
             </button>
+        </div>
+    </div>
+
+    <div id="bottom-sheet-overlay" onclick="toggleBottomSheet()" class="fixed inset-0 bg-slate-900/60 z-[60] hidden backdrop-blur-sm transition-opacity opacity-0 md:hidden"></div>
+    <div id="bottom-sheet" class="fixed inset-x-0 bottom-0 z-[70] bg-white/95 dark:bg-midnight-800/95 backdrop-blur-3xl rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transform translate-y-full transition-transform duration-300 ease-out border-t border-slate-100 dark:border-white/5 md:hidden pb-24">
+        <div class="flex justify-center pt-4 pb-2">
+            <div class="w-12 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full"></div>
+        </div>
+        <div class="p-6 pt-2">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 text-center">所有功能模块</h3>
+            <div class="grid grid-cols-4 gap-y-8 gap-x-2">
+                <a href="/details" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-brand-50 text-brand-500 dark:bg-brand-500/10 dark:text-brand-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">洞察</span>
+                </a>
+                <a href="/insight" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-blue-50 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-chart-pie"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">全景</span>
+                </a>
+                <a href="/gaps" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-amber-50 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-puzzle-piece"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">缺集</span>
+                </a>
+                <a href="/content" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-purple-50 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-film"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">排行</span>
+                </a>
+                <a href="/calendar" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-calendar-days"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">日历</span>
+                </a>
+                <a href="/bot" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10 dark:text-indigo-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-robot"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">机器</span>
+                </a>
+                <a href="/clients" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-cyan-50 text-cyan-500 dark:bg-cyan-500/10 dark:text-cyan-400 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-desktop"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">管控</span>
+                </a>
+                <a href="/settings" class="flex flex-col items-center group">
+                    <div class="w-12 h-12 rounded-[1rem] bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300 flex items-center justify-center text-xl mb-2 shadow-sm"><i class="fa-solid fa-gear"></i></div>
+                    <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300">设置</span>
+                </a>
+            </div>
+            <div class="mt-8">
+                <a href="/logout" class="w-full flex items-center justify-center gap-2 py-3 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-xl font-black text-sm active:scale-95 transition-transform"><i class="fa-solid fa-arrow-right-from-bracket"></i> 退出系统</a>
+            </div>
         </div>
     </div>
 
@@ -254,16 +294,16 @@
     {% block scripts %}{% endblock %}
     
     <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            const isClosed = sidebar.classList.contains('sidebar-closed');
-            if (isClosed) {
-                sidebar.classList.remove('sidebar-closed'); sidebar.classList.add('sidebar-open');
-                overlay.classList.remove('hidden');
+        // 优化5：触发底部抽屉
+        function toggleBottomSheet() {
+            const sheet = document.getElementById('bottom-sheet');
+            const overlay = document.getElementById('bottom-sheet-overlay');
+            if (sheet.classList.contains('translate-y-full')) {
+                overlay.classList.remove('hidden'); void overlay.offsetWidth;
+                overlay.classList.remove('opacity-0'); sheet.classList.remove('translate-y-full');
             } else {
-                sidebar.classList.add('sidebar-closed'); sidebar.classList.remove('sidebar-open');
-                overlay.classList.add('hidden');
+                overlay.classList.add('opacity-0'); sheet.classList.add('translate-y-full');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
 
@@ -273,16 +313,75 @@
             window.dispatchEvent(new Event('theme-changed'));
         }
 
-        /* ----- 通知与工单轮询逻辑 ----- */
-        let lastNotifyIds = [];
-        let isNotifyPanelOpen = false;
+        /* ----- 全局热播雷达 (从 index.html 搬家过来) ----- */
+        const globalEmbyBaseUrl = "{{ emby_url | default('') }}";
+        const globalEmbyServerId = "{{ server_id | default('') }}";
+        
+        function toggleLiveDropdown() {
+            const panel = document.getElementById('global-live-panel');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden'); void panel.offsetWidth;
+                panel.classList.remove('opacity-0', 'scale-95'); panel.classList.add('opacity-100', 'scale-100');
+                fetchGlobalLive(); // 打开时主动拉取一次
+            } else {
+                panel.classList.remove('opacity-100', 'scale-100'); panel.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => panel.classList.add('hidden'), 200);
+            }
+        }
 
+        async function fetchGlobalLive() {
+            try {
+                const res = await fetch('/api/stats/live'); const json = await res.json();
+                const listContainer = document.getElementById('global-live-list');
+                const badge = document.getElementById('global-live-badge');
+                const statusText = document.getElementById('global-live-status-text');
+
+                if(json.status === 'success' && json.data.length > 0) {
+                    badge.classList.remove('hidden');
+                    statusText.innerText = `${json.data.length} 设备在线`;
+                    let html = '';
+                    json.data.forEach(s => {
+                        const item = s.NowPlayingItem || {}; const playState = s.PlayState || {};
+                        const targetId = item.SeriesId || item.ParentId || s.ItemId || item.Id;
+                        const imgUrl = `/api/proxy/image/${targetId}/primary`; 
+                        const isTranscoding = playState.IsTranscoding || s.IsTranscoding;
+                        const title = item.SeriesName ? `${item.SeriesName} - ${item.Name}` : (item.Name || '未知内容');
+                        let percentage = 0; if (item.RunTimeTicks && item.RunTimeTicks > 0) { percentage = Math.round((playState.PositionTicks / item.RunTimeTicks) * 100); }
+                        html += `
+                        <div onclick="if(globalEmbyBaseUrl) window.open('${globalEmbyBaseUrl}/web/index.html#!/item?id=${targetId}&serverId=${globalEmbyServerId}')" class="flex gap-3 p-3 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all cursor-pointer group border border-transparent hover:border-slate-100 dark:hover:border-white/5">
+                            <div class="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-midnight-700 shadow-sm relative">
+                                <img src="${imgUrl}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='/static/img/favicon.png'">
+                            </div>
+                            <div class="flex flex-col justify-center flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[11px] font-black text-slate-500 dark:text-slate-400 truncate pr-2">${s.UserName || s.User || '未知'}</span>
+                                    ${isTranscoding ? '<span class="text-[9px] bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400 px-1.5 py-0.5 rounded">转码</span>' : '<span class="text-[9px] bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400 px-1.5 py-0.5 rounded">直通</span>'}
+                                </div>
+                                <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 truncate mb-2 group-hover:text-brand-500 transition-colors">${title}</h4>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-100 dark:bg-black/30 rounded-full h-1.5 overflow-hidden shadow-inner">
+                                        <div class="bg-brand-500 h-1.5 rounded-full" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <span class="text-[9px] font-black text-brand-500 w-6 text-right">${percentage}%</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                    listContainer.innerHTML = html; 
+                } else { 
+                    badge.classList.add('hidden'); statusText.innerText = `空闲中`;
+                    listContainer.innerHTML = `<div class="py-12 text-center text-xs text-slate-400 font-bold"><i class="fa-solid fa-bed block text-2xl mb-2 opacity-50"></i>当前暂无播放</div>`;
+                }
+            } catch(e) {}
+        }
+
+        /* ----- 通知与工单轮询逻辑 ----- */
+        let lastNotifyIds = []; let isNotifyPanelOpen = false;
         function toggleNotifyDropdown() {
             const panel = document.getElementById('notify-panel');
             if (isNotifyPanelOpen) {
                 panel.classList.remove('opacity-100', 'scale-100'); panel.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => panel.classList.add('hidden'), 200);
-                isNotifyPanelOpen = false;
+                setTimeout(() => panel.classList.add('hidden'), 200); isNotifyPanelOpen = false;
             } else {
                 panel.classList.remove('hidden'); void panel.offsetWidth; 
                 panel.classList.remove('opacity-0', 'scale-95'); panel.classList.add('opacity-100', 'scale-100');
@@ -290,17 +389,17 @@
             }
         }
 
+        // 统一处理点击外部关闭弹窗 (通知 + 雷达)
         document.addEventListener('click', (e) => {
-            const panelDesk = document.getElementById('notify-panel');
-            const bells = document.querySelectorAll('.notify-bell-btn');
-            if (isNotifyPanelOpen && panelDesk && !panelDesk.contains(e.target)) {
-                let clickedBell = false;
-                bells.forEach(b => { if (b.contains(e.target)) clickedBell = true; });
-                if (!clickedBell) {
-                    panelDesk.classList.remove('opacity-100', 'scale-100'); panelDesk.classList.add('opacity-0', 'scale-95');
-                    setTimeout(() => panelDesk.classList.add('hidden'), 200);
-                    isNotifyPanelOpen = false;
-                }
+            const notifyPanel = document.getElementById('notify-panel');
+            const notifyBell = document.querySelector('.notify-bell-btn');
+            if (isNotifyPanelOpen && !notifyPanel.contains(e.target) && !notifyBell.contains(e.target)) {
+                toggleNotifyDropdown();
+            }
+            const livePanel = document.getElementById('global-live-panel');
+            const liveBtn = document.getElementById('global-live-btn');
+            if (livePanel && !livePanel.classList.contains('hidden') && !livePanel.contains(e.target) && !liveBtn.contains(e.target)) {
+                toggleLiveDropdown();
             }
         });
 
@@ -308,13 +407,11 @@
             try {
                 const res = await fetch('/api/requests/pending_notify'); const json = await res.json();
                 if (json.status === 'success') { updateNotifyUI(json.count, json.items); } 
-                else { document.querySelectorAll('#notify-badge-desktop, #notify-badge-mobile').forEach(b => b.style.display = 'none'); }
             } catch(e) {}
         }
 
         function updateNotifyUI(count, items) {
-            const badgeD = document.getElementById('notify-badge-desktop');
-            const badgeM = document.getElementById('notify-badge-mobile');
+            const badgeD = document.getElementById('notify-badge-desktop'); const badgeM = document.getElementById('notify-badge-mobile');
             if (count > 0) {
                 if(badgeD) badgeD.classList.remove('hidden'); if(badgeM) badgeM.classList.remove('hidden');
                 document.getElementById('notify-count-text').textContent = count + ' 条待处理';
@@ -335,7 +432,7 @@
                         <img src="${item.poster || '/static/img/favicon.png'}" onerror="this.src='/static/img/favicon.png'" class="w-10 h-14 object-cover rounded-lg shadow-sm bg-slate-100 dark:bg-midnight-800 shrink-0">
                         <div class="flex-1 min-w-0 flex flex-col justify-center">
                             <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-500 transition">${item.title}</div>
-                            <div class="text-[10px] text-slate-500 mt-1 truncate"><i class="fa-solid fa-user text-[9px] mr-1"></i>${item.users}</div>
+                            <div class="text-[10px] text-slate-500 mt-1 truncate">${item.users}</div>
                         </div>
                         <div class="text-[9px] text-slate-400 font-mono mt-1 shrink-0">${timeStr}</div>
                     </a>`;
@@ -347,78 +444,47 @@
         }
 
         function showGlobalToast(item) {
-            const container = document.getElementById('global-toast-container');
-            const toast = document.createElement('div');
+            const container = document.getElementById('global-toast-container'); const toast = document.createElement('div');
             toast.className = "flex items-center gap-3 bg-white/95 dark:bg-midnight-800/95 backdrop-blur-2xl border border-slate-100 dark:border-white/5 p-3 rounded-2xl shadow-2xl transform translate-x-full opacity-0 transition-all duration-500 pointer-events-auto w-[280px] md:w-80 cursor-pointer hover:scale-105";
             toast.onclick = () => { window.location.href = item.type === 'feedback' ? '/requests_admin?tab=feedback' : '/requests_admin'; };
-            toast.innerHTML = `
-                <div class="w-10 h-10 rounded-full ${item.type === 'feedback' ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500' : 'bg-brand-50 dark:bg-brand-500/10 text-brand-500'} flex items-center justify-center shrink-0">
-                    ${item.poster ? `<img src="${item.poster}" class="w-full h-full object-cover rounded-full">` : `<i class="fa-solid ${item.type === 'feedback' ? 'fa-triangle-exclamation' : 'fa-clapperboard'}"></i>`}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="text-[10px] font-black ${item.type === 'feedback' ? 'text-rose-500' : 'text-brand-500'} mb-0.5 uppercase tracking-wider">收到新的工单</div>
-                    <div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${item.title}</div>
-                    <div class="text-[10px] text-slate-500 truncate mt-0.5">${item.users}</div>
-                </div>
-            `;
+            toast.innerHTML = `<div class="w-10 h-10 rounded-full ${item.type === 'feedback' ? 'bg-rose-50 text-rose-500' : 'bg-brand-50 text-brand-500'} flex items-center justify-center shrink-0">${item.poster ? `<img src="${item.poster}" class="w-full h-full object-cover rounded-full">` : `<i class="fa-solid fa-bell"></i>`}</div><div class="flex-1 min-w-0"><div class="text-[10px] font-black text-brand-500 mb-0.5 uppercase">新工单</div><div class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${item.title}</div></div>`;
             container.appendChild(toast);
             setTimeout(() => { toast.classList.remove('translate-x-full', 'opacity-0'); toast.classList.add('translate-x-0', 'opacity-100'); }, 50);
-            setTimeout(() => { if(toast.parentElement) { toast.classList.remove('translate-x-0', 'opacity-100'); toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => { if(toast.parentElement) toast.remove(); }, 500); } }, 8000);
+            setTimeout(() => { if(toast.parentElement) { toast.classList.remove('translate-x-0', 'opacity-100'); toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 500); } }, 8000);
         }
 
-        document.addEventListener('DOMContentLoaded', () => { setTimeout(fetchPendingNotify, 1000); setInterval(fetchPendingNotify, 30000); });
+        document.addEventListener('DOMContentLoaded', () => { 
+            setTimeout(fetchPendingNotify, 1000); setInterval(fetchPendingNotify, 30000); 
+            setTimeout(fetchGlobalLive, 2000); setInterval(fetchGlobalLive, 10000); // 全局雷达轮询
+        });
 
         /* ----- 全局搜索逻辑 ----- */
-        const searchModal = document.getElementById('ep-global-search');
-        const searchContainer = document.getElementById('ep-search-container');
-        const searchInput = document.getElementById('ep-search-input');
-        const searchResults = document.getElementById('ep-search-results');
-        const searchLoading = document.getElementById('ep-search-loading');
-        const searchEmpty = document.getElementById('ep-search-empty');
+        const searchModal = document.getElementById('ep-global-search'); const searchContainer = document.getElementById('ep-search-container');
+        const searchInput = document.getElementById('ep-search-input'); const searchResults = document.getElementById('ep-search-results');
+        const searchLoading = document.getElementById('ep-search-loading'); const searchEmpty = document.getElementById('ep-search-empty');
         let searchTimeout = null;
-
-        function openGlobalSearch() {
-            searchModal.classList.remove('hidden'); void searchModal.offsetWidth;
-            searchModal.classList.remove('opacity-0'); searchContainer.classList.remove('scale-95');
-            searchInput.value = ''; searchResults.innerHTML = ''; searchResults.appendChild(searchEmpty); searchEmpty.style.display = 'block';
-            setTimeout(() => searchInput.focus(), 100);
-        }
-        function closeGlobalSearch() {
-            searchModal.classList.add('opacity-0'); searchContainer.classList.add('scale-95');
-            setTimeout(() => { searchModal.classList.add('hidden'); searchInput.blur(); }, 200);
-        }
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openGlobalSearch(); }
-            if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) { closeGlobalSearch(); }
-        });
+        function openGlobalSearch() { searchModal.classList.remove('hidden'); void searchModal.offsetWidth; searchModal.classList.remove('opacity-0'); searchContainer.classList.remove('scale-95'); searchInput.value = ''; searchResults.innerHTML = ''; searchResults.appendChild(searchEmpty); searchEmpty.style.display = 'block'; setTimeout(() => searchInput.focus(), 100); }
+        function closeGlobalSearch() { searchModal.classList.add('opacity-0'); searchContainer.classList.add('scale-95'); setTimeout(() => { searchModal.classList.add('hidden'); searchInput.blur(); }, 200); }
+        document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openGlobalSearch(); } if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) { closeGlobalSearch(); } });
         searchInput.addEventListener('input', (e) => {
             clearTimeout(searchTimeout); const query = e.target.value.trim();
             if (!query) { searchResults.innerHTML = ''; searchResults.appendChild(searchEmpty); searchEmpty.style.display = 'block'; return; }
             searchLoading.classList.remove('hidden'); searchEmpty.style.display = 'none';
             searchTimeout = setTimeout(async () => {
-                try {
-                    const res = await fetch(`/api/library/search?query=${encodeURIComponent(query)}`); const data = await res.json();
-                    renderSearchResults(data.data || []);
-                } catch (err) { searchResults.innerHTML = '<div class="text-center py-10 text-rose-500 font-bold">搜索请求失败</div>'; } 
-                finally { searchLoading.classList.add('hidden'); }
+                try { const res = await fetch(`/api/library/search?query=${encodeURIComponent(query)}`); const data = await res.json(); renderSearchResults(data.data || []); } 
+                catch (err) { searchResults.innerHTML = '<div class="text-center py-10 text-rose-500 font-bold">搜索失败</div>'; } finally { searchLoading.classList.add('hidden'); }
             }, 500);
         });
-
         function renderSearchResults(items) {
             if (items.length === 0) { searchResults.innerHTML = '<div class="text-center py-12 text-slate-400 font-bold">未找到资源 🤷‍♂️</div>'; return; }
             let html = '';
             items.forEach(item => {
                 let badgesHtml = item.badges.map(b => `<span class="px-2 py-0.5 text-[10px] font-black rounded border ${b.color.replace('text-', 'text-').replace('bg-', 'bg-').replace('border-', 'border-')} shadow-sm">${b.text}</span>`).join('');
-                let typeIcon = item.type === 'movie' ? '<i class="fa-solid fa-film text-brand-500"></i>' : '<i class="fa-solid fa-tv text-purple-500"></i>';
-                let safeOverview = item.overview ? item.overview.replace(/<[^>]+>/g, ' ').replace(/[\r\n]+/g, ' ').trim() : '暂无简介';
                 html += `
                     <a href="${item.emby_url}" target="_blank" class="flex gap-4 p-3 mb-1 hover:bg-white dark:hover:bg-white/5 rounded-xl cursor-pointer transition-all group border border-transparent hover:border-slate-200 dark:hover:border-white/10 hover:shadow-sm">
-                        <img src="${item.poster}" onerror="this.src='/static/img/logo-dark.png';" class="w-16 h-24 object-cover rounded-lg bg-slate-100 dark:bg-midnight-800 shrink-0 border border-slate-100 dark:border-white/5">
+                        <img src="${item.poster}" onerror="this.src='/static/img/logo-app.png';" class="w-16 h-24 object-cover rounded-lg bg-slate-100 dark:bg-midnight-800 shrink-0 border border-slate-100 dark:border-white/5">
                         <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
-                            <div>
-                                <div class="flex items-center gap-2 mb-1.5"><span class="shrink-0">${typeIcon}</span><h4 class="font-bold text-base text-slate-900 dark:text-white truncate flex-1">${item.name}</h4><span class="text-[10px] font-black font-mono bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-300">${item.year}</span></div>
-                                <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">${safeOverview}</p>
-                            </div>
+                            <div><div class="flex items-center gap-2 mb-1.5"><h4 class="font-bold text-base text-slate-900 dark:text-white truncate flex-1">${item.name}</h4><span class="text-[10px] font-black font-mono bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-slate-500">${item.year}</span></div><p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">${item.overview ? item.overview.replace(/<[^>]+>/g, ' ').trim() : '暂无简介'}</p></div>
                             <div class="flex flex-wrap gap-2 mt-2">${badgesHtml}</div>
                         </div>
                     </a>`;
