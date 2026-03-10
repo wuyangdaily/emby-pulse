@@ -73,14 +73,14 @@
                 </div>
             </div>
 
-            <button onclick="loadTasks()" class="bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-[14px] border border-transparent dark:border-white/5 text-[13px] font-bold transition-all shadow-sm flex items-center active:scale-95 shrink-0">
-                <i class="fa-solid fa-rotate-right md:mr-1.5"></i> <span class="hidden md:inline">刷新状态</span>
+            <button onclick="loadTasks(true)" class="bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-[14px] border border-transparent dark:border-white/5 text-[13px] font-bold transition-all shadow-sm flex items-center active:scale-95 shrink-0">
+                <i class="fa-solid fa-rotate-right md:mr-1.5" id="refresh-icon"></i> <span class="hidden md:inline">刷新状态</span>
             </button>
         </div>
     </div>
 
     <div id="task-container" class="space-y-6 md:space-y-8 mt-4">
-        <div class="text-center py-40">
+        <div class="text-center py-40" id="loading-indicator">
             <i class="fa-solid fa-circle-notch fa-spin text-brand-500 text-4xl mb-4"></i>
             <p class="text-gray-400 text-[11px] font-bold tracking-widest uppercase animate-pulse">正在同步服务器任务矩阵...</p>
         </div>
@@ -92,6 +92,7 @@
     let pollInterval = null;
     let isDropdownOpen = false;
 
+    // 点击其他地方关闭下拉浮窗
     document.addEventListener('click', (e) => {
         const container = document.getElementById('running-tasks-dropdown-container');
         if (isDropdownOpen && container && !container.contains(e.target)) {
@@ -123,28 +124,57 @@
         setTimeout(() => { if(!isDropdownOpen) panel.classList.add('hidden'); }, 200);
     }
 
-    async function init() { loadTasks(); }
+    async function init() { 
+        loadTasks(); 
+    }
 
-    async function loadTasks() {
+    async function loadTasks(isManualRefresh = false) {
+        const container = document.getElementById('task-container');
+        if (isManualRefresh) {
+            const icon = document.getElementById('refresh-icon');
+            if(icon) icon.classList.add('fa-spin');
+        }
+
         try {
             const res = await fetch('/api/tasks');
             const json = await res.json();
             
             if(json.status === 'success') {
-                renderGroupedTasks(json.data);
+                const data = json.data || [];
+                renderGroupedTasks(data);
                 
                 let runningTasks = [];
-                json.data.forEach(group => { group.tasks.forEach(t => { if (t.State === 'Running') runningTasks.push(t); }); });
+                data.forEach(group => { 
+                    if(group.tasks) {
+                        group.tasks.forEach(t => { if (t.State === 'Running') runningTasks.push(t); }); 
+                    }
+                });
                 updateRunningTasksUI(runningTasks);
 
                 if (runningTasks.length > 0 && !pollInterval) {
-                    pollInterval = setInterval(loadTasks, 2000);
+                    pollInterval = setInterval(() => loadTasks(false), 2000);
                 } else if (runningTasks.length === 0 && pollInterval) {
                     clearInterval(pollInterval);
                     pollInterval = null;
                 }
+            } else {
+                // 如果 API 返回失败
+                if(container.innerHTML.includes('fa-circle-notch')) {
+                    container.innerHTML = `<div class="text-center py-40 text-red-500 font-bold text-[13px] tracking-widest"><i class="fa-solid fa-circle-exclamation mr-2 text-xl"></i>获取任务失败: ${json.message || '未知错误'}</div>`;
+                }
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error(e); 
+            // 断网或服务端炸了
+            if(container.innerHTML.includes('fa-circle-notch')) {
+                container.innerHTML = `<div class="text-center py-40 text-red-500 font-bold text-[13px] tracking-widest"><i class="fa-solid fa-wifi mr-2 text-xl"></i>网络请求超时，请检查后端服务</div>`;
+            }
+        } finally {
+            if (isManualRefresh) {
+                const icon = document.getElementById('refresh-icon');
+                if(icon) setTimeout(() => icon.classList.remove('fa-spin'), 500);
+            }
+        }
     }
 
     function updateRunningTasksUI(tasks) {
@@ -188,7 +218,7 @@
     function renderGroupedTasks(groups) {
         const container = document.getElementById('task-container');
         if(!groups || groups.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-400 py-20 font-bold text-[13px] tracking-widest"><i class="fa-solid fa-ghost mr-2 opacity-50"></i>暂无任务数据</div>';
+            container.innerHTML = '<div class="text-center text-gray-400 py-32 font-bold text-[13px] tracking-widest"><i class="fa-solid fa-ghost mr-2 opacity-50"></i>暂无任务数据</div>';
             return;
         }
 
@@ -227,7 +257,6 @@
                     }
                 }
 
-                // 🔥 运行中的高级发光动效
                 const cardBaseClass = "relative bg-white dark:bg-[#1C1C1E] rounded-[20px] p-5 flex flex-col justify-between min-h-[130px] group transition-all duration-300";
                 const borderClass = isRunning 
                     ? 'border border-blue-500 shadow-[0_8px_30px_rgba(59,130,246,0.15)] dark:shadow-[0_8px_30px_rgba(59,130,246,0.2)] ring-1 ring-blue-500 scale-[1.02] z-10' 
@@ -324,5 +353,8 @@
             else alert(json.message);
         } catch(e) { alert('网络错误'); }
     }
+
+    // 🔥 这里补上了刚才遗漏的初始化触发器！
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 {% endblock %}
