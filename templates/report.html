@@ -1,57 +1,35 @@
 {% extends "layout.html" %}
-{% block title %}映迹工坊 - 旗舰版{% endblock %}
+{% block title %}映迹工坊 - EmbyPulse{% endblock %}
+
 {% block head %}
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <script src="https://cdn.bootcdn.net/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 <style>
-    html, body { height: 100%; margin: 0; background: #f3f4f6; overflow: hidden; }
-    .app-container { display: flex; height: 100%; }
-    
-    .preview-area { 
-        flex: 1; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; 
-        padding: 40px 20px; padding-top: 30px; padding-bottom: 140px;
-        background-color: #e5e7eb; -webkit-overflow-scrolling: touch; 
-        transition: background-color 0.3s;
+    /* === 🔥 Apple 级极简卡片质感 === */
+    .apple-card { 
+        background-color: rgba(255, 255, 255, 0.95); 
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 24px; 
+        padding: 24px; 
+        box-shadow: 0 4px 24px -8px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.02);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    .control-panel { 
-        width: 360px; background: white; padding: 20px; border-left: 1px solid #ddd; 
-        z-index: 50; display: block; box-shadow: -5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; 
-        transition: all 0.3s;
+    html.dark .apple-card {
+        background-color: rgba(28, 28, 30, 0.85); 
+        box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255,255,255,0.04);
     }
-    
-    .mobile-toolbar { 
-        display: none; position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; 
-        background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); 
-        border-top: 1px solid rgba(0,0,0,0.1); z-index: 500; 
-        align-items: center; justify-content: space-between; padding: 0 15px; 
-        box-sizing: border-box; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); 
-    }
-    .toolbar-btn { flex: 1; height: 44px; border-radius: 8px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-config { background: #f3f4f6; color: #333; margin-right: 10px; border: 1px solid #ddd; }
-    .btn-save { background: #16a34a; color: white; flex: 1.5; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3); }
-    
-    .bottom-sheet { 
-        display: block; visibility: hidden; position: fixed; bottom: 0; left: 0; width: 100%; 
-        background: white; border-radius: 20px 20px 0 0; padding: 25px; padding-bottom: 40px; 
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.2); z-index: 600; 
-        transform: translateY(100%); transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
-        max-height: 85vh; overflow-y: auto; 
-    }
-    .bottom-sheet.active { visibility: visible; transform: translateY(0); }
-    .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .sheet-title { font-weight: 900; font-size: 18px; color: #333; }
-    .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; color: #666; cursor: pointer; }
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 550; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-    .overlay.active { opacity: 1; pointer-events: auto; }
-    
-    @media (max-width: 768px) { 
-        .app-container { flex-direction: column; } 
-        .control-panel { display: none !important; } 
-        .mobile-toolbar { display: flex; } 
-        .preview-area { align-items: flex-start; } 
-    }
-    
+
+    .mac-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .mac-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.4); border-radius: 10px; }
+    html.dark .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.15); }
+
+    /* ==================================
+       🔥 海报生成引擎原生 CSS (受保护区域) 
+       ================================== */
     :root { 
         --theme-bg: #1a1a1a; 
         --theme-card: rgba(255,255,255,0.08); 
@@ -65,11 +43,11 @@
         width: 400px; height: fit-content; min-height: auto; padding-bottom: 20px; 
         background: var(--theme-bg); color: var(--theme-text); position: relative; 
         overflow: hidden; display: flex; flex-direction: column; 
-        box-shadow: 0 30px 60px rgba(0,0,0,0.5); line-height: 1.6; 
+        box-shadow: 0 30px 60px rgba(0,0,0,0.2); line-height: 1.6; 
         font-family: "Microsoft YaHei", "Noto Sans SC", sans-serif !important; 
         transition: background 0.3s; transform-origin: top center; 
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+        border-radius: 24px;
     }
     
     #poster-bg-img { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; transform: scale(1.2); opacity: 0; transition: opacity 0.5s; height: 100%; }
@@ -127,55 +105,205 @@
     .rank-name { font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 4px; margin-bottom: -2px; }
     .rank-meta-row { font-size: 9px; opacity: 0.7; display: flex; gap: 8px; }
     
-    /* 🔥 史诗级重构：彻底抛弃内联混排，采用结构化数据看板引擎！ */
     .mood-area { margin-top: 25px; display: flex; flex-direction: column; gap: 12px; }
     .mood-card { background: linear-gradient(135deg, var(--theme-card), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; position: relative; overflow: hidden; color: var(--theme-text); transition: color 0.3s, background 0.3s;}
     .mood-icon { position: absolute; right: -10px; bottom: -15px; font-size: 60px; opacity: 0.08; transform: rotate(-15deg); }
     .mood-title { font-size: 11px; font-weight: 900; letter-spacing: 1px; color: var(--theme-highlight); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; transition: color 0.3s; line-height: 1;}
     .mood-title i { font-size: 14px; }
     
-    /* 大结构化色块容器 */
     .mood-data-container { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
     .mood-data-box { background: var(--theme-pill-bg); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(255,255,255,0.05); min-width: 80px; }
     .mood-data-val { font-size: 16px; font-weight: 900; color: var(--theme-pill-text); line-height: 1; margin-bottom: 4px; }
     .mood-data-sub { font-size: 9px; opacity: 0.7; text-transform: uppercase; font-weight: bold; }
     
-    /* 胶囊体流派标签 */
     .mood-tags-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
     .mood-tag-pill { background: var(--theme-pill-bg); color: var(--theme-pill-text); font-size: 12px; font-weight: bold; padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 6px; }
     
     .mood-desc { font-size: 11px; line-height: 1.5; opacity: 0.7; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px; margin-top: 4px; }
 
-    /* 物理级字体锁定颜色，脱离全局 CSS 变量的魔爪 */
     .p-footer { margin-top: 30px; text-align: center; font-size: 10px; letter-spacing: 2px; font-weight: bold; }
     .empty-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.4; min-height: 200px; text-align: center; color: var(--theme-text); transition: color 0.3s;}
-    
-    .ctrl-label { font-size: 12px; font-weight: bold; color: #666; margin-bottom: 8px; display: block; }
-    .btn-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-    .btn { flex: 1; padding: 10px; border: 1px solid #ddd; background: #fff; font-weight: bold; border-radius: 8px; font-size: 12px; cursor: pointer; min-width: 60px; white-space: nowrap; color: #374151; transition: all 0.2s; }
-    .btn.active { background: #111827; color: white; border-color: #111827; }
-    .theme-dots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
-    .dot { height: 40px; border-radius: 8px; cursor: pointer; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: bold; text-shadow: 0 1px 2px black; }
-
-    html.dark body { background: #111827 !important; }
-    html.dark .preview-area { background-color: #0f172a; } 
-    html.dark .control-panel { background: #1f2937; border-left-color: #374151; }
-    html.dark .mobile-toolbar { background: rgba(31, 41, 55, 0.95); border-top-color: #374151; }
-    html.dark .toolbar-btn.btn-config { background: #374151; color: white; border-color: #4b5563; }
-    html.dark .bottom-sheet { background: #1f2937; color: #e5e7eb; }
-    html.dark .sheet-title { color: white; }
-    html.dark .sheet-close { background: #374151; color: white; }
-    html.dark .ctrl-label { color: #d1d5db; }
-    html.dark .btn { background: #374151; border-color: #4b5563; color: #e5e7eb; }
-    html.dark .btn.active { background: #f3f4f6; color: #111827; border-color: #fff; }
-    html.dark .btn:hover:not(.active) { background: #4b5563; }
-    .ctrl-select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; background: #f9fafb; color: #333; outline: none; }
-    html.dark .ctrl-select { background-color: #374151; border-color: #4b5563; color: white; }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="w-full max-w-[1600px] mx-auto py-4 pb-32 px-4 sm:px-6 md:px-8 space-y-4 md:space-y-6">
+
+    <div class="apple-card flex flex-col md:flex-row md:items-center justify-between gap-6 w-full mb-2 p-5 md:p-6">
+        <div class="flex items-center gap-4 pl-1 shrink-0">
+            <div class="w-12 h-12 rounded-[14px] bg-gradient-to-br from-pink-500 to-rose-500 text-white flex items-center justify-center text-xl shadow-lg shadow-rose-500/30 shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <h2 class="text-xl md:text-[22px] font-bold tracking-tight text-gray-900 dark:text-white">映迹工坊</h2>
+                <div class="text-[12px] text-gray-500 mt-1 font-medium flex items-center gap-1.5">
+                    <i class="fa-solid fa-palette opacity-70"></i> <span>智能生成用户专属的月度/年度观影海报</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hidden lg:flex items-center gap-3 w-full md:w-auto">
+            <button onclick="savePoster()" class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-[14px] font-bold text-[13px] shadow-md shadow-brand-500/20 transition-all active:scale-95 shrink-0 border border-transparent">
+                <i class="fa-solid fa-download"></i> <span class="save-btn-text">保存并下载海报</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 items-stretch">
+        
+        <div class="lg:col-span-8 apple-card flex items-start justify-center overflow-x-auto mac-scrollbar bg-gray-50/50 dark:bg-black/10 min-h-[600px] p-6 md:p-10 relative">
+            <div id="scale-wrapper" class="flex items-start justify-center transform-origin-top transition-transform duration-300">
+                
+                <div id="capture-target" class="poster-canvas">
+                    <div id="poster-bg-img" data-src=""></div>
+                    <div id="poster-bg-gradient"></div>
+                    <div class="p-content">
+                        <div class="p-header">
+                            <div class="user-box">
+                                <div class="avatar" id="p-avatar"></div>
+                                <div class="user-info">
+                                    <h1 id="p-user">User</h1>
+                                    <p id="p-period">全量观影报告</p>
+                                </div>
+                            </div>
+                            <div class="server-pill"><span id="p-server">0</span>全服总播</div>
+                        </div>
+                        <div class="stats-row">
+                            <div class="stat-card">
+                                <div class="stat-val" id="p-hours">0</div>
+                                <div class="stat-label">专注时长 (H)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-val" id="p-plays">0</div>
+                                <div class="stat-label">播放次数</div>
+                            </div>
+                        </div>
+                        
+                        <div id="content-area">
+                            <div id="podium-area" class="podium-container" style="display:none;">
+                                <div class="podium-item rank-2" id="rank2-box" style="visibility: hidden;">
+                                    <div class="medal rank-2">2</div>
+                                    <img class="podium-cover" id="rank2-img">
+                                    <div class="podium-info"><div class="podium-title" id="rank2-title">-</div><div class="podium-meta" id="rank2-meta">0次</div></div>
+                                </div>
+                                <div class="podium-item rank-1" id="rank1-box" style="visibility: hidden;">
+                                    <div class="medal rank-1"><i class="fa-solid fa-crown"></i></div>
+                                    <img class="podium-cover" id="rank1-img">
+                                    <div class="podium-info"><div class="podium-title" id="rank1-title">-</div><div class="podium-meta" id="rank1-meta">0次</div></div>
+                                </div>
+                                <div class="podium-item rank-3" id="rank3-box" style="visibility: hidden;">
+                                    <div class="medal rank-3">3</div>
+                                    <img class="podium-cover" id="rank3-img">
+                                    <div class="podium-info"><div class="podium-title" id="rank3-title">-</div><div class="podium-meta" id="rank3-meta">0次</div></div>
+                                </div>
+                            </div>
+                            
+                            <div class="rank-list" id="rank-list"></div>
+                            
+                            <div class="mood-area" id="mood-area"></div>
+                        </div>
+                        
+                        <div id="empty-area" class="empty-box" style="display:none;"><i class="fa-solid fa-ghost" style="font-size: 40px; margin-bottom: 10px;"></i><p>该时段暂无记录</p></div>
+                        <div class="p-footer" id="p-footer" style="color: rgba(255,255,255,0.4);">GENERATED BY EMBY PULSE</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 apple-card flex flex-col p-6 h-full">
+            <h3 class="text-[15px] font-bold text-gray-800 dark:text-gray-200 mb-6 flex items-center shrink-0">
+                <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 flex items-center justify-center mr-3 shadow-sm border border-gray-200/50 dark:border-white/5"><i class="fa-solid fa-sliders text-sm"></i></div> 
+                参数构建台
+            </h3>
+            
+            <div class="flex-1 flex flex-col justify-start space-y-6">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">数据来源对象</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-indigo-500 z-10"><i class="fa-solid fa-user-astronaut"></i></div>
+                        <select id="user-select" class="w-full appearance-none px-4 py-3 pl-10 pr-10 rounded-[14px] border border-transparent bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-[13px] font-bold text-gray-800 dark:text-gray-100 focus:bg-white dark:focus:bg-black/30 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all cursor-pointer shadow-sm" onchange="changeUser(this.value)">
+                            <option>Loading...</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 z-10"><i class="fa-solid fa-chevron-down text-[10px]"></i></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">分析时间切片</label>
+                    <div class="grid grid-cols-4 gap-2 btn-group bg-gray-50 dark:bg-black/20 p-1.5 rounded-[16px] border border-gray-100 dark:border-white/5 shadow-inner">
+                        <button class="btn px-2 py-2.5 rounded-[12px] border border-transparent bg-transparent text-[12px] font-bold text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-[#3A3A3C] hover:shadow-sm transition-all" onclick="setPeriod('all', this)">全量</button>
+                        <button class="btn px-2 py-2.5 rounded-[12px] border border-transparent bg-transparent text-[12px] font-bold text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-[#3A3A3C] hover:shadow-sm transition-all" onclick="setPeriod('year', this)">年度</button>
+                        <button class="btn active px-2 py-2.5 rounded-[12px] border border-brand-200 dark:border-brand-500/30 bg-white dark:bg-brand-900/30 text-[12px] font-bold text-brand-600 dark:text-brand-400 shadow-sm transition-all" onclick="setPeriod('month', this)">本月</button>
+                        <button class="btn px-2 py-2.5 rounded-[12px] border border-transparent bg-transparent text-[12px] font-bold text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-[#3A3A3C] hover:shadow-sm transition-all" onclick="setPeriod('week', this)">本周</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider pl-1">海报色彩引擎</label>
+                    <div class="grid grid-cols-4 gap-3 mb-3">
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #1a1a1a;" onclick="setTheme('#1a1a1a', 'white', '#eab308')">黑金</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #2e1065;" onclick="setTheme('#2e1065', 'white', '#c084fc')">赛博</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #0f172a;" onclick="setTheme('#0f172a', 'white', '#38bdf8')">深海</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #064e3b;" onclick="setTheme('#064e3b', 'white', '#34d399')">极光</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #7f1d1d;" onclick="setTheme('#7f1d1d', 'white', '#f87171')">熔岩</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: linear-gradient(135deg, #c2410c, #7c2d12);" onclick="setTheme('linear-gradient(135deg, #c2410c, #7c2d12)', 'white', '#fdba74')">落日</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-white/20 shadow-sm flex items-center justify-center text-[10px] font-bold text-white transition-transform hover:scale-105 active:scale-95" style="background: #525252;" onclick="setTheme('#525252', 'white', '#e5e7eb')">水泥</div>
+                        <div class="h-10 rounded-[12px] cursor-pointer border border-gray-200 shadow-sm flex items-center justify-center text-[10px] font-bold text-gray-800 transition-transform hover:scale-105 active:scale-95" style="background: #ffffff;" onclick="setTheme('#ffffff', '#333', '#3b82f6')">纯白</div>
+                    </div>
+                </div>
+                
+                <div class="pt-2">
+                    <button onclick="toggleCoverBg()" id="cover-bg-btn" class="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-gray-50 hover:bg-gray-100 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 rounded-[14px] font-bold text-[12px] transition-all border border-dashed border-gray-300 dark:border-gray-600 active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-image text-brand-500"></i> 叠加年度最佳封面作为透视背景
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-100 dark:border-white/5 lg:hidden">
+                <button onclick="savePoster()" class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[16px] font-black text-[15px] shadow-lg shadow-emerald-500/30 transition-all active:scale-95">
+                    <i class="fa-solid fa-download"></i> <span class="save-btn-text">立即保存至相册</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
+    window.onerror = function(msg) { alert("发生错误: " + msg); return false; };
+</script>
+<script>
+    let currentUserId = '';
+    let currentUserName = 'User';
+    let currentPeriod = 'month';
+    let isCoverBgEnabled = false;
+    let top1PhysicalBlurredBase64 = null;
+
+    // 🔥 修复比例缩放逻辑，确保手机端海报居中且可看
+    function fitScale() {
+        const wrapper = document.getElementById('scale-wrapper');
+        const container = wrapper.parentElement;
+        const w = container.clientWidth - 48; // 减去 padding
+        if (w < 400) {
+            const scale = w / 400;
+            wrapper.style.transform = `scale(${scale})`;
+            // 如果缩放了，要扣掉对应的高度差，防止下方大片留白
+            setTimeout(() => {
+                const targetH = document.getElementById('capture-target').offsetHeight;
+                wrapper.style.height = (targetH * scale) + 'px';
+            }, 100);
+        } else {
+            wrapper.style.transform = 'none';
+            wrapper.style.height = 'auto';
+        }
+    }
+    
+    window.addEventListener('resize', fitScale);
+
     window.tmdbCache = {};
     window.fallbackReportPoster = async function(imgEl, title, isTop1 = false) {
         if(imgEl.getAttribute('data-fallback-done')) return;
@@ -234,157 +362,6 @@
             img.src = base64Url;
         });
     }
-</script>
-
-<div class="app-container">
-    <div class="preview-area">
-        <div id="scale-wrapper">
-            <div id="capture-target" class="poster-canvas">
-                <div id="poster-bg-img" data-src=""></div>
-                <div id="poster-bg-gradient"></div>
-                <div class="p-content">
-                    <div class="p-header">
-                        <div class="user-box">
-                            <div class="avatar" id="p-avatar"></div>
-                            <div class="user-info">
-                                <h1 id="p-user">User</h1>
-                                <p id="p-period">全量观影报告</p>
-                            </div>
-                        </div>
-                        <div class="server-pill"><span id="p-server">0</span>全服总播</div>
-                    </div>
-                    <div class="stats-row">
-                        <div class="stat-card">
-                            <div class="stat-val" id="p-hours">0</div>
-                            <div class="stat-label">专注时长 (H)</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-val" id="p-plays">0</div>
-                            <div class="stat-label">播放次数</div>
-                        </div>
-                    </div>
-                    
-                    <div id="content-area">
-                        <div id="podium-area" class="podium-container" style="display:none;">
-                            <div class="podium-item rank-2" id="rank2-box" style="visibility: hidden;">
-                                <div class="medal rank-2">2</div>
-                                <img class="podium-cover" id="rank2-img">
-                                <div class="podium-info"><div class="podium-title" id="rank2-title">-</div><div class="podium-meta" id="rank2-meta">0次</div></div>
-                            </div>
-                            <div class="podium-item rank-1" id="rank1-box" style="visibility: hidden;">
-                                <div class="medal rank-1"><i class="fa-solid fa-crown"></i></div>
-                                <img class="podium-cover" id="rank1-img">
-                                <div class="podium-info"><div class="podium-title" id="rank1-title">-</div><div class="podium-meta" id="rank1-meta">0次</div></div>
-                            </div>
-                            <div class="podium-item rank-3" id="rank3-box" style="visibility: hidden;">
-                                <div class="medal rank-3">3</div>
-                                <img class="podium-cover" id="rank3-img">
-                                <div class="podium-info"><div class="podium-title" id="rank3-title">-</div><div class="podium-meta" id="rank3-meta">0次</div></div>
-                            </div>
-                        </div>
-                        
-                        <div class="rank-list" id="rank-list"></div>
-                        
-                        <div class="mood-area" id="mood-area"></div>
-                    </div>
-                    
-                    <div id="empty-area" class="empty-box" style="display:none;"><i class="fa-solid fa-ghost" style="font-size: 40px; margin-bottom: 10px;"></i><p>该时段暂无记录</p></div>
-                    <div class="p-footer" id="p-footer" style="color: rgba(255,255,255,0.4);">GENERATED BY EMBY PULSE</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="control-panel">
-        <div id="desktop-controls-container"></div>
-    </div>
-
-    <div class="mobile-toolbar">
-        <button class="toolbar-btn btn-config" onclick="toggleSheet()">
-            <i class="fa-solid fa-sliders"></i> 参数配置
-        </button>
-        <button class="toolbar-btn btn-save" onclick="savePoster()" id="mobile-save-btn">
-            <i class="fa-solid fa-download"></i> 保存海报
-        </button>
-    </div>
-
-    <div class="overlay" id="mobile-overlay" onclick="toggleSheet(false)"></div>
-    <div class="bottom-sheet" id="mobile-sheet">
-        <div class="sheet-header">
-            <div class="sheet-title">配置选项</div>
-            <div class="sheet-close" onclick="toggleSheet(false)"><i class="fa-solid fa-xmark"></i></div>
-        </div>
-        
-        <div id="mobile-controls-container">
-            <label class="ctrl-label">选择用户</label>
-            <select id="user-select" class="ctrl-select" onchange="changeUser(this.value)">
-                <option>Loading...</option>
-            </select>
-
-            <label class="ctrl-label">时间范围</label>
-            <div class="btn-group">
-                <button class="btn" onclick="setPeriod('all', this)">全量</button>
-                <button class="btn" onclick="setPeriod('year', this)">年度</button>
-                <button class="btn active" onclick="setPeriod('month', this)">本月</button>
-                <button class="btn" onclick="setPeriod('week', this)">本周</button>
-            </div>
-
-            <label class="ctrl-label">海报主题</label>
-            <div class="theme-dots">
-                <div class="dot" style="background: #1a1a1a;" onclick="setTheme('#1a1a1a', 'white', '#eab308')">黑金</div>
-                <div class="dot" style="background: #2e1065;" onclick="setTheme('#2e1065', 'white', '#c084fc')">赛博</div>
-                <div class="dot" style="background: #0f172a;" onclick="setTheme('#0f172a', 'white', '#38bdf8')">深海</div>
-                <div class="dot" style="background: #064e3b;" onclick="setTheme('#064e3b', 'white', '#34d399')">极光</div>
-                <div class="dot" style="background: #7f1d1d;" onclick="setTheme('#7f1d1d', 'white', '#f87171')">熔岩</div>
-                <div class="dot" style="background: linear-gradient(135deg, #c2410c, #7c2d12);" onclick="setTheme('linear-gradient(135deg, #c2410c, #7c2d12)', 'white', '#fdba74')">落日</div>
-                <div class="dot" style="background: #525252;" onclick="setTheme('#525252', 'white', '#e5e7eb')">水泥</div>
-                <div class="dot" style="background: #ffffff; color:#333; text-shadow:none; border:1px solid #ccc;" onclick="setTheme('#ffffff', '#333', '#3b82f6')">纯白</div>
-            </div>
-            
-            <button onclick="toggleCoverBg()" class="btn" style="width: 100%; margin-bottom: 15px; border: 1px dashed #999;">🖼️ 使用 Top1 封面背景</button>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    window.onerror = function(msg) { alert("发生错误: " + msg); return false; };
-</script>
-<script>
-    let currentUserId = '';
-    let currentUserName = 'User';
-    let currentPeriod = 'month';
-    let isCoverBgEnabled = false;
-    let top1PhysicalBlurredBase64 = null;
-
-    function checkLayout() {
-        const isMobile = window.innerWidth <= 768;
-        const controlsHTML = document.getElementById('mobile-controls-container').innerHTML;
-        const desktopContainer = document.getElementById('desktop-controls-container');
-        if (!isMobile && desktopContainer.innerHTML.trim() === '') {
-            desktopContainer.innerHTML = controlsHTML + 
-            `<button onclick="savePoster()" id="pc-save-btn" style="width: 100%; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 14px; margin-top: 20px;"><i class="fa-solid fa-download"></i> 保存海报</button>`;
-        }
-    }
-    window.addEventListener('resize', () => { fitScale(); checkLayout(); });
-    setTimeout(() => { fitScale(); checkLayout(); }, 100);
-
-    function toggleSheet(forceState) {
-        const sheet = document.getElementById('mobile-sheet');
-        const overlay = document.getElementById('mobile-overlay');
-        let shouldShow = typeof forceState === 'boolean' ? forceState : !sheet.classList.contains('active');
-        if(shouldShow) { sheet.classList.add('active'); overlay.classList.add('active'); } 
-        else { sheet.classList.remove('active'); overlay.classList.remove('active'); }
-    }
-
-    function fitScale() {
-        const wrapper = document.querySelector('.preview-area');
-        const w = wrapper.clientWidth;
-        const scale = Math.min((w - 40) / 400, 1);
-        document.getElementById('scale-wrapper').style.transform = `scale(${scale})`;
-        document.getElementById('scale-wrapper').style.transformOrigin = 'top center';
-    }
 
     async function toBase64(url) {
         try {
@@ -427,11 +404,10 @@
         document.getElementById('poster-bg-img').style.opacity = '0';
         
         if(text === '#333') {
-            document.documentElement.style.setProperty('--theme-pill-bg', '#e5e7eb'); // 浅灰更配纯白
-            document.documentElement.style.setProperty('--theme-pill-text', '#1f2937'); // 深灰字
+            document.documentElement.style.setProperty('--theme-pill-bg', '#e5e7eb'); 
+            document.documentElement.style.setProperty('--theme-pill-text', '#1f2937'); 
             document.documentElement.style.setProperty('--theme-card', 'rgba(0,0,0,0.03)');
             document.getElementById('poster-bg-gradient').style.background = 'transparent';
-            // 🔥 暴力修改页脚颜色
             document.getElementById('p-footer').style.color = 'rgba(0,0,0,0.3)';
         } else {
             document.documentElement.style.setProperty('--theme-pill-bg', 'rgba(255,255,255,0.15)');
@@ -462,7 +438,7 @@
             document.documentElement.style.setProperty('--theme-text', 'white'); 
             document.querySelector('.poster-canvas').style.color = 'white';
             document.getElementById('poster-bg-gradient').style.background = 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.8) 100%)';
-            document.getElementById('p-footer').style.color = 'rgba(255,255,255,0.5)'; // 背景图上统一白字
+            document.getElementById('p-footer').style.color = 'rgba(255,255,255,0.5)';
             if(top1PhysicalBlurredBase64) {
                 document.getElementById('poster-bg-img').style.backgroundImage = `url('${top1PhysicalBlurredBase64}')`;
             }
@@ -537,14 +513,14 @@
 
     function setPeriod(p, btn) {
         currentPeriod = p;
-        document.querySelectorAll('.btn-group .btn').forEach(b => {
-            if(b.innerText === btn.innerText) b.classList.add('active');
-            else b.classList.remove('active');
+        const group = btn.closest('.btn-group');
+        group.querySelectorAll('.btn').forEach(b => {
+            b.className = "btn px-2 py-2.5 rounded-[12px] border border-transparent bg-transparent text-[12px] font-bold text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-[#3A3A3C] hover:shadow-sm transition-all";
         });
+        btn.className = "btn active px-2 py-2.5 rounded-[12px] border border-brand-200 dark:border-brand-500/30 bg-white dark:bg-brand-900/30 text-[12px] font-bold text-brand-600 dark:text-brand-400 shadow-sm transition-all";
         loadData();
     }
 
-    // 🔥 彻底重构的情绪模块渲染器：放弃内联图文，全转为硬核 flex 大盒子数据看板
     function renderMoods(moodData) {
         const area = document.getElementById('mood-area');
         area.innerHTML = '';
@@ -697,19 +673,29 @@
             
             if(data.mood_data) renderMoods(data.mood_data);
         }
+        
+        // 数据加载完重新算一下高度
+        setTimeout(fitScale, 300);
     }
 
+    // 🔥 改进后的截图保存功能，防止高度被卡断
     async function savePoster() {
-        const btns = document.querySelectorAll('#save-btn, #mobile-save-btn, #pc-save-btn');
-        btns.forEach(b => b.innerText = '生成中...');
-        toggleSheet(false); 
+        const btns = document.querySelectorAll('.save-btn-text');
+        btns.forEach(b => b.innerText = '正在合成高清海报...');
 
         const wrapper = document.getElementById('scale-wrapper');
         const oldT = wrapper.style.transform;
+        const oldH = wrapper.style.height;
         
         window.scrollTo(0, 0);
+        // 撤销缩放，保证截到原生高清像素
         wrapper.style.transform = 'none';
-        await new Promise(r => setTimeout(r, 400)); 
+        
+        // 强行把包裹层撑高，防止被外层容器 overflow 截断
+        const targetH = document.getElementById('capture-target').scrollHeight;
+        wrapper.style.height = targetH + 'px';
+        
+        await new Promise(r => setTimeout(r, 500)); 
         
         try {
             const canvas = await html2canvas(document.getElementById('capture-target'), { 
@@ -723,10 +709,13 @@
             link.download = `EmbyPulse_${currentUserName}_${currentPeriod}.png`;
             link.href = canvas.toDataURL();
             link.click();
-        } catch(e) { alert('生成截图失败，请重试。'); } 
-        finally { 
+        } catch(e) { 
+            alert('生成海报失败，请重试。'); 
+        } finally { 
+            // 恢复原状
             wrapper.style.transform = oldT; 
-            btns.forEach(b => b.innerHTML = '<i class="fa-solid fa-download"></i> 保存海报');
+            wrapper.style.height = oldH; 
+            btns.forEach(b => b.innerText = '保存并下载海报');
         }
     }
 
