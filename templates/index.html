@@ -7,7 +7,9 @@
 
     /* === 🔥 Apple 级极简卡片质感 === */
     .apple-card { 
-        background-color: #FFFFFF; 
+        background-color: rgba(255, 255, 255, 0.95); 
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border-radius: 24px; 
         padding: 24px; 
         box-shadow: 0 4px 24px -8px rgba(0,0,0,0.04);
@@ -16,14 +18,14 @@
     }
     
     html.dark .apple-card {
-        background-color: #1C1C1E; 
+        background-color: rgba(28, 28, 30, 0.85); /* iOS 卡片微透深色 */
         box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
         border: 1px solid rgba(255,255,255,0.04);
     }
 
     .user-rank-card { transition: all 0.2s ease-out; cursor: pointer; }
-    .user-rank-card:hover { background-color: #F2F2F7; }
-    html.dark .user-rank-card:hover { background-color: #2C2C2E; }
+    .user-rank-card:hover { background-color: rgba(0,0,0,0.03); }
+    html.dark .user-rank-card:hover { background-color: rgba(255,255,255,0.05); }
     
     .user-rank-arrow { opacity: 0; transform: translateX(-4px); transition: all 0.2s ease-out; }
     .user-rank-card:hover .user-rank-arrow { opacity: 1; transform: translateX(0); }
@@ -34,7 +36,7 @@
     }
 
     @media (max-width: 767px) {
-        .mobile-borderless { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+        .mobile-borderless { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; backdrop-filter: none !important;}
         .stat-card-mobile { padding: 20px !important; margin-bottom: 0 !important; }
         .section-title-mobile { margin-bottom: 12px !important; padding-left: 4px; }
     }
@@ -46,8 +48,8 @@
     
     <div class="apple-card flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mb-6">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-[14px] bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center text-xl shadow-lg shadow-brand-500/30">
-                <i class="fa-solid fa-chart-pie"></i>
+            <div class="w-12 h-12 rounded-[14px] bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/30">
+                <i class="fa-solid fa-chart-simple text-xl"></i>
             </div>
             <div>
                 <h2 class="text-xl md:text-[22px] font-bold tracking-tight text-gray-900 dark:text-white">数据概览</h2>
@@ -75,21 +77,21 @@
             <h3 class="text-[15px] font-semibold tracking-wide mb-4 md:mb-5 text-gray-800 dark:text-gray-200">媒体库储量</h3>
             <div class="grid grid-cols-3 gap-3 md:gap-4">
                 <div class="relative overflow-hidden rounded-2xl bg-blue-50 dark:bg-blue-500/10 p-4 md:p-5 group border border-transparent dark:border-blue-500/5">
-                    <i class="fa-solid fa-film absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-blue-500/10 dark:text-blue-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-film absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-blue-500/10 dark:text-blue-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 mb-1 opacity-80">电影</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="lib-movies">-</p>
                     </div>
                 </div>
                 <div class="relative overflow-hidden rounded-2xl bg-purple-50 dark:bg-purple-500/10 p-4 md:p-5 group border border-transparent dark:border-purple-500/5">
-                    <i class="fa-solid fa-tv absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-purple-500/10 dark:text-purple-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-tv absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-purple-500/10 dark:text-purple-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-purple-600 dark:text-purple-400 mb-1 opacity-80">剧集</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="lib-series">-</p>
                     </div>
                 </div>
                 <div class="relative overflow-hidden rounded-2xl bg-orange-50 dark:bg-orange-500/10 p-4 md:p-5 group border border-transparent dark:border-orange-500/5">
-                    <i class="fa-solid fa-layer-group absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-orange-500/10 dark:text-orange-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-layer-group absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-orange-500/10 dark:text-orange-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-orange-600 dark:text-orange-400 mb-1 opacity-80">总集数</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="lib-episodes">-</p>
@@ -102,21 +104,21 @@
             <h3 class="text-[15px] font-semibold tracking-wide mb-4 md:mb-5 text-gray-800 dark:text-gray-200">核心运营指标</h3>
             <div class="grid grid-cols-3 gap-3 md:gap-4">
                 <div class="relative overflow-hidden rounded-2xl bg-green-50 dark:bg-green-500/10 p-4 md:p-5 group border border-transparent dark:border-green-500/5">
-                    <i class="fa-solid fa-play absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-green-500/10 dark:text-green-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-play absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-green-500/10 dark:text-green-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-green-600 dark:text-green-400 mb-1 opacity-80">播放次数</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="stat-plays">-</p>
                     </div>
                 </div>
                 <div class="relative overflow-hidden rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 p-4 md:p-5 group border border-transparent dark:border-indigo-500/5">
-                    <i class="fa-solid fa-users absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-indigo-500/10 dark:text-indigo-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-users absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-indigo-500/10 dark:text-indigo-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 mb-1 opacity-80">活跃观众</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="stat-users">-</p>
                     </div>
                 </div>
                 <div class="relative overflow-hidden rounded-2xl bg-pink-50 dark:bg-pink-500/10 p-4 md:p-5 group border border-transparent dark:border-pink-500/5">
-                    <i class="fa-solid fa-clock absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-pink-500/10 dark:text-pink-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500"></i>
+                    <i class="fa-solid fa-clock absolute -right-3 -bottom-3 text-[50px] md:text-[70px] text-pink-500/10 dark:text-pink-400/10 transform group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500 z-0"></i>
                     <div class="relative z-10">
                         <p class="text-[11px] font-semibold text-pink-600 dark:text-pink-400 mb-1 opacity-80">时长 (小时)</p>
                         <p class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white tracking-tight font-mono" id="stat-duration">-</p>
@@ -166,10 +168,10 @@
             <div class="flex justify-between items-center mb-4 shrink-0">
                 <h3 class="text-[15px] font-semibold tracking-wide text-gray-800 dark:text-gray-200">白金观影榜</h3>
                 <div class="flex bg-gray-100 dark:bg-[#2C2C2E] rounded-lg p-1 text-[11px] font-medium">
-                    <button onclick="switchTopUsers('day')" id="top-btn-day" class="px-2 py-1 rounded text-gray-500 hover:text-gray-900 dark:hover:text-white transition">今日</button>
+                    <button onclick="switchTopUsers('day')" id="top-btn-day" class="px-2 py-1 rounded bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white transition font-medium">今日</button>
                     <button onclick="switchTopUsers('week')" id="top-btn-week" class="px-2 py-1 rounded text-gray-500 hover:text-gray-900 dark:hover:text-white transition">本周</button>
                     <button onclick="switchTopUsers('month')" id="top-btn-month" class="px-2 py-1 rounded text-gray-500 hover:text-gray-900 dark:hover:text-white transition">本月</button>
-                    <button onclick="switchTopUsers('all')" id="top-btn-all" class="px-2 py-1 rounded bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white transition">总榜</button>
+                    <button onclick="switchTopUsers('all')" id="top-btn-all" class="px-2 py-1 rounded text-gray-500 hover:text-gray-900 dark:hover:text-white transition">总榜</button>
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto space-y-1 hide-scrollbar pr-1" id="top-users-container">
@@ -182,7 +184,7 @@
 
 {% block scripts %}
 <script>
-    let trendChart = null; let currentTrendDim = 'day'; let currentTopPeriod = 'all';
+    let trendChart = null; let currentTrendDim = 'day'; let currentTopPeriod = 'day';
     const embyBaseUrl = "{{ emby_url }}"; const embyServerId = "{{ server_id }}";
 
     function jumpToEmby(itemId) {
@@ -215,7 +217,7 @@
     });
 
     async function init() {
-        await loadUsers(); fetchDashboardData('all'); fetchLibraries(); fetchLatest(); fetchRecentActivity('all'); fetchTopUsers('all'); initTrendChart('all', 'day'); 
+        await loadUsers(); fetchDashboardData('all'); fetchLibraries(); fetchLatest(); fetchRecentActivity('all'); fetchTopUsers('day'); initTrendChart('all', 'day'); 
     }
     
     async function loadUsers() { 
@@ -328,7 +330,7 @@
                         <div class="flex items-center min-w-0">
                             <div class="w-6 h-6 rounded-md ${rankClass} flex items-center justify-center font-bold text-[11px] mr-3 shrink-0 shadow-sm">${index + 1}</div>
                             <div class="relative w-9 h-9 rounded-full overflow-hidden bg-gray-100 dark:bg-[#2C2C2E] shrink-0 mr-3 shadow-sm ring-1 ring-black/5 dark:ring-white/10 flex items-center justify-center">
-                                <span class="font-bold text-gray-500 dark:text-gray-300 text-xs">${user.UserName.charAt(0).toUpperCase()}</span>
+                                <span class="font-bold text-gray-500 dark:text-gray-300 text-xs absolute z-0">${user.UserName.charAt(0).toUpperCase()}</span>
                                 <img src="/api/proxy/user_image/${user.UserId}" onload="this.style.opacity='1'" onerror="this.style.opacity='0'" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 z-10">
                             </div>
                             <div class="truncate"><p class="text-[14px] font-medium text-gray-900 dark:text-white truncate">${user.UserName}</p><p class="text-[11px] text-gray-500 mt-0.5">${user.Plays} 次播放</p></div>
