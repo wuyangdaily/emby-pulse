@@ -54,8 +54,8 @@
             </div>
         </div>
 
-        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-end gap-3 w-full xl:flex-1">
-            <div class="relative w-full lg:max-w-[280px] xl:max-w-md shrink-0">
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-end gap-3 w-full xl:flex-1">
+            <div class="relative w-full md:max-w-[280px] xl:max-w-md shrink-0">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                     <i class="fa-solid fa-magnifying-glass transition-colors"></i>
                 </div>
@@ -72,7 +72,7 @@
                 </button>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto shrink-0">
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0">
                 <div class="flex items-center justify-between gap-2 bg-gray-100 dark:bg-[#2C2C2E] border border-transparent dark:border-white/5 px-3 py-2.5 rounded-[12px] shadow-sm flex-1 sm:flex-none">
                     <span class="text-[11px] font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider"><i class="fa-solid fa-robot mr-1"></i>自动模式</span>
                     <label class="relative inline-flex items-center cursor-pointer shrink-0">
@@ -127,12 +127,12 @@
     <div x-show="!isScanning && filteredGaps.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5" x-transition x-cloak>
         <template x-for="series in displayedGaps" :key="series.series_id">
             
-            <div :id="'card-' + series.series_id" class="relative apple-card !p-4 !rounded-[24px] transition-all duration-500 z-10 group hover:-translate-y-1 hover:shadow-[0_16px_32px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_16px_32px_-12px_rgba(0,0,0,0.6)] overflow-hidden flex flex-row items-stretch h-[210px] sm:h-[230px] md:h-[250px] xl:h-[280px] gap-4 border border-gray-100 dark:border-white/5"
+            <div :id="'card-' + series.series_id" class="relative apple-card !p-4 !rounded-[24px] transition-all duration-500 z-10 group hover:-translate-y-1 hover:shadow-[0_16px_32px_-12px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_16px_32px_-12px_rgba(0,0,0,0.6)] overflow-hidden flex flex-row items-stretch h-[260px] sm:h-[280px] md:h-[300px] lg:h-[310px] xl:h-[330px] gap-4 border border-gray-100 dark:border-white/5"
                  :class="selectedSeries.includes(series.series_id) ? 'ring-2 ring-indigo-500 bg-indigo-50/20 dark:bg-indigo-900/10' : ''">
                 
                 <div :id="'tint-' + series.series_id" class="absolute inset-0 z-0 opacity-[0.12] dark:opacity-20 pointer-events-none transition-colors duration-1000"></div>
 
-                <div class="shrink-0 relative rounded-[14px] overflow-hidden shadow-md aspect-[2/3] h-full block group/poster border border-gray-200/50 dark:border-white/10 z-10">
+                <div class="shrink-0 relative rounded-[14px] overflow-hidden shadow-md w-[35%] sm:w-[30%] md:w-[32%] max-w-[150px] h-full block group/poster border border-gray-200/50 dark:border-white/10 z-10">
                     
                     <label class="absolute top-2 left-2 z-30 cursor-pointer transition-all duration-400" 
                            :class="selectedSeries.includes(series.series_id) ? 'opacity-100 scale-100' : 'opacity-0 scale-90 group-hover/poster:opacity-100 group-hover/poster:scale-100'">
@@ -164,7 +164,7 @@
                         </button>
                     </div>
 
-                    <div class="mt-1 overflow-y-auto pr-1.5 space-y-3 mac-scrollbar flex-1">
+                    <div class="mt-1 overflow-y-auto pr-1.5 space-y-3 mac-scrollbar flex-1 pb-2">
                         <template x-for="seasonGroup in series.grouped_gaps" :key="seasonGroup.season_num">
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center justify-between">
