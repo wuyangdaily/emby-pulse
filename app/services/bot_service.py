@@ -303,6 +303,7 @@ class NotificationBot:
         self.ip_cache = {} 
         self.wecom_token = None
         self.wecom_token_expires = 0
+        self.delete_cache = {}
         
         bus.subscribe("notify.library.new_episode", self.on_library_new_episode)
         bus.subscribe("notify.library.new_item", self.on_library_new_item)
@@ -483,11 +484,22 @@ class NotificationBot:
         except Exception as e: 
             logger.error(f"登录通知组装异常: {e}")
 
-# 🔥 史诗级重构：精准识别删除类型、SxxExx 组装、与 TMDB 云端海报溯源兜底
+# 🔥 史诗级重构：10秒防抖去重拦截 + TMDB 云端海报溯源兜底
     def on_item_deleted(self, data):
         if not cfg.get("notify_item_deleted"): return
         try:
             item = data.get("Item") or data
+            
+            # ==========================================
+            # 🔥 核心防御：10秒去重拦截器
+            item_id = item.get("Id") or item.get("Name") or "unknown_id"
+            now = time.time()
+            if item_id in self.delete_cache and (now - self.delete_cache[item_id] < 10):
+                return  # 10秒内同一个资源的重复警报，直接静默丢弃！
+            self.delete_cache[item_id] = now
+            # 顺手清理掉 60 秒前的老记忆，防止内存越堆越多
+            self.delete_cache = {k: v for k, v in self.delete_cache.items() if now - v < 60}
+            # ==========================================
             
             raw_type = item.get("Type", "")
             title = item.get("Name") or item.get("Title") or "未知资源"
@@ -501,7 +513,6 @@ class NotificationBot:
             
             del_type = "媒体"
             
-            # 精准推导删除内容的层级与结构
             if raw_type == "Movie":
                 del_type = "电影"
             elif raw_type == "Series":
@@ -521,15 +532,12 @@ class NotificationBot:
                    f"🕒 <b>时间：</b>{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
                    f"<i>* 该项目已从媒体库物理存储中被永久移除。</i>")
             
-            # 1. 尝试获取原目标图片（对于已删除的通常拿不到）
             primary_io = self._download_emby_image(item.get("Id"), 'Primary') if item.get("Id") else None
             backdrop_io = self._download_emby_image(item.get("Id"), 'Backdrop') if item.get("Id") else None
             
-            # 2. 如果是单集/季被删，自动去借用“整剧”的海报进行兜底
             if not primary_io and not backdrop_io and item.get("SeriesId"):
                 primary_io = self._download_emby_image(item.get("SeriesId"), 'Primary')
             
-            # 3. 🔥 终极防裂图：绕开 Emby，直接向 TMDB 云端索要高清海报
             tmdb_img_url = None
             if not primary_io and not backdrop_io:
                 tmdb_id = item.get("ProviderIds", {}).get("Tmdb")
@@ -549,7 +557,6 @@ class NotificationBot:
                     except Exception as e:
                         logger.error(f"TMDB 云端海报获取异常: {e}")
             
-            # 优先级：Emby原生主图 -> Emby背景图 -> TMDB云端主图 -> 系统默认兜底图
             tg_img = primary_io or backdrop_io or tmdb_img_url or REPORT_COVER_URL
             
             self.send_photo("sys_notify", tg_img, msg, platform="all", wecom_photo_io=tg_img)
