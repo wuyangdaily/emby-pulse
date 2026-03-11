@@ -78,7 +78,7 @@
             </button>
         </div>
 
-        <nav class="flex-1 overflow-y-auto mac-scrollbar px-3 pb-6 space-y-5">
+        <nav id="sidebar-nav" class="flex-1 overflow-y-auto mac-scrollbar px-3 pb-6 space-y-5">
             <div>
                 <p class="px-3 text-[11px] font-black text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-[0.1em] opacity-80">数据与分析</p>
                 <div class="space-y-1">
@@ -199,10 +199,7 @@
                 <a href="/settings" class="flex items-center justify-between p-3.5 active:bg-gray-50/50 dark:active:bg-apple-hoverDark/50 border-b border-gray-200/50 dark:border-white/5"><div class="flex items-center gap-3"><div class="w-7 h-7 rounded-[8px] bg-gray-700 text-white flex justify-center items-center"><i class="fa-solid fa-gear"></i></div><span class="text-[15px] font-medium">系统设置</span></div><i class="fa-solid fa-chevron-right text-[12px] text-gray-400 dark:text-gray-500"></i></a>
                 <a href="/about" class="flex items-center justify-between p-3.5 active:bg-gray-50/50 dark:active:bg-apple-hoverDark/50"><div class="flex items-center gap-3"><div class="w-7 h-7 rounded-[8px] bg-gray-400 text-white flex justify-center items-center"><i class="fa-solid fa-circle-info"></i></div><span class="text-[15px] font-medium">关于与支持</span></div><i class="fa-solid fa-chevron-right text-[12px] text-gray-400 dark:text-gray-500"></i></a>
             </div>
-            
-            <a href="/logout" id="mobile-logout-btn" class="flex items-center justify-center gap-2 w-full py-3.5 mt-2 mb-10 bg-red-50/80 dark:bg-red-500/10 backdrop-blur-md text-red-500 dark:text-red-400 rounded-2xl font-bold text-[14px] shadow-sm border border-red-100 dark:border-red-500/20 active:scale-95 transition-transform">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i> 退出管理系统
-            </a>
+            <a href="/logout" id="mobile-logout-btn" class="flex items-center justify-center gap-2 w-full py-3.5 mt-2 mb-10 bg-red-50/80 dark:bg-red-500/10 backdrop-blur-md text-red-500 dark:text-red-400 rounded-2xl font-bold text-[14px] shadow-sm border border-red-100 dark:border-red-500/20 active:scale-95 transition-transform"><i class="fa-solid fa-arrow-right-from-bracket"></i> 退出管理系统</a>
         </div>
     </div>
 
@@ -293,209 +290,60 @@
         }
         document.addEventListener('DOMContentLoaded', () => { setTimeout(fetchPendingNotify, 1000); setInterval(fetchPendingNotify, 30000); setTimeout(fetchGlobalLive, 2000); setInterval(fetchGlobalLive, 10000); });
         
-        /* 全局搜索 */
-        const searchModal = document.getElementById('ep-global-search'); 
-        const searchContainer = document.getElementById('ep-search-container'); 
-        const searchInput = document.getElementById('ep-search-input'); 
-        const searchResults = document.getElementById('ep-search-results'); 
-        const searchLoading = document.getElementById('ep-search-loading'); 
-        const searchEmpty = document.getElementById('ep-search-empty'); 
-        let searchTimeout = null;
-
-        function openGlobalSearch() { 
-            searchModal.classList.remove('hidden'); 
-            void searchModal.offsetWidth; 
-            searchModal.classList.remove('opacity-0'); 
-            searchContainer.classList.remove('scale-95'); 
-            searchInput.value = ''; 
-            searchResults.innerHTML = ''; 
-            searchResults.appendChild(searchEmpty); 
-            searchEmpty.style.display = 'block'; 
-            setTimeout(() => searchInput.focus(), 100); 
-        }
-
-        function closeGlobalSearch() { 
-            searchModal.classList.add('opacity-0'); 
-            searchContainer.classList.add('scale-95'); 
-            setTimeout(() => { searchModal.classList.add('hidden'); searchInput.blur(); }, 200); 
-        }
-
-        document.addEventListener('keydown', (e) => { 
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openGlobalSearch(); } 
-            if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) { closeGlobalSearch(); } 
-        });
-
+        /* 全局搜索与防溢出简介 */
+        const searchModal = document.getElementById('ep-global-search'); const searchContainer = document.getElementById('ep-search-container'); const searchInput = document.getElementById('ep-search-input'); const searchResults = document.getElementById('ep-search-results'); const searchLoading = document.getElementById('ep-search-loading'); const searchEmpty = document.getElementById('ep-search-empty'); let searchTimeout = null;
+        function openGlobalSearch() { searchModal.classList.remove('hidden'); void searchModal.offsetWidth; searchModal.classList.remove('opacity-0'); searchContainer.classList.remove('scale-95'); searchInput.value = ''; searchResults.innerHTML = ''; searchResults.appendChild(searchEmpty); searchEmpty.style.display = 'block'; setTimeout(() => searchInput.focus(), 100); }
+        function closeGlobalSearch() { searchModal.classList.add('opacity-0'); searchContainer.classList.add('scale-95'); setTimeout(() => { searchModal.classList.add('hidden'); searchInput.blur(); }, 200); }
+        document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openGlobalSearch(); } if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) { closeGlobalSearch(); } });
         searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout); 
-            const query = e.target.value.trim();
-            if (!query) { 
-                searchResults.innerHTML = ''; 
-                searchResults.appendChild(searchEmpty); 
-                searchEmpty.style.display = 'block'; 
-                return; 
-            }
-            searchLoading.classList.remove('hidden'); 
-            searchEmpty.style.display = 'none';
-            searchTimeout = setTimeout(async () => { 
-                try { 
-                    const res = await fetch(`/api/library/search?query=${encodeURIComponent(query)}`); 
-                    const data = await res.json(); 
-                    renderSearchResults(data.data || []); 
-                } catch (err) { 
-                    searchResults.innerHTML = '<div class="text-center py-10 text-red-500 font-medium">搜索失败</div>'; 
-                } finally { 
-                    searchLoading.classList.add('hidden'); 
-                } 
-            }, 500);
+            clearTimeout(searchTimeout); const query = e.target.value.trim();
+            if (!query) { searchResults.innerHTML = ''; searchResults.appendChild(searchEmpty); searchEmpty.style.display = 'block'; return; }
+            searchLoading.classList.remove('hidden'); searchEmpty.style.display = 'none';
+            searchTimeout = setTimeout(async () => { try { const res = await fetch(`/api/library/search?query=${encodeURIComponent(query)}`); const data = await res.json(); renderSearchResults(data.data || []); } catch (err) { searchResults.innerHTML = '<div class="text-center py-10 text-red-500 font-medium">搜索失败</div>'; } finally { searchLoading.classList.add('hidden'); } }, 500);
         });
-
-        // 🔥 修复：找回彩色标签、简介、年份，并加入防撑爆的换行策略
         function renderSearchResults(items) {
-            if (items.length === 0) { 
-                searchResults.innerHTML = '<div class="text-center py-12 text-gray-400 font-medium">未找到资源</div>'; 
-                return; 
-            } 
-            let html = '';
+            if (items.length === 0) { searchResults.innerHTML = '<div class="text-center py-12 text-gray-400 font-medium">未找到资源</div>'; return; } let html = '';
             items.forEach(item => { 
-                // 1. 过滤 HTML 标签并处理简介
                 let cleanOverview = item.overview ? item.overview.replace(/<[^>]*>?/gm, '') : '暂无剧集简介';
-                
-                // 2. 渲染彩色 Badge
-                let badgesHtml = '';
-                if (item.badges && item.badges.length > 0) {
-                    badgesHtml = item.badges.map(b => {
-                        const colorClass = b.color ? b.color : 'bg-gray-100 text-gray-600 dark:bg-[#3A3A3C] dark:text-gray-300 border border-gray-200/50 dark:border-white/5';
-                        return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${colorClass} shadow-sm whitespace-nowrap">${b.text}</span>`;
-                    }).join('');
-                }
-                
+                let badgesHtml = ''; if (item.badges && item.badges.length > 0) { badgesHtml = item.badges.map(b => { const colorClass = b.color ? b.color : 'bg-gray-100 text-gray-600 dark:bg-[#3A3A3C] dark:text-gray-300 border border-gray-200/50 dark:border-white/5'; return `<span class="px-2 py-0.5 text-[10px] font-bold rounded-md ${colorClass} shadow-sm whitespace-nowrap">${b.text}</span>`; }).join(''); }
                 const yearText = item.year ? `<span class="text-[12px] font-mono font-bold text-gray-400 ml-2 shrink-0">${item.year}</span>` : '';
-
-                // 3. 构建卡片，加入 break-all 防止超长链接撑破
-                html += `
-                <a href="${item.emby_url}" target="_blank" class="flex gap-4 p-3 mb-2 bg-transparent hover:bg-gray-50 dark:hover:bg-black/20 rounded-[16px] cursor-pointer transition-all group border border-transparent hover:border-gray-200/60 dark:hover:border-white/5 hover:shadow-sm">
-                    <img src="${item.poster}" onerror="this.src='/static/img/logo-app.png';" class="w-16 h-24 object-cover rounded-[10px] bg-gray-100 dark:bg-[#2C2C2E] shrink-0 border border-gray-200/50 dark:border-white/5 shadow-sm group-hover:scale-105 transition-transform">
-                    <div class="flex-1 min-w-0 flex flex-col justify-center overflow-hidden">
-                        <div class="flex items-center mb-1.5 overflow-hidden">
-                            <h4 class="font-bold text-[15px] text-gray-900 dark:text-white truncate group-hover:text-brand-500 transition-colors">${item.name}</h4>
-                            ${yearText}
-                        </div>
-                        <div class="flex flex-wrap gap-1.5 mb-1.5">
-                            ${badgesHtml}
-                        </div>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed break-all overflow-wrap-anywhere">
-                            ${cleanOverview}
-                        </p>
-                    </div>
-                </a>`; 
+                html += `<a href="${item.emby_url}" target="_blank" class="flex gap-4 p-3 mb-2 bg-transparent hover:bg-gray-50 dark:hover:bg-black/20 rounded-[16px] cursor-pointer transition-all group border border-transparent hover:border-gray-200/60 dark:hover:border-white/5 hover:shadow-sm"><img src="${item.poster}" onerror="this.src='/static/img/logo-app.png';" class="w-16 h-24 object-cover rounded-[10px] bg-gray-100 dark:bg-[#2C2C2E] shrink-0 border border-gray-200/50 dark:border-white/5 shadow-sm group-hover:scale-105 transition-transform"><div class="flex-1 min-w-0 flex flex-col justify-center overflow-hidden"><div class="flex items-center mb-1.5 overflow-hidden"><h4 class="font-bold text-[15px] text-gray-900 dark:text-white truncate group-hover:text-brand-500 transition-colors">${item.name}</h4>${yearText}</div><div class="flex flex-wrap gap-1.5 mb-1.5">${badgesHtml}</div><p class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed break-all overflow-wrap-anywhere">${cleanOverview}</p></div></a>`; 
             });
             searchResults.innerHTML = html;
         }
 
-        /* ===== 🔥 纯前端移动端底栏自定义系统 ===== */
-        const NAV_MAP = {
-            'requests_admin': { icon: 'fa-clapperboard', text: '工单', url: '/requests_admin' },
-            'users': { icon: 'fa-users-gear', text: '用户', url: '/users_manage' },
-            'details': { icon: 'fa-magnifying-glass-chart', text: '洞察', url: '/details' },
-            'insight': { icon: 'fa-chart-pie', text: '全景', url: '/insight' },
-            'gaps': { icon: 'fa-puzzle-piece', text: '缺集', url: '/gaps' },
-            'content': { icon: 'fa-film', text: '排行', url: '/content' },
-            'calendar': { icon: 'fa-calendar-days', text: '日历', url: '/calendar' },
-            'bot': { icon: 'fa-robot', text: '机器', url: '/bot' },
-            'clients': { icon: 'fa-desktop', text: '管控', url: '/clients' },
-            'tasks': { icon: 'fa-bolt', text: '任务', url: '/tasks' }
-        };
-
+        /* ===== 移动端底栏自定义 ===== */
+        const NAV_MAP = { 'requests_admin': { icon: 'fa-clapperboard', text: '工单', url: '/requests_admin' }, 'users': { icon: 'fa-users-gear', text: '用户', url: '/users_manage' }, 'details': { icon: 'fa-magnifying-glass-chart', text: '洞察', url: '/details' }, 'insight': { icon: 'fa-chart-pie', text: '全景', url: '/insight' }, 'gaps': { icon: 'fa-puzzle-piece', text: '缺集', url: '/gaps' }, 'content': { icon: 'fa-film', text: '排行', url: '/content' }, 'calendar': { icon: 'fa-calendar-days', text: '日历', url: '/calendar' }, 'bot': { icon: 'fa-robot', text: '机器', url: '/bot' }, 'clients': { icon: 'fa-desktop', text: '管控', url: '/clients' }, 'tasks': { icon: 'fa-bolt', text: '任务', url: '/tasks' } };
         function renderMobileDynamicNav() {
             if(window.innerWidth > 768) return; 
             const savedNavs = JSON.parse(localStorage.getItem('ep_mobile_nav') || '["requests_admin", "users"]');
-            const container = document.getElementById('mobile-dynamic-nav-container');
-            if(!container) return;
-
-            const activePath = window.location.pathname;
-            let html = '';
-            savedNavs.forEach(key => {
-                const item = NAV_MAP[key] || NAV_MAP['requests_admin'];
-                const isActive = activePath.includes(item.url) ? 'text-brand-500' : 'text-gray-500 dark:text-gray-400';
-                const badgeHtml = key === 'requests_admin' ? `<span id="notify-badge-mobile" class="hidden absolute top-1 right-1/4 h-2 w-2 bg-red-500 rounded-full border border-white dark:border-apple-cardDark animate-pulse"></span>` : '';
-                
-                html += `
-                <a href="${item.url}" class="flex flex-col items-center justify-center flex-1 py-1.5 transition-colors relative ${isActive}">
-                    <i class="fa-solid ${item.icon} text-[17px] mb-0.5"></i><span class="text-[10px] font-medium">${item.text}</span>
-                    ${badgeHtml}
-                </a>`;
-            });
-            container.innerHTML = html;
-            if(savedNavs.includes('requests_admin') && typeof fetchPendingNotify === 'function') fetchPendingNotify();
+            const container = document.getElementById('mobile-dynamic-nav-container'); if(!container) return;
+            const activePath = window.location.pathname; let html = '';
+            savedNavs.forEach(key => { const item = NAV_MAP[key] || NAV_MAP['requests_admin']; const isActive = activePath.includes(item.url) ? 'text-brand-500' : 'text-gray-500 dark:text-gray-400'; const badgeHtml = key === 'requests_admin' ? `<span id="notify-badge-mobile" class="hidden absolute top-1 right-1/4 h-2 w-2 bg-red-500 rounded-full border border-white dark:border-apple-cardDark animate-pulse"></span>` : ''; html += `<a href="${item.url}" class="flex flex-col items-center justify-center flex-1 py-1.5 transition-colors relative ${isActive}"><i class="fa-solid ${item.icon} text-[17px] mb-0.5"></i><span class="text-[10px] font-medium">${item.text}</span>${badgeHtml}</a>`; });
+            container.innerHTML = html; if(savedNavs.includes('requests_admin') && typeof fetchPendingNotify === 'function') fetchPendingNotify();
         }
-
         document.addEventListener('DOMContentLoaded', () => {
-            renderMobileDynamicNav();
-            
-            const sheetContent = document.querySelector('#bottom-sheet #sheet-scroll-content');
-            if(sheetContent) {
-                const configBtnHtml = `<button onclick="openNavConfigModal()" class="w-full flex items-center justify-center gap-2 py-3 bg-white/60 dark:bg-apple-cardDark/60 backdrop-blur-md text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-[13px] shadow-sm mt-4 mb-2 border border-white/50 dark:border-white/10 active:scale-95 transition-transform"><i class="fa-solid fa-pen-to-square"></i> 自定义底部导航</button>`;
-                
-                const logoutBtn = document.getElementById('mobile-logout-btn');
-                if(logoutBtn) {
-                    logoutBtn.insertAdjacentHTML('beforebegin', configBtnHtml);
-                } else {
-                    sheetContent.insertAdjacentHTML('beforeend', configBtnHtml);
+            renderMobileDynamicNav(); const sheetContent = document.querySelector('#bottom-sheet #sheet-scroll-content');
+            if(sheetContent) { const configBtnHtml = `<button onclick="openNavConfigModal()" class="w-full flex items-center justify-center gap-2 py-3 bg-white/60 dark:bg-apple-cardDark/60 backdrop-blur-md text-gray-600 dark:text-gray-300 rounded-2xl font-bold text-[13px] shadow-sm mt-4 mb-2 border border-white/50 dark:border-white/10 active:scale-95 transition-transform"><i class="fa-solid fa-pen-to-square"></i> 自定义底部导航</button>`; const logoutBtn = document.getElementById('mobile-logout-btn'); if(logoutBtn) logoutBtn.insertAdjacentHTML('beforebegin', configBtnHtml); else sheetContent.insertAdjacentHTML('beforeend', configBtnHtml); }
+            const modalHtml = `<div id="nav-config-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4"><div class="bg-apple-bgLight dark:bg-apple-cardDark w-full max-w-sm rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5"><div class="text-center mb-6"><h3 class="text-lg font-bold text-gray-900 dark:text-white">自定义底部导航</h3><p class="text-xs text-gray-500 mt-1">请选择 2 个最常用的功能</p></div><div class="space-y-4"><div><label class="text-[11px] font-bold text-gray-500 ml-1">左侧快捷按键</label><select id="nav-select-1" class="w-full mt-1.5 bg-white dark:bg-[#2C2C2E] text-gray-800 dark:text-gray-200 p-3 rounded-xl border-none focus:ring-2 focus:ring-brand-500 text-[13px] font-medium outline-none shadow-sm"></select></div><div><label class="text-[11px] font-bold text-gray-500 ml-1">右侧快捷按键</label><select id="nav-select-2" class="w-full mt-1.5 bg-white dark:bg-[#2C2C2E] text-gray-800 dark:text-gray-200 p-3 rounded-xl border-none focus:ring-2 focus:ring-brand-500 text-[13px] font-medium outline-none shadow-sm"></select></div></div><div class="flex gap-3 mt-8"><button onclick="closeNavConfigModal()" class="flex-1 py-3 bg-white dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-[14px] font-bold text-[13px] transition-colors shadow-sm">取消</button><button onclick="saveNavConfig()" class="flex-1 py-3 bg-brand-500 text-white rounded-[14px] font-bold text-[13px] shadow-md transition-colors active:scale-95">保存配置</button></div></div></div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // 🔥 核心修复：侧边栏自动定位到当前活动菜单（避免矮屏幕下找不到位置）
+            const sidebarNav = document.getElementById('sidebar-nav');
+            if (sidebarNav) {
+                const activeLink = sidebarNav.querySelector('.text-brand-500');
+                if (activeLink) {
+                    const navRect = sidebarNav.getBoundingClientRect();
+                    const linkRect = activeLink.getBoundingClientRect();
+                    if (linkRect.top < navRect.top || linkRect.bottom > navRect.bottom) {
+                        activeLink.scrollIntoView({ behavior: 'instant', block: 'center' });
+                    }
                 }
             }
-
-            const modalHtml = `
-                <div id="nav-config-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
-                    <div class="bg-apple-bgLight dark:bg-apple-cardDark w-full max-w-sm rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5">
-                        <div class="text-center mb-6">
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">自定义底部导航</h3>
-                            <p class="text-xs text-gray-500 mt-1">请选择 2 个最常用的功能</p>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-[11px] font-bold text-gray-500 ml-1">左侧快捷按键</label>
-                                <select id="nav-select-1" class="w-full mt-1.5 bg-white dark:bg-[#2C2C2E] text-gray-800 dark:text-gray-200 p-3 rounded-xl border-none focus:ring-2 focus:ring-brand-500 text-[13px] font-medium outline-none shadow-sm"></select>
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-bold text-gray-500 ml-1">右侧快捷按键</label>
-                                <select id="nav-select-2" class="w-full mt-1.5 bg-white dark:bg-[#2C2C2E] text-gray-800 dark:text-gray-200 p-3 rounded-xl border-none focus:ring-2 focus:ring-brand-500 text-[13px] font-medium outline-none shadow-sm"></select>
-                            </div>
-                        </div>
-                        <div class="flex gap-3 mt-8">
-                            <button onclick="closeNavConfigModal()" class="flex-1 py-3 bg-white dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-[14px] font-bold text-[13px] transition-colors shadow-sm">取消</button>
-                            <button onclick="saveNavConfig()" class="flex-1 py-3 bg-brand-500 text-white rounded-[14px] font-bold text-[13px] shadow-md transition-colors active:scale-95">保存配置</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
         });
-
-        function openNavConfigModal() {
-            toggleBottomSheet(); 
-            const modal = document.getElementById('nav-config-modal');
-            const s1 = document.getElementById('nav-select-1'); const s2 = document.getElementById('nav-select-2');
-            
-            let options = ''; for(let key in NAV_MAP) { options += `<option value="${key}">${NAV_MAP[key].text}</option>`; }
-            s1.innerHTML = options; s2.innerHTML = options;
-            
-            const savedNavs = JSON.parse(localStorage.getItem('ep_mobile_nav') || '["requests_admin", "users"]');
-            s1.value = savedNavs[0] || 'requests_admin'; s2.value = savedNavs[1] || 'users';
-
-            modal.classList.remove('hidden'); void modal.offsetWidth;
-            modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
-        }
-
-        function closeNavConfigModal() {
-            const modal = document.getElementById('nav-config-modal');
-            modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => modal.classList.add('hidden'), 300);
-        }
-
-        function saveNavConfig() {
-            localStorage.setItem('ep_mobile_nav', JSON.stringify([document.getElementById('nav-select-1').value, document.getElementById('nav-select-2').value]));
-            renderMobileDynamicNav(); closeNavConfigModal();
-        }
+        function openNavConfigModal() { toggleBottomSheet(); const modal = document.getElementById('nav-config-modal'); const s1 = document.getElementById('nav-select-1'); const s2 = document.getElementById('nav-select-2'); let options = ''; for(let key in NAV_MAP) { options += `<option value="${key}">${NAV_MAP[key].text}</option>`; } s1.innerHTML = options; s2.innerHTML = options; const savedNavs = JSON.parse(localStorage.getItem('ep_mobile_nav') || '["requests_admin", "users"]'); s1.value = savedNavs[0] || 'requests_admin'; s2.value = savedNavs[1] || 'users'; modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); }
+        function closeNavConfigModal() { const modal = document.getElementById('nav-config-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+        function saveNavConfig() { localStorage.setItem('ep_mobile_nav', JSON.stringify([document.getElementById('nav-select-1').value, document.getElementById('nav-select-2').value])); renderMobileDynamicNav(); closeNavConfigModal(); }
     </script>
 </body>
 </html>

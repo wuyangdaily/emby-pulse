@@ -12,6 +12,7 @@ import time
 from app.core.config import cfg
 from app.core.database import query_db
 from app.routers.search import get_emby_sys_info, is_new_emby_router
+# 🔥 引入核心适配器
 from app.core.media_adapter import media_api
 
 router = APIRouter(prefix="/api/gaps", tags=["gaps"])
@@ -30,13 +31,15 @@ def _get_proxies():
 
 def get_admin_user_id():
     try:
+        # 🚀 替换为 media_api
         users = media_api.get("/Users", timeout=5).json()
         for u in users:
             if u.get("Policy", {}).get("IsAdministrator"): return u['Id']
         return users[0]['Id'] if users else None
     except: return None
 
-def process_single_series(series, lock_map, host, key, tmdb_key, proxies, today, global_inventory, server_id, use_new_route):
+# 🔥 修复：移除了多余的 key 参数
+def process_single_series(series, lock_map, host, tmdb_key, proxies, today, global_inventory, server_id, use_new_route):
     series_id = series.get("Id"); series_name = series.get("Name", "未知剧集")
     tmdb_id = series.get("ProviderIds", {}).get("Tmdb")
     if not tmdb_id or lock_map.get(f"{series_id}_-1_-1", 0) == 1:
@@ -62,7 +65,6 @@ def process_single_series(series, lock_map, host, key, tmdb_key, proxies, today,
         for tmdb_ep in tmdb_episodes:
             e_num = tmdb_ep.get("episode_number"); air_date = tmdb_ep.get("air_date")
             
-            # 🔥 核心修复点：将 > 改为 >=，今天排期播出的剧集不再催促，留给资源组压制时间
             if not air_date or air_date >= today: continue
                 
             if e_num not in local_season_inventory and lock_map.get(f"{series_id}_{s_num}_{e_num}", 0) != 1:
@@ -121,7 +123,8 @@ def run_scan_task():
 
         results = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(process_single_series, s, lock_map, host, key, tmdb_key, proxies, today, global_inventory, server_id, use_new_route) for s in pending_series]
+            # 🔥 修复：调用时移除了多余的 key
+            futures = [executor.submit(process_single_series, s, lock_map, host, tmdb_key, proxies, today, global_inventory, server_id, use_new_route) for s in pending_series]
             for f in concurrent.futures.as_completed(futures):
                 res = f.result()
                 if res: results.append(res)
