@@ -25,16 +25,26 @@ if not os.path.exists(FONT_DIR): os.makedirs(FONT_DIR)
 init_db()
 
 # ==============================================================================
-# 🔥 黑客级双开引擎：在子线程强行拉起 10308 (无视 Docker 限制)
+# 🔥 黑客级双开引擎：在子线程强行拉起 10308 (无视 Docker 限制与多进程互殴)
 # ==============================================================================
 def start_user_portal():
-    print("🎈 [User Portal] 求片中心专属端口 10308 已在后台独立线程启动！")
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    # log_level="error" 是为了防止双端口的访问日志在控制台里互相打架
-    config = uvicorn.Config(app, host="0.0.0.0", port=10308, log_level="error")
-    server = uvicorn.Server(config)
-    loop.run_until_complete(server.serve())
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        # log_level="critical" 屏蔽多余日志，防止刷屏
+        config = uvicorn.Config(app, host="0.0.0.0", port=10308, log_level="critical")
+        server = uvicorn.Server(config)
+        
+        # 核心防崩溃：禁止子线程劫持系统信号，否则会引发主进程连环爆炸
+        server.install_signal_handlers = lambda: None 
+        
+        print("🎈 [User Portal] 求片中心专属端口 10308 已就绪！")
+        loop.run_until_complete(server.serve())
+    except OSError as e:
+        # 如果是多个 Worker 抢端口导致的 [Errno 98] 或 [Errno 48]，静默忽略
+        pass
+    except Exception:
+        pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,29 +61,33 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # ==============================================================================
-# 🔥 核心防御：10308 端口专属隐形分流器 (求片中心独立出入口)
+# 🔥 核心防御：10308 全环境穿透分流器 (完美支持 Host / 桥接 / Nginx 反代)
 # ==============================================================================
 @app.middleware("http")
 async def port_10308_dispatcher(request: Request, call_next):
-    # 获取请求的 Host (例如 192.168.1.100:10308)
-    host_header = request.headers.get("host", "")
+    # 1. 物理端口：针对 Host 模式，直接读取服务器底层 Socket 接收的实际物理端口
+    server_tuple = request.scope.get("server")
+    physical_port = server_tuple[1] if server_tuple else 0
     
-    # 铁律：只要是以 :10308 结尾的请求，全部打入普通用户通道
-    if host_header.endswith(":10308"):
+    # 2. 逻辑端口：针对 Bridge 模式映射 (-p 10308:10307) 或反代，解析请求环境
+    logical_port = request.url.port
+    
+    # 铁律：只要物理端口或请求头里的逻辑端口是 10308，全部打入普通用户通道！
+    if physical_port == 10308 or logical_port == 10308:
         path = request.url.path
         
-        # 1. 隐形重写：访问根目录当做访问求片中心
+        # 隐形重写：访问根目录直接送去求片中心
         if path == "/":
             request.scope["path"] = "/request"
             
-        # 2. 物理隔绝：只放行普通用户需要的路径，其他后台路由一律假死拦截
+        # 物理隔绝：只放行普通用户必须的路径，其余全部拉黑
         allowed_prefixes = (
             "/request", "/request_login", 
             "/api/v1/request", "/api/proxy/smart_image", 
             "/static", "/favicon.ico"
         )
         if not request.scope["path"].startswith(allowed_prefixes):
-            return HTMLResponse("<h1>404 Not Found</h1>", status_code=404)
+            return HTMLResponse("<h1>404 Not Found</h1><p>Access Denied.</p>", status_code=404)
             
     return await call_next(request)
 # ==============================================================================
