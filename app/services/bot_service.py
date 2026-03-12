@@ -714,11 +714,11 @@ class NotificationBot:
         proxy_url = cfg.get("wecom_proxy_url", "https://qyapi.weixin.qq.com").rstrip('/')
         if not token or not agentid: return
         
-        # 精准对标行业标准的三栏交互菜单
+        # 🔥 修复：去掉主菜单的 Emoji，符合企微极其严苛的 16 字节限制
         menu_data = {
             "button": [
                 {
-                    "name": "📊 数据大盘",
+                    "name": "数据大盘",  # 4个汉字=12字节 (≤16字节)
                     "sub_button": [
                         {"type": "click", "name": "📈 今日日报", "key": "/stats"},
                         {"type": "click", "name": "📅 本周周报", "key": "/weekly"},
@@ -726,7 +726,7 @@ class NotificationBot:
                     ]
                 },
                 {
-                    "name": "🎬 媒体大厅",
+                    "name": "媒体大厅",
                     "sub_button": [
                         {"type": "click", "name": "🟢 正在播放", "key": "/now"},
                         {"type": "click", "name": "🆕 最近入库", "key": "/latest"},
@@ -734,7 +734,7 @@ class NotificationBot:
                     ]
                 },
                 {
-                    "name": "🛠️ 系统运维",
+                    "name": "系统运维",
                     "sub_button": [
                         {"type": "click", "name": "🔍 资源搜索", "key": "/search"},
                         {"type": "click", "name": "📡 系统探针", "key": "/check"},
