@@ -165,6 +165,11 @@ async def gaps_page(request: Request):
     if not check_login(request): return RedirectResponse("/login")
     return templates.TemplateResponse("gaps.html", {"request": request, "active_page": "gaps", "version": APP_VERSION})
 
+@router.get("/risk", response_class=HTMLResponse)
+async def risk_control_page(request: Request):
+    """风险管控大盘页面"""
+    return templates.TemplateResponse("risk.html", {"request": request, "title": "风险管控中心"})
+
 @router.get("/api/wallpaper")
 async def get_wallpaper():
     fallback_wallpapers = [

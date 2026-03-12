@@ -23,6 +23,9 @@ class SettingsModel(BaseModel):
     server_type: str = "emby"
     notify_user_login: bool = False     # 🔥 补上这行
     notify_item_deleted: bool = False   # 🔥 补上这行
+# 🔥 新增风控全局字段
+    enable_risk_control: Optional[bool] = False         # 全局风控总开关
+    default_max_concurrent: Optional[int] = 2           # 全局默认允许并发数
 
 class BotSettingsModel(BaseModel):
     tg_bot_token: str
@@ -63,6 +66,9 @@ class UserUpdateModel(BaseModel):
     enable_video_transcoding: Optional[bool] = None
     enable_audio_transcoding: Optional[bool] = None
     max_parental_rating: Optional[int] = None
+# 🔥 新增单用户风控字段
+    max_concurrent: Optional[int] = None   # 该用户的专属最大并发数
+    risk_level: Optional[str] = None       # 风控状态(例如：safe, banned)
 
 # 🔥 更新：为新建/套用模板增加颗粒度控制选项
 class NewUserModel(BaseModel):
@@ -74,6 +80,8 @@ class NewUserModel(BaseModel):
     copy_library: Optional[bool] = True
     copy_policy: Optional[bool] = True
     copy_parental: Optional[bool] = True
+# 🔥 新增单用户风控字段
+    max_concurrent: Optional[int] = None   # 新用户的默认最大并发数
 
 class InviteGenModel(BaseModel):
     days: int 

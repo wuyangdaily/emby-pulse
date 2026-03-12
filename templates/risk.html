@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block title %}风险管控 - EmbyPulse{% endblock %}
+
+{% block head %}
+<style>
+    /* 呼吸灯警告动画 */
+    @keyframes pulse-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    .animate-pulse-red {
+        animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 md:mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                <i class="fa-solid fa-shield-halved text-brand-500"></i> 风险管控中心
+            </h1>
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-2">实时监控账号并发情况，防范非法共享与盗链行为。</p>
+        </div>
+        <div class="text-[12px] font-mono font-bold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-apple-hoverDark px-3 py-1.5 rounded-lg border border-gray-200 dark:border-white/5 shadow-sm inline-flex items-center gap-2">
+            <i class="fa-solid fa-radar_stroke fa-satellite-dish animate-pulse text-brand-500"></i> 
+            <span id="last-update">最后扫描: 正在连接...</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white dark:bg-apple-cardDark border border-gray-100 dark:border-white/5 rounded-[20px] p-5 shadow-sm flex items-center gap-5">
+            <div class="w-12 h-12 rounded-full bg-brand-50 dark:bg-brand-500/10 text-brand-500 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div>
+                <p class="text-[13px] font-bold text-gray-400 mb-1">当前在线账号</p>
+                <p class="text-3xl font-black text-gray-800 dark:text-white leading-none" id="stat-online">0</p>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-apple-cardDark border border-gray-100 dark:border-white/5 rounded-[20px] p-5 shadow-sm flex items-center gap-5">
+            <div class="w-12 h-12 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <p class="text-[13px] font-bold text-gray-400 mb-1">并发超限警报</p>
+                <p class="text-3xl font-black text-red-500 leading-none" id="stat-warning">0</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-apple-cardDark border border-gray-100 dark:border-white/5 rounded-[20px] p-5 shadow-sm flex items-center gap-5">
+            <div class="w-12 h-12 rounded-full bg-green-50 dark:bg-green-500/10 text-green-500 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-display"></i>
+            </div>
+            <div>
+                <p class="text-[13px] font-bold text-gray-400 mb-1">正在播放设备总数</p>
+                <p class="text-3xl font-black text-gray-800 dark:text-white leading-none" id="stat-devices">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="users-container" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div class="col-span-full py-20 text-center">
+            <i class="fa-solid fa-spinner fa-spin text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <p class="text-sm font-bold text-gray-400">正在开启天眼扫描数据...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 强制设置左侧菜单高亮状态
+    const navItems = document.querySelectorAll('#sidebar-nav .nav-item');
+    navItems.forEach(item => {
+        if(item.getAttribute('href') === '/risk') {
+            item.classList.add('bg-brand-50', 'dark:bg-apple-hoverDark', 'text-brand-500');
+            item.classList.remove('text-gray-600', 'dark:text-gray-400');
+        } else {
+            item.classList.remove('bg-brand-50', 'dark:bg-apple-hoverDark', 'text-brand-500');
+        }
+    });
+
+    // 核心拉取逻辑
+    async function fetchRiskData() {
+        try {
+            const res = await fetch('/api/risk/online');
+            const json = await res.json();
+            
+            if (json.error) {
+                document.getElementById('users-container').innerHTML = `
+                    <div class="col-span-full bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-500 p-4 rounded-2xl text-center text-sm font-bold">
+                        ❌ 数据加载失败: ${json.error}
+                    </div>`;
+                return;
+            }
+            renderDashboard(json.data || []);
+        } catch (e) {
+            console.error("天眼系统连接中断", e);
+        }
+    }
+
+    // 页面渲染引擎
+    function renderDashboard(usersData) {
+        const container = document.getElementById('users-container');
+        container.innerHTML = '';
+        
+        let totalUsers = usersData.length;
+        let totalWarning = 0;
+        let totalDevices = 0;
+
+        if(totalUsers === 0) {
+            container.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600">
+                    <i class="fa-solid fa-mug-hot text-6xl mb-4 opacity-50"></i>
+                    <p class="text-[15px] font-bold">目前风平浪静，没有人看视频</p>
+                </div>`;
+        }
+
+        usersData.forEach(user => {
+            totalDevices += user.current_count;
+            if (user.is_warning) totalWarning++;
+
+            // 构建设备列表
+            let devicesHtml = '';
+            user.devices.forEach((dev, index) => {
+                devicesHtml += `
+                    <div class="bg-gray-50 dark:bg-black/20 border border-gray-100/50 dark:border-white/5 p-3 rounded-xl relative group">
+                        <div class="pr-20">
+                            <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2">
+                                <i class="fa-solid fa-tv text-brand-500 opacity-70"></i> ${dev.device_name}
+                            </h4>
+                            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 truncate">
+                                🎬 ${dev.item_name}
+                            </p>
+                            <p class="text-[10px] font-mono text-gray-400">
+                                <i class="fa-solid fa-globe text-[9px]"></i> ${dev.ip} · ${dev.client}
+                            </p>
+                        </div>
+                        <button onclick="kickDevice('${user.user_id}', '${user.username}', '${dev.session_id}')" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white dark:hover:bg-red-500 border border-red-100 dark:border-red-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-scissors"></i> 掐断
+                        </button>
+                    </div>
+                `;
+            });
+
+            // 判断外框高亮颜色
+            const cardBorderColor = user.is_warning 
+                ? 'border-red-500 dark:border-red-500 shadow-[0_8px_30px_rgba(239,68,68,0.15)] bg-red-50/10 dark:bg-red-900/10' 
+                : 'border-transparent dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10';
+
+            const badgeStyle = user.is_warning
+                ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 animate-pulse-red'
+                : 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400';
+
+            // 构建整个用户卡片
+            const card = document.createElement('div');
+            card.className = `bg-white dark:bg-apple-cardDark rounded-[24px] overflow-hidden shadow-sm transition-all duration-300 border-2 ${cardBorderColor} flex flex-col`;
+            
+            card.innerHTML = `
+                <div class="p-5 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500 shrink-0">
+                            <i class="fa-solid fa-user-astronaut"></i>
+                        </div>
+                        <h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${user.username}</h3>
+                    </div>
+                    <div class="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide ${badgeStyle}">
+                        并发: ${user.current_count} / ${user.limit}
+                    </div>
+                </div>
+                
+                <div class="p-5 flex-1 flex flex-col gap-3">
+                    ${devicesHtml}
+                </div>
+
+                ${user.is_warning ? `
+                <div class="p-4 pt-0">
+                    <button onclick="banUser('${user.user_id}', '${user.username}')" 
+                            class="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] transition-colors shadow-sm active:scale-[0.98]">
+                        <i class="fa-solid fa-user-slash"></i> 一键冻结此账号 (关小黑屋)
+                    </button>
+                </div>
+                ` : ''}
+            `;
+            container.appendChild(card);
+        });
+
+        // 更新顶部数字
+        document.getElementById('stat-online').innerText = totalUsers;
+        document.getElementById('stat-warning').innerText = totalWarning;
+        document.getElementById('stat-devices').innerText = totalDevices;
+        
+        // 更新时间
+        const now = new Date();
+        document.getElementById('last-update').innerText = `最后扫描: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    }
+
+    // 🔪 踢出设备接口
+    async function kickDevice(userId, username, sessionId) {
+        if(!confirm(`确定要强制掐断该设备的播放吗？`)) return;
+        try {
+            const res = await fetch('/api/risk/kick', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, username: username, session_id: sessionId })
+            });
+            const data = await res.json();
+            alert(res.ok ? "✅ 成功发送断开指令！" : `❌ 踢出失败: ${data.detail || data.error}`);
+            fetchRiskData();
+        } catch (e) {
+            alert("网络请求失败");
+        }
+    }
+
+    // 🚫 封禁账号接口
+    async function banUser(userId, username) {
+        if(!confirm(`⚠️ 终极警告：\n确定要将用户 [${username}] 关入小黑屋吗？\n该账号将被 Emby 底层完全冻结！`)) return;
+        try {
+            const res = await fetch('/api/risk/ban', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ user_id: userId, username: username })
+            });
+            const data = await res.json();
+            alert(res.ok ? `✅ 已成功冻结用户 [${username}]` : `❌ 封号失败: ${data.detail || data.error}`);
+            fetchRiskData();
+        } catch (e) {
+            alert("网络请求失败");
+        }
+    }
+
+    // 页面加载完毕后开始轮询
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchRiskData();
+        setInterval(fetchRiskData, 15000); // 15秒扫一次，和后台天眼同步
+    });
+</script>
+{% endblock %}
