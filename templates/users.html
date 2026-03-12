@@ -217,6 +217,10 @@
                 <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">账号到期时间</label>
                 <input type="date" id="new-expire" class="w-full px-4 py-3 rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50 dark:bg-black/20 focus:ring-2 focus:ring-brand-500 outline-none transition-all text-[13px]">
             </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">专属并发限制 (可选)</label>
+                <input type="number" id="new-max-concurrent" min="1" class="w-full px-4 py-3 rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50 dark:bg-black/20 focus:ring-2 focus:ring-brand-500 outline-none transition-all text-[13px]" placeholder="留空则使用全局默认限制">
+            </div>
             
             <div class="p-4 bg-brand-50/50 dark:bg-brand-500/5 rounded-xl border border-brand-100 dark:border-brand-500/10">
                 <label class="block text-xs font-bold text-brand-600 dark:text-brand-400 mb-2 uppercase tracking-wide">权限同步模板 (可选)</label>
@@ -365,6 +369,15 @@
                         <option value="18">18 岁以上 (仅限成人)</option>
                     </select>
                 </div>
+
+                <div class="p-4 border border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#1C1C1E] rounded-xl shadow-sm">
+                    <label class="block text-[11px] font-bold text-gray-500 mb-2 uppercase tracking-wider"><i class="fa-solid fa-users-viewfinder mr-1"></i>专属并发控制 (覆盖全局)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="number" id="edit-max-concurrent" min="1" placeholder="留空则使用全局限制" class="w-full px-4 py-3 rounded-xl border border-gray-200/80 dark:border-white/10 bg-gray-50 dark:bg-black/20 focus:ring-2 focus:ring-brand-500 outline-none transition-all text-[13px] font-bold text-gray-800 dark:text-gray-100 shadow-inner">
+                        <span class="text-[12px] text-gray-500 font-bold shrink-0">台设备</span>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -943,6 +956,8 @@ async function openEditUserModal(uid) {
             document.getElementById('edit-enable-video-transcode').checked = json.data.EnableVideoTranscoding !== false; 
             document.getElementById('edit-enable-audio-transcode').checked = json.data.EnableAudioTranscoding !== false;
             document.getElementById('edit-max-parental-rating').value = (json.data.MaxParentalRating !== null && json.data.MaxParentalRating !== undefined) ? json.data.MaxParentalRating : "-1";
+            // 🔥 读取专属并发设置
+            document.getElementById('edit-max-concurrent').value = (json.data.MaxConcurrent !== null && json.data.MaxConcurrent !== undefined) ? json.data.MaxConcurrent : "";
         }
     } catch(err) {}
     renderLibraryCheckboxes(user); 
@@ -1001,6 +1016,8 @@ async function applyEditTemplate() {
                 document.getElementById('edit-enable-downloading').checked = tData.EnableDownloading !== false; 
                 document.getElementById('edit-enable-video-transcode').checked = tData.EnableVideoTranscoding !== false; 
                 document.getElementById('edit-enable-audio-transcode').checked = tData.EnableAudioTranscoding !== false; 
+                // 🔥 同步模板的并发限制
+                document.getElementById('edit-max-concurrent').value = (tData.MaxConcurrent !== null && tData.MaxConcurrent !== undefined) ? tData.MaxConcurrent : "";
             }
             if (document.getElementById('apply-opt-par').checked) { 
                 document.getElementById('edit-max-parental-rating').value = (tData.MaxParentalRating !== null && tData.MaxParentalRating !== undefined) ? tData.MaxParentalRating : "-1"; 
@@ -1046,7 +1063,9 @@ async function submitEditUser() {
             enable_downloading: document.getElementById('edit-enable-downloading').checked, 
             enable_video_transcoding: document.getElementById('edit-enable-video-transcode').checked, 
             enable_audio_transcoding: document.getElementById('edit-enable-audio-transcode').checked, 
-            max_parental_rating: parseInt(document.getElementById('edit-max-parental-rating').value) 
+            max_parental_rating: parseInt(document.getElementById('edit-max-parental-rating').value),
+            // 🔥 提交并发配置
+            max_concurrent: document.getElementById('edit-max-concurrent').value ? parseInt(document.getElementById('edit-max-concurrent').value) : null
         };
         
         const res = await fetch('/api/manage/user/update', { 
@@ -1074,6 +1093,7 @@ function openNewUserModal() {
     document.getElementById('new-username').value = ""; 
     document.getElementById('new-password').value = ""; 
     document.getElementById('new-expire').value = ""; 
+    document.getElementById('new-max-concurrent').value = ""; // 🔥 清空新建的并发
     populateTemplates('new-template'); 
     setTimeout(() => { modal.classList.add('flex'); }, 10); 
 }
@@ -1100,7 +1120,9 @@ async function submitNewUser() {
                 template_user_id: document.getElementById('new-template').value || null, 
                 copy_library: document.getElementById('new-opt-lib').checked, 
                 copy_policy: document.getElementById('new-opt-pol').checked, 
-                copy_parental: document.getElementById('new-opt-par').checked 
+                copy_parental: document.getElementById('new-opt-par').checked,
+                // 🔥 提交新建账号并发数
+                max_concurrent: document.getElementById('new-max-concurrent').value ? parseInt(document.getElementById('new-max-concurrent').value) : null
             }) 
         });
         if ((await res.json()).status === 'success') { 
