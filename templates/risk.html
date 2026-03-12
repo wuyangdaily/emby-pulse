@@ -6,35 +6,25 @@
 <style>
     @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
     .animate-pulse-red { animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    
-    /* 隐藏未激活的 Tab 页面 */
     .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
     .tab-content.active { display: block; opacity: 1; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="p-4 md:p-8 max-w-7xl mx-auto">
+<div class="p-4 md:p-8 max-w-7xl mx-auto pb-32">
     
     <div class="bg-white/80 dark:bg-apple-cardDark/80 backdrop-blur-xl border border-gray-200/60 dark:border-white/5 rounded-[24px] p-2 flex flex-col md:flex-row items-center justify-between gap-4 mb-8 shadow-sm">
-        
         <div class="flex items-center gap-1 bg-gray-100/50 dark:bg-black/20 p-1 rounded-[20px] w-full md:w-auto">
-            <button onclick="switchTab('live')" id="tab-btn-live" class="flex-1 md:flex-none px-6 py-2.5 rounded-[16px] text-[14px] font-bold transition-all bg-white dark:bg-[#2C2C2E] text-gray-900 dark:text-white shadow-sm">
-                <i class="fa-solid fa-satellite-dish text-brand-500 mr-2"></i>实时雷达
-            </button>
-            <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 md:flex-none px-6 py-2.5 rounded-[16px] text-[14px] font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white">
-                <i class="fa-solid fa-clock-rotate-left mr-2"></i>历史审计
-            </button>
+            <button onclick="switchTab('live')" id="tab-btn-live" class="flex-1 md:flex-none px-6 py-2.5 rounded-[16px] text-[14px] font-bold transition-all bg-white dark:bg-[#2C2C2E] text-gray-900 dark:text-white shadow-sm"><i class="fa-solid fa-satellite-dish text-brand-500 mr-2"></i>实时雷达</button>
+            <button onclick="switchTab('history')" id="tab-btn-history" class="flex-1 md:flex-none px-6 py-2.5 rounded-[16px] text-[14px] font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-white"><i class="fa-solid fa-clock-rotate-left mr-2"></i>历史审计</button>
         </div>
-
         <div class="flex items-center gap-3 w-full md:w-auto px-2">
             <div class="text-[12px] font-mono font-bold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-black/20 px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-white/5 flex items-center gap-2">
                 <span id="live-indicator" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                 <span id="last-update">正在连接天眼...</span>
             </div>
-            <button onclick="openConfigModal()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-apple-hoverDark text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 flex items-center justify-center transition-colors">
-                <i class="fa-solid fa-sliders"></i>
-            </button>
+            <button onclick="openConfigModal()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-apple-hoverDark text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 flex items-center justify-center transition-colors"><i class="fa-solid fa-sliders"></i></button>
         </div>
     </div>
 
@@ -66,11 +56,20 @@
             </div>
         </div>
 
-        <div id="users-container" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            <div class="col-span-full py-20 text-center text-gray-400">
+        <div id="users-container" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
+            <div class="col-span-full py-16 text-center text-gray-400">
                 <i class="fa-solid fa-spinner fa-spin text-4xl mb-4"></i><p class="font-bold">加载天眼数据中...</p>
             </div>
         </div>
+
+        <div class="flex items-center gap-4 mb-6">
+            <div class="h-px bg-gray-200 dark:bg-white/10 flex-1"></div>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-shield-cat mr-1"></i> 天眼防线摘要</span>
+            <div class="h-px bg-gray-200 dark:bg-white/10 flex-1"></div>
+        </div>
+        
+        <div id="summary-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            </div>
     </div>
 
     <div id="tab-history" class="tab-content">
@@ -92,24 +91,19 @@
                             <th class="py-3 px-5 text-[12px] font-bold text-gray-500 uppercase">风控详情</th>
                         </tr>
                     </thead>
-                    <tbody id="logs-tbody" class="divide-y divide-gray-100 dark:divide-white/5 text-[13px]">
-                        </tbody>
+                    <tbody id="logs-tbody" class="divide-y divide-gray-100 dark:divide-white/5 text-[13px]"></tbody>
                 </table>
             </div>
         </div>
     </div>
-
 </div>
 
 <div id="config-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
     <div class="bg-apple-bgLight dark:bg-apple-cardDark w-full max-w-md rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5">
         <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-brand-500"></i> 风控引擎参数
-            </h3>
+            <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-sliders text-brand-500"></i> 风控引擎参数</h3>
             <button onclick="closeConfigModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
-        
         <div class="space-y-5">
             <div class="flex items-center justify-between p-4 bg-white dark:bg-[#2C2C2E] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                 <div>
@@ -121,7 +115,6 @@
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-500"></div>
                 </label>
             </div>
-
             <div class="p-4 bg-white dark:bg-[#2C2C2E] rounded-2xl border border-gray-100 dark:border-white/5 shadow-sm">
                 <h4 class="font-bold text-[14px] mb-3">全局默认最大并发数</h4>
                 <div class="flex items-center gap-3">
@@ -129,13 +122,11 @@
                     <span class="text-[12px] text-gray-500">个设备同时播放</span>
                 </div>
             </div>
-
             <div class="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl flex gap-3 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
                 <i class="fa-solid fa-circle-info mt-0.5"></i>
-                <p class="text-[11px] font-medium leading-relaxed">如果你想为某位特殊的 VIP 用户设置专属并发额度（如无限制），请前往左侧菜单的 <strong>[ 用户管理 ] -> 编辑用户</strong> 界面中单独配置。</p>
+                <p class="text-[11px] font-medium leading-relaxed">需要为某位 VIP 设置专属额度或无视踢出特权，请前往 <strong>[ 用户管理 ] -> 编辑用户</strong> 界面中开启。</p>
             </div>
         </div>
-
         <button onclick="saveConfig()" class="w-full mt-6 py-3.5 bg-brand-500 hover:bg-brand-600 text-white rounded-[16px] font-bold text-[14px] shadow-md transition-colors active:scale-95">
             <i class="fa-solid fa-check mr-1"></i> 保存并应用配置
         </button>
@@ -146,24 +137,10 @@
 
 {% block scripts %}
 <script>
-    // 强制设置左侧菜单高亮状态
-    const navItems = document.querySelectorAll('#sidebar-nav .nav-item');
-    navItems.forEach(item => {
-        if(item.getAttribute('href') === '/risk') {
-            item.classList.add('bg-brand-50', 'dark:bg-apple-hoverDark', 'text-brand-500');
-            item.classList.remove('text-gray-600', 'dark:text-gray-400');
-        } else {
-            item.classList.remove('bg-brand-50', 'dark:bg-apple-hoverDark', 'text-brand-500');
-        }
-    });
-
-    // Tab 切换器
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-' + tabId).classList.add('active');
-        
-        const btnLive = document.getElementById('tab-btn-live');
-        const btnHistory = document.getElementById('tab-btn-history');
+        const btnLive = document.getElementById('tab-btn-live'), btnHistory = document.getElementById('tab-btn-history');
         
         if (tabId === 'live') {
             btnLive.className = "flex-1 md:flex-none px-6 py-2.5 rounded-[16px] text-[14px] font-bold transition-all bg-white dark:bg-[#2C2C2E] text-gray-900 dark:text-white shadow-sm";
@@ -176,29 +153,35 @@
         }
     }
 
-    // ================= 模块 1：实时监控 =================
+    // ================= 模块 1：实时监控与战报 =================
     async function fetchRiskData() {
         if(!document.getElementById('tab-live').classList.contains('active')) return;
         try {
             const res = await fetch('/api/risk/online');
             const json = await res.json();
-            if (json.error) return;
-            renderDashboard(json.data || []);
-        } catch (e) { }
+            if (!json.error) renderDashboard(json.data || []);
+            
+            // 无论有没有人看，都去拉取一次下方常驻的安全简报
+            fetchSummaryData();
+        } catch (e) {}
     }
-// 页面渲染引擎
+
+    async function fetchSummaryData() {
+        try {
+            const res = await fetch('/api/risk/summary');
+            const json = await res.json();
+            if (!json.error) renderSummaryBoard(json);
+        } catch(e) {}
+    }
+
     function renderDashboard(usersData) {
         const container = document.getElementById('users-container');
-        
-        let totalUsers = usersData.length;
-        let totalWarning = 0;
-        let totalDevices = 0;
+        let totalUsers = usersData.length, totalWarning = 0, totalDevices = 0;
 
-        // 🔥 当没有人在看片时，加载高价值的“待机防线战报”
         if(totalUsers === 0) {
-            renderEmptySummary(container);
+            container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-16 text-gray-400 bg-white/40 dark:bg-[#1C1C1E]/40 rounded-[24px] border border-dashed border-gray-200 dark:border-white/10"><i class="fa-solid fa-mug-hot text-5xl mb-4 opacity-30"></i><p class="text-[14px] font-bold">当前风平浪静，天眼静默待机中</p></div>`;
         } else {
-            container.innerHTML = ''; // 清空并渲染卡片
+            container.innerHTML = ''; 
             usersData.forEach(user => {
                 totalDevices += user.current_count;
                 if (user.is_warning) totalWarning++;
@@ -208,16 +191,11 @@
                     devicesHtml += `
                         <div class="bg-gray-50 dark:bg-black/20 border border-gray-100/50 dark:border-white/5 p-3 rounded-xl relative group">
                             <div class="pr-20">
-                                <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2 truncate">
-                                    <i class="fa-solid fa-tv text-brand-500 opacity-70"></i> ${dev.device_name}
-                                </h4>
+                                <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2 truncate"><i class="fa-solid fa-tv text-brand-500 opacity-70"></i> ${dev.device_name}</h4>
                                 <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 truncate">🎬 ${dev.item_name}</p>
                                 <p class="text-[10px] font-mono text-gray-400"><i class="fa-solid fa-globe text-[9px]"></i> ${dev.ip} · ${dev.client}</p>
                             </div>
-                            <button onclick="kickDevice('${user.user_id}', '${user.username}', '${dev.session_id}', '${dev.device_id}')" 
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1">
-                                <i class="fa-solid fa-plug-circle-xmark text-sm"></i> 拔线
-                            </button>
+                            <button onclick="kickDevice('${user.user_id}', '${user.username}', '${dev.session_id}', '${dev.device_id}')" class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1"><i class="fa-solid fa-plug-circle-xmark text-sm"></i> 拔线</button>
                         </div>`;
                 });
 
@@ -228,14 +206,11 @@
                 card.className = `bg-white dark:bg-apple-cardDark rounded-[24px] shadow-sm transition-all duration-300 border-2 ${cardBorderColor} flex flex-col`;
                 card.innerHTML = `
                     <div class="p-5 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/10">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500"><i class="fa-solid fa-user-astronaut"></i></div>
-                            <h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${user.username}</h3>
-                        </div>
+                        <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500"><i class="fa-solid fa-user-astronaut"></i></div><h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${user.username}</h3></div>
                         <div class="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide ${badgeStyle}">并发: ${user.current_count} / ${user.limit}</div>
                     </div>
                     <div class="p-5 flex-1 flex flex-col gap-3">${devicesHtml}</div>
-                    ${user.is_warning ? `<div class="p-4 pt-0"><button onclick="banUser('${user.user_id}', '${user.username}')" class="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-sm active:scale-95 transition-all"><i class="fa-solid fa-user-slash"></i> 一键冻结账号 (关小黑屋)</button></div>` : ''}
+                    ${user.is_warning ? `<div class="p-4 pt-0"><button onclick="banUser('${user.user_id}', '${user.username}')" class="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-sm active:scale-95 transition-all"><i class="fa-solid fa-user-slash"></i> 一键冻结账号</button></div>` : ''}
                 `;
                 container.appendChild(card);
             });
@@ -248,187 +223,104 @@
         document.getElementById('last-update').innerText = `最后雷达扫描: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
     }
 
-    // 🔥 新增：渲染极具价值的“待机战报”大盘
-    async function renderEmptySummary(container) {
-        // 如果已经渲染了空态战报，就不需要重复请求闪烁了
-        if(container.querySelector('#empty-summary-board')) return;
-
-        container.innerHTML = `<div class="col-span-full py-10 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-300"></i><p class="mt-2 text-[13px] text-gray-400 font-bold">天眼正在生成安全简报...</p></div>`;
-        
-        try {
-            const res = await fetch('/api/risk/summary');
-            const json = await res.json();
-            if (json.error) throw new Error();
-
-            let offendersHtml = '';
-            if (json.top_offenders && json.top_offenders.length > 0) {
-                json.top_offenders.forEach((u, idx) => {
-                    let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹';
-                    offendersHtml += `
-                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/5">
-                            <span class="text-[13px] font-bold text-gray-800 dark:text-gray-200"><span class="mr-2">${medal}</span> ${u.username}</span>
-                            <span class="text-[11px] font-bold bg-red-50 text-red-500 dark:bg-red-500/10 px-2 py-1 rounded-lg">违规 ${u.total_violations} 次</span>
-                        </div>`;
-                });
-            } else {
-                offendersHtml = `<div class="py-6 text-center text-gray-400 text-[12px] font-bold"><i class="fa-solid fa-shield-cat text-2xl mb-2 opacity-50 block"></i>表现良好，无违规记录</div>`;
-            }
-
-            container.innerHTML = `
-                <div id="empty-summary-board" class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
-                    
-                    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden">
-                        <div class="absolute right-0 top-0 w-32 h-32 bg-brand-500/5 rounded-bl-[100px]"></div>
-                        <h3 class="text-[15px] font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                            <i class="fa-solid fa-shield-halved text-brand-500"></i> 天眼 24H 拦截战报
-                        </h3>
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
-                                <div class="text-2xl font-black text-yellow-500 mb-1">${json.today_stats.warn || 0}</div>
-                                <div class="text-[11px] font-bold text-gray-500">触发警报</div>
-                            </div>
-                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
-                                <div class="text-2xl font-black text-orange-500 mb-1">${json.today_stats.kick || 0}</div>
-                                <div class="text-[11px] font-bold text-gray-500">拔断网线</div>
-                            </div>
-                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
-                                <div class="text-2xl font-black text-red-500 mb-1">${json.today_stats.ban || 0}</div>
-                                <div class="text-[11px] font-bold text-gray-500">封禁账号</div>
-                            </div>
-                        </div>
-                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
-                            <div class="text-[12px] text-gray-500 font-medium"><i class="fa-solid fa-circle-check text-green-500 mr-1"></i> 系统安静待机中，当前无负载</div>
-                            <div class="text-[11px] font-bold bg-brand-50 text-brand-600 dark:bg-brand-500/10 px-2 py-1 rounded">全局并发限额: ${json.global_limit}</div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-[15px] font-black text-gray-900 dark:text-white flex items-center gap-2">
-                                <i class="fa-solid fa-clipboard-list text-purple-500"></i> 高危重点观察名单 (Top 5)
-                            </h3>
-                            <span class="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-lg">已有 ${json.vip_count} 人获 VIP 特权</span>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            ${offendersHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
-        } catch (e) {
-            container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400"><i class="fa-solid fa-mug-hot text-5xl mb-4 opacity-50"></i><p class="text-[14px] font-bold">当前风平浪静，天眼待机中</p></div>`;
+    function renderSummaryBoard(json) {
+        const container = document.getElementById('summary-container');
+        let offendersHtml = '';
+        if (json.top_offenders && json.top_offenders.length > 0) {
+            json.top_offenders.forEach((u, idx) => {
+                let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹';
+                offendersHtml += `<div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/5"><span class="text-[13px] font-bold text-gray-800 dark:text-gray-200"><span class="mr-2">${medal}</span> ${u.username}</span><span class="text-[11px] font-bold bg-red-50 text-red-500 dark:bg-red-500/10 px-2 py-1 rounded-lg">违规 ${u.total_violations} 次</span></div>`;
+            });
+        } else {
+            offendersHtml = `<div class="py-6 text-center text-gray-400 text-[12px] font-bold"><i class="fa-solid fa-shield-cat text-2xl mb-2 opacity-50 block"></i>表现良好，无违规记录</div>`;
         }
+
+        container.innerHTML = `
+            <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden">
+                <div class="absolute right-0 top-0 w-32 h-32 bg-brand-500/5 rounded-bl-[100px]"></div>
+                <h3 class="text-[15px] font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-brand-500"></i> 天眼 24H 拦截战报</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center"><div class="text-2xl font-black text-yellow-500 mb-1">${json.today_stats.warn || 0}</div><div class="text-[11px] font-bold text-gray-500">触发警报</div></div>
+                    <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center"><div class="text-2xl font-black text-orange-500 mb-1">${json.today_stats.kick || 0}</div><div class="text-[11px] font-bold text-gray-500">拔断网线</div></div>
+                    <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center"><div class="text-2xl font-black text-red-500 mb-1">${json.today_stats.ban || 0}</div><div class="text-[11px] font-bold text-gray-500">封禁账号</div></div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                    <div class="text-[12px] text-gray-500 font-medium"><i class="fa-solid fa-circle-check text-green-500 mr-1"></i> 系统防线稳固</div>
+                    <div class="text-[11px] font-bold bg-brand-50 text-brand-600 dark:bg-brand-500/10 px-2 py-1 rounded">全局并发限额: ${json.global_limit}</div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-[15px] font-black text-gray-900 dark:text-white flex items-center gap-2"><i class="fa-solid fa-clipboard-list text-purple-500"></i> 高危观察名单 (Top 5)</h3>
+                    <span class="text-[10px] font-bold text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400 px-2 py-1 rounded-lg border border-purple-100 dark:border-purple-500/20"><i class="fa-solid fa-crown mr-1"></i>已有 ${json.vip_count} 人获 VIP 特权</span>
+                </div>
+                <div class="flex flex-col gap-1">${offendersHtml}</div>
+            </div>
+        `;
     }
 
-    // 🔪 终极踢出：物理拔网线
     async function kickDevice(userId, username, sessionId, deviceId) {
-        if(!confirm(`物理拔网线警告：\n确定要强制掐断该设备吗？\n(第三方播放器将被强行注销登录状态！)`)) return;
+        if(!confirm(`物理拔网线警告：\n确定要强制掐断该设备吗？`)) return;
         try {
-            const res = await fetch('/api/risk/kick', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: userId, username: username, session_id: sessionId, device_id: deviceId })
-            });
-            const data = await res.json();
-            alert(res.ok ? "✅ 成功拔掉网线，对方视频将瞬间卡死报错！" : `❌ 执行失败: ${data.detail || data.error}`);
-            fetchRiskData();
-        } catch (e) { alert("网络请求失败"); }
+            const res = await fetch('/api/risk/kick', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: userId, username: username, session_id: sessionId, device_id: deviceId }) });
+            alert(res.ok ? "✅ 成功拔掉网线！" : `❌ 执行失败`); fetchRiskData();
+        } catch (e) {}
     }
 
-    // 🚫 封禁账号接口
     async function banUser(userId, username) {
-        if(!confirm(`⚠️ 终极警告：\n确定要将用户 [${username}] 关入小黑屋吗？\n该账号将被 Emby 底层完全冻结！`)) return;
+        if(!confirm(`⚠️ 终极警告：确定要将用户 [${username}] 关入小黑屋吗？`)) return;
         try {
-            const res = await fetch('/api/risk/ban', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: userId, username: username })
-            });
-            alert(res.ok ? `✅ 已成功冻结用户 [${username}]` : `❌ 封号失败`);
-            fetchRiskData();
-        } catch (e) { alert("网络请求失败"); }
+            const res = await fetch('/api/risk/ban', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ user_id: userId, username: username }) });
+            alert(res.ok ? `✅ 已成功冻结` : `❌ 封号失败`); fetchRiskData();
+        } catch (e) {}
     }
 
     // ================= 模块 2：历史记录 =================
     let allLogs = [];
     async function fetchHistoryLogs() {
-        try {
-            const res = await fetch('/api/risk/logs');
-            const json = await res.json();
-            allLogs = json.data || [];
-            renderLogs(allLogs);
-        } catch(e) {}
+        try { const res = await fetch('/api/risk/logs'); const json = await res.json(); allLogs = json.data || []; renderLogs(allLogs); } catch(e) {}
     }
-
     function renderLogs(logs) {
         const tbody = document.getElementById('logs-tbody');
-        if (logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400">暂无任何风控记录</td></tr>`;
-            return;
-        }
+        if (logs.length === 0) return tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-400">暂无任何风控记录</td></tr>`;
         let html = '';
         logs.forEach(log => {
-            const isBan = log.action === 'ban';
-            const isKick = log.action === 'kick';
-            const actionBadge = isBan ? `<span class="bg-red-500 text-white px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-user-slash mr-1"></i>小黑屋</span>` :
-                              isKick ? `<span class="bg-orange-500 text-white px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-plug-circle-xmark mr-1"></i>拔网线</span>` :
-                              `<span class="bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500 px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-bell mr-1"></i>机器人警告</span>`;
-            
-            html += `
-                <tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                    <td class="py-3 px-5 text-gray-500 font-mono">${log.created_at}</td>
-                    <td class="py-3 px-5 font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-user text-gray-400 mr-2"></i>${log.username}</td>
-                    <td class="py-3 px-5">${actionBadge}</td>
-                    <td class="py-3 px-5 text-gray-600 dark:text-gray-400 max-w-xs truncate" title="${log.reason}">${log.reason}</td>
-                </tr>`;
+            const isBan = log.action === 'ban', isKick = log.action === 'kick';
+            const actionBadge = isBan ? `<span class="bg-red-500 text-white px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-user-slash mr-1"></i>小黑屋</span>` : isKick ? `<span class="bg-orange-500 text-white px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-plug-circle-xmark mr-1"></i>拔网线</span>` : `<span class="bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500 px-2 py-1 rounded text-[11px] font-bold"><i class="fa-solid fa-bell mr-1"></i>机器人警告</span>`;
+            html += `<tr class="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors"><td class="py-3 px-5 text-gray-500 font-mono">${log.created_at}</td><td class="py-3 px-5 font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-user text-gray-400 mr-2"></i>${log.username}</td><td class="py-3 px-5">${actionBadge}</td><td class="py-3 px-5 text-gray-600 dark:text-gray-400 max-w-xs truncate" title="${log.reason}">${log.reason}</td></tr>`;
         });
         tbody.innerHTML = html;
     }
-
     function filterLogs() {
         const keyword = document.getElementById('log-search').value.toLowerCase();
-        const filtered = allLogs.filter(log => log.username.toLowerCase().includes(keyword) || log.reason.toLowerCase().includes(keyword));
-        renderLogs(filtered);
+        renderLogs(allLogs.filter(log => log.username.toLowerCase().includes(keyword) || log.reason.toLowerCase().includes(keyword)));
     }
 
-    // ================= 模块 3：风控配置弹窗 =================
+    // ================= 模块 3：风控配置 =================
     async function openConfigModal() {
         try {
-            const res = await fetch('/api/risk/config');
-            const cfg = await res.json();
+            const res = await fetch('/api/risk/config'); const cfg = await res.json();
             document.getElementById('cfg-enable').checked = cfg.enable_risk_control;
             document.getElementById('cfg-limit').value = cfg.default_max_concurrent;
-            
             const modal = document.getElementById('config-modal');
-            modal.classList.remove('hidden'); void modal.offsetWidth;
-            modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
-        } catch(e) { alert('获取配置失败'); }
+            modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
+        } catch(e) {}
     }
-
     function closeConfigModal() {
         const modal = document.getElementById('config-modal');
-        modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
-        setTimeout(() => modal.classList.add('hidden'), 300);
+        modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300);
     }
-
     async function saveConfig() {
-        const payload = {
-            enable_risk_control: document.getElementById('cfg-enable').checked,
-            default_max_concurrent: parseInt(document.getElementById('cfg-limit').value)
-        };
         try {
-            const res = await fetch('/api/risk/config', {
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-            });
-            if(res.ok) {
-                closeConfigModal();
-                alert('✅ 风控配置已保存并生效！');
-            }
-        } catch(e) { alert('保存失败'); }
+            const res = await fetch('/api/risk/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ enable_risk_control: document.getElementById('cfg-enable').checked, default_max_concurrent: parseInt(document.getElementById('cfg-limit').value) }) });
+            if(res.ok) { closeConfigModal(); alert('✅ 配置已生效！'); fetchRiskData(); }
+        } catch(e) {}
     }
 
-    // 页面加载完毕后开始轮询大盘
     document.addEventListener('DOMContentLoaded', () => {
         fetchRiskData();
-        setInterval(fetchRiskData, 15000); 
+        // 因为已经是事件驱动秒触发了，前端的轮询可以拉长到 30 秒，节省性能
+        setInterval(fetchRiskData, 30000); 
     });
 </script>
 {% endblock %}
