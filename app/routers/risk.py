@@ -118,3 +118,37 @@ def update_risk_config(req: ConfigRequest):
     cfg["default_max_concurrent"] = req.default_max_concurrent
     save_config()
     return {"message": "配置已生效"}
+
+@router.get("/summary")
+def get_risk_summary():
+    """空闲状态下的风控战报简报"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+
+        # 1. 统计近 24 小时的拦截数据
+        cur.execute("SELECT action, COUNT(*) as cnt FROM risk_logs WHERE datetime(created_at) >= datetime('now', '-1 day') GROUP BY action")
+        today_stats = {"warn": 0, "kick": 0, "ban": 0}
+        for row in cur.fetchall():
+            today_stats[row['action']] = row['cnt']
+
+        # 2. 统计历史高危账号排行榜 (违规次数最多的前 5 名)
+        cur.execute("SELECT username, COUNT(*) as total_violations FROM risk_logs GROUP BY username ORDER BY total_violations DESC LIMIT 5")
+        top_offenders = [dict(r) for r in cur.fetchall()]
+
+        # 3. 统计有多少人拥有“专属并发特权”
+        cur.execute("SELECT COUNT(*) as vip_count FROM users_meta WHERE max_concurrent IS NOT NULL")
+        vip_row = cur.fetchone()
+        vip_count = vip_row['vip_count'] if vip_row else 0
+
+        conn.close()
+        return {
+            "status": "success",
+            "today_stats": today_stats,
+            "top_offenders": top_offenders,
+            "vip_count": vip_count,
+            "global_limit": cfg.get("default_max_concurrent", 2)
+        }
+    except Exception as e:
+        return {"error": str(e)}

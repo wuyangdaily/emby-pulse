@@ -186,63 +186,138 @@
             renderDashboard(json.data || []);
         } catch (e) { }
     }
-
+// 页面渲染引擎
     function renderDashboard(usersData) {
         const container = document.getElementById('users-container');
-        container.innerHTML = '';
         
-        let totalUsers = usersData.length, totalWarning = 0, totalDevices = 0;
+        let totalUsers = usersData.length;
+        let totalWarning = 0;
+        let totalDevices = 0;
 
+        // 🔥 当没有人在看片时，加载高价值的“待机防线战报”
         if(totalUsers === 0) {
-            container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400"><i class="fa-solid fa-mug-hot text-6xl mb-4 opacity-50"></i><p class="text-[15px] font-bold">目前风平浪静，没有人看视频</p></div>`;
-        }
+            renderEmptySummary(container);
+        } else {
+            container.innerHTML = ''; // 清空并渲染卡片
+            usersData.forEach(user => {
+                totalDevices += user.current_count;
+                if (user.is_warning) totalWarning++;
 
-        usersData.forEach(user => {
-            totalDevices += user.current_count;
-            if (user.is_warning) totalWarning++;
+                let devicesHtml = '';
+                user.devices.forEach((dev) => {
+                    devicesHtml += `
+                        <div class="bg-gray-50 dark:bg-black/20 border border-gray-100/50 dark:border-white/5 p-3 rounded-xl relative group">
+                            <div class="pr-20">
+                                <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2 truncate">
+                                    <i class="fa-solid fa-tv text-brand-500 opacity-70"></i> ${dev.device_name}
+                                </h4>
+                                <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 truncate">🎬 ${dev.item_name}</p>
+                                <p class="text-[10px] font-mono text-gray-400"><i class="fa-solid fa-globe text-[9px]"></i> ${dev.ip} · ${dev.client}</p>
+                            </div>
+                            <button onclick="kickDevice('${user.user_id}', '${user.username}', '${dev.session_id}', '${dev.device_id}')" 
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1">
+                                <i class="fa-solid fa-plug-circle-xmark text-sm"></i> 拔线
+                            </button>
+                        </div>`;
+                });
 
-            let devicesHtml = '';
-            user.devices.forEach((dev) => {
-                devicesHtml += `
-                    <div class="bg-gray-50 dark:bg-black/20 border border-gray-100/50 dark:border-white/5 p-3 rounded-xl relative group">
-                        <div class="pr-20">
-                            <h4 class="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-1 flex items-center gap-2 truncate">
-                                <i class="fa-solid fa-tv text-brand-500 opacity-70"></i> ${dev.device_name}
-                            </h4>
-                            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1 truncate">🎬 ${dev.item_name}</p>
-                            <p class="text-[10px] font-mono text-gray-400"><i class="fa-solid fa-globe text-[9px]"></i> ${dev.ip} · ${dev.client}</p>
+                const cardBorderColor = user.is_warning ? 'border-red-500 shadow-[0_8px_30px_rgba(239,68,68,0.15)] bg-red-50/10 dark:bg-red-900/10' : 'border-transparent dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10';
+                const badgeStyle = user.is_warning ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 animate-pulse-red' : 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400';
+
+                const card = document.createElement('div');
+                card.className = `bg-white dark:bg-apple-cardDark rounded-[24px] shadow-sm transition-all duration-300 border-2 ${cardBorderColor} flex flex-col`;
+                card.innerHTML = `
+                    <div class="p-5 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500"><i class="fa-solid fa-user-astronaut"></i></div>
+                            <h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${user.username}</h3>
                         </div>
-                        <button onclick="kickDevice('${user.user_id}', '${user.username}', '${dev.session_id}', '${dev.device_id}')" 
-                                class="absolute right-3 top-1/2 -translate-y-1/2 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 dark:border-red-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 shadow-sm flex items-center gap-1">
-                            <i class="fa-solid fa-plug-circle-xmark text-sm"></i> 拔线
-                        </button>
-                    </div>`;
-            });
-
-            const cardBorderColor = user.is_warning ? 'border-red-500 shadow-[0_8px_30px_rgba(239,68,68,0.15)] bg-red-50/10 dark:bg-red-900/10' : 'border-transparent dark:border-white/5 hover:border-gray-200 dark:hover:border-white/10';
-            const badgeStyle = user.is_warning ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400 animate-pulse-red' : 'bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400';
-
-            const card = document.createElement('div');
-            card.className = `bg-white dark:bg-apple-cardDark rounded-[24px] shadow-sm transition-all duration-300 border-2 ${cardBorderColor} flex flex-col`;
-            card.innerHTML = `
-                <div class="p-5 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-black/10">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center text-brand-500"><i class="fa-solid fa-user-astronaut"></i></div>
-                        <h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${user.username}</h3>
+                        <div class="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide ${badgeStyle}">并发: ${user.current_count} / ${user.limit}</div>
                     </div>
-                    <div class="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wide ${badgeStyle}">并发: ${user.current_count} / ${user.limit}</div>
-                </div>
-                <div class="p-5 flex-1 flex flex-col gap-3">${devicesHtml}</div>
-                ${user.is_warning ? `<div class="p-4 pt-0"><button onclick="banUser('${user.user_id}', '${user.username}')" class="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-sm active:scale-95 transition-all"><i class="fa-solid fa-user-slash"></i> 一键冻结账号 (关小黑屋)</button></div>` : ''}
-            `;
-            container.appendChild(card);
-        });
+                    <div class="p-5 flex-1 flex flex-col gap-3">${devicesHtml}</div>
+                    ${user.is_warning ? `<div class="p-4 pt-0"><button onclick="banUser('${user.user_id}', '${user.username}')" class="w-full flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-sm active:scale-95 transition-all"><i class="fa-solid fa-user-slash"></i> 一键冻结账号 (关小黑屋)</button></div>` : ''}
+                `;
+                container.appendChild(card);
+            });
+        }
 
         document.getElementById('stat-online').innerText = totalUsers;
         document.getElementById('stat-warning').innerText = totalWarning;
         document.getElementById('stat-devices').innerText = totalDevices;
         const now = new Date();
         document.getElementById('last-update').innerText = `最后雷达扫描: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+    }
+
+    // 🔥 新增：渲染极具价值的“待机战报”大盘
+    async function renderEmptySummary(container) {
+        // 如果已经渲染了空态战报，就不需要重复请求闪烁了
+        if(container.querySelector('#empty-summary-board')) return;
+
+        container.innerHTML = `<div class="col-span-full py-10 text-center"><i class="fa-solid fa-spinner fa-spin text-2xl text-gray-300"></i><p class="mt-2 text-[13px] text-gray-400 font-bold">天眼正在生成安全简报...</p></div>`;
+        
+        try {
+            const res = await fetch('/api/risk/summary');
+            const json = await res.json();
+            if (json.error) throw new Error();
+
+            let offendersHtml = '';
+            if (json.top_offenders && json.top_offenders.length > 0) {
+                json.top_offenders.forEach((u, idx) => {
+                    let medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '🔹';
+                    offendersHtml += `
+                        <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-colors border border-transparent hover:border-gray-100 dark:hover:border-white/5">
+                            <span class="text-[13px] font-bold text-gray-800 dark:text-gray-200"><span class="mr-2">${medal}</span> ${u.username}</span>
+                            <span class="text-[11px] font-bold bg-red-50 text-red-500 dark:bg-red-500/10 px-2 py-1 rounded-lg">违规 ${u.total_violations} 次</span>
+                        </div>`;
+                });
+            } else {
+                offendersHtml = `<div class="py-6 text-center text-gray-400 text-[12px] font-bold"><i class="fa-solid fa-shield-cat text-2xl mb-2 opacity-50 block"></i>表现良好，无违规记录</div>`;
+            }
+
+            container.innerHTML = `
+                <div id="empty-summary-board" class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
+                    
+                    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-32 h-32 bg-brand-500/5 rounded-bl-[100px]"></div>
+                        <h3 class="text-[15px] font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-brand-500"></i> 天眼 24H 拦截战报
+                        </h3>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
+                                <div class="text-2xl font-black text-yellow-500 mb-1">${json.today_stats.warn || 0}</div>
+                                <div class="text-[11px] font-bold text-gray-500">触发警报</div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
+                                <div class="text-2xl font-black text-orange-500 mb-1">${json.today_stats.kick || 0}</div>
+                                <div class="text-[11px] font-bold text-gray-500">拔断网线</div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-black/20 p-4 rounded-2xl border border-gray-100/50 dark:border-white/5 text-center">
+                                <div class="text-2xl font-black text-red-500 mb-1">${json.today_stats.ban || 0}</div>
+                                <div class="text-[11px] font-bold text-gray-500">封禁账号</div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
+                            <div class="text-[12px] text-gray-500 font-medium"><i class="fa-solid fa-circle-check text-green-500 mr-1"></i> 系统安静待机中，当前无负载</div>
+                            <div class="text-[11px] font-bold bg-brand-50 text-brand-600 dark:bg-brand-500/10 px-2 py-1 rounded">全局并发限额: ${json.global_limit}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-[15px] font-black text-gray-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-clipboard-list text-purple-500"></i> 高危重点观察名单 (Top 5)
+                            </h3>
+                            <span class="text-[10px] font-bold text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-lg">已有 ${json.vip_count} 人获 VIP 特权</span>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            ${offendersHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400"><i class="fa-solid fa-mug-hot text-5xl mb-4 opacity-50"></i><p class="text-[14px] font-bold">当前风平浪静，天眼待机中</p></div>`;
+        }
     }
 
     // 🔪 终极踢出：物理拔网线
