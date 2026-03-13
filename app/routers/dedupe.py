@@ -142,9 +142,9 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
         
         items = []; start = 0; limit = 10000
         while True:
+            # 🔥 修复2: 引入 SeriesProviderIds。只有它才能跨越不同的 Series 对象，完美抓取整剧重复！
             url = f"{host}/emby/Users/{admin_id}/Items"
-            # 🔥 修复 2: 必须引入 SeriesId，抛弃残缺的 TmdbId 关联电视剧单集
-            params = { "IncludeItemTypes": "Movie,Episode", "Recursive": "true", "Fields": "ProviderIds,ParentIndexNumber,IndexNumber,IndexNumberEnd,SeriesId", "StartIndex": start, "Limit": limit, "api_key": key }
+            params = { "IncludeItemTypes": "Movie,Episode", "Recursive": "true", "Fields": "ProviderIds,SeriesProviderIds,ParentIndexNumber,IndexNumber,IndexNumberEnd", "StartIndex": start, "Limit": limit, "api_key": key }
             chunk = requests.get(url, params=params, timeout=30).json().get("Items", [])
             items.extend(chunk)
             if len(chunk) < limit: break
@@ -163,10 +163,10 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
                 if not tmdb: continue
                 g_key = f"movie_{tmdb}"
             elif mtype == "Episode":
-                # 🔥 修复 2: 电视剧单集通过原生 SeriesId 进行绝对聚合
-                series_id = i.get("SeriesId")
-                if not series_id: continue
-                g_key = f"tv_{series_id}_s{i.get('ParentIndexNumber', 0)}e{i.get('IndexNumber', 0)}"
+                # 🔥 修复2: 改用 Series 的 TMDB ID 作为前缀，无视 Emby 生成的多个内部 SeriesId
+                series_tmdb = i.get("SeriesProviderIds", {}).get("Tmdb")
+                if not series_tmdb: continue
+                g_key = f"tv_{series_tmdb}_s{i.get('ParentIndexNumber', 0)}e{i.get('IndexNumber', 0)}"
             else: continue
             
             if g_key not in whitelist: groups[g_key].append(i)
@@ -185,7 +185,8 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
             scan_state["message"] = f"第三阶段：深层分析视频流 ({current}/{total_dups})"
             
             ids = ",".join([i["Id"] for i in item_list])
-            detail_url = f"{host}/emby/Users/{admin_id}/Items?Ids={ids}&Fields=MediaSources,Path&api_key={key}"
+            # 🔥 获取详情时同步带回 ProviderIds，存入 DB 以备分类使用
+            detail_url = f"{host}/emby/Users/{admin_id}/Items?Ids={ids}&Fields=MediaSources,Path,ProviderIds,SeriesProviderIds&api_key={key}"
             details = requests.get(detail_url, timeout=10).json().get("Items", [])
             
             parsed_items = []
@@ -197,8 +198,11 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
                 full_path = src.get("Path", "")
                 file_name = full_path.split("/")[-1].split("\\")[-1] if full_path else d.get("Name", "未知文件")
                 
+                tmdb_val = d.get("ProviderIds", {}).get("Tmdb")
+                if d.get("Type") == "Episode": tmdb_val = d.get("SeriesProviderIds", {}).get("Tmdb")
+                
                 parsed_items.append({
-                    "g_key": g_key, "tmdb": d.get("ProviderIds", {}).get("Tmdb") or d.get("SeriesId", ""),
+                    "g_key": g_key, "tmdb": tmdb_val or "",
                     "mtype": d.get("Type"), "title": d.get("SeriesName") or d.get("Name", ""),
                     "season": d.get("ParentIndexNumber", 0), "episode": d.get("IndexNumber", 0),
                     "item_id": d["Id"], "file_name": file_name, "file_path": full_path,
@@ -275,11 +279,18 @@ async def get_results():
     if rows:
         for r in rows: result_tree[r["group_key"]].append(dict(r))
         
-    # 🔥 修复 1: 获取真实的 Emby 公网地址供拼接使用
     base_url = cfg.get("emby_public_url") or cfg.get("emby_host") or ""
     if base_url.endswith('/'): base_url = base_url[:-1]
     
-    return {"success": True, "data": result_tree, "emby_url": base_url}
+    # 🔥 修复 1: 主动向系统抓取真实 ServerId 传递给前端拼接
+    server_id = ""
+    try:
+        host = cfg.get("emby_host"); key = cfg.get("emby_api_key")
+        info_res = requests.get(f"{host}/emby/System/Info?api_key={key}", timeout=2).json()
+        server_id = info_res.get("Id", "")
+    except: pass
+    
+    return {"success": True, "data": result_tree, "emby_url": base_url, "server_id": server_id}
 
 @router.post("/ignore")
 async def ignore_groups(req: IgnoreReq):

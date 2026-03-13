@@ -49,12 +49,26 @@
         <span id="summary-text">扫描完成。</span>
     </div>
 
-    <div id="dedupe-results" class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 pb-28 items-start">
-        <div class="text-center py-24 text-gray-400 lg:col-span-2 2xl:col-span-3">
-            <i class="fa-solid fa-layer-group text-6xl mb-5 opacity-20"></i>
-            <p class="text-[15px] font-medium text-gray-500">准备就绪，等待您的扫描指令</p>
-        </div>
+    <div id="dedupe-empty-state" class="text-center py-24 text-gray-400">
+        <i class="fa-solid fa-layer-group text-6xl mb-5 opacity-20"></i>
+        <p class="text-[15px] font-medium text-gray-500">准备就绪，等待您的扫描指令</p>
     </div>
+
+    <div id="dedupe-results-movies" class="hidden grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 items-start mb-6">
+        <div class="col-span-full flex items-center gap-3 mb-1">
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-500/20 flex items-center justify-center"><i class="fa-solid fa-film"></i></div>
+            <h2 class="text-xl font-black text-gray-900 dark:text-white">电影去重</h2>
+            <span id="movie-count-badge" class="ml-1 bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400 px-2.5 py-1 rounded-md text-[11px] font-bold"></span>
+        </div>
+        </div>
+
+    <div id="dedupe-results-tv" class="hidden grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-5 items-start pb-28">
+        <div class="col-span-full flex items-center gap-3 mb-1">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 dark:bg-indigo-500/20 flex items-center justify-center"><i class="fa-solid fa-tv"></i></div>
+            <h2 class="text-xl font-black text-gray-900 dark:text-white">剧集去重</h2>
+            <span id="tv-count-badge" class="ml-1 bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400 px-2.5 py-1 rounded-md text-[11px] font-bold"></span>
+        </div>
+        </div>
 
     <div id="action-pill" class="fixed bottom-[90px] md:bottom-8 left-1/2 -translate-x-1/2 z-[90] w-[92%] md:w-auto min-w-[320px] max-w-3xl bg-white/95 dark:bg-[#2C2C2E]/95 apple-blur border border-gray-200 dark:border-white/10 rounded-[20px] shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-400 transform translate-y-32 opacity-0 pointer-events-none">
         <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -310,128 +324,137 @@
     async function loadResults() {
         try {
             const res = await fetch('/api/dedupe/results'); const data = await res.json();
-            if (data.success) { allGroups = data.data; renderResults(allGroups, data.emby_url); }
+            if (data.success) { allGroups = data.data; renderResults(allGroups, data.emby_url, data.server_id); }
         } catch(e) { console.error(e); }
     }
 
-    // 🔥 修复 4: 完美解决电视剧散落排版，智能折叠聚合算法
-    function renderResults(groups, embyUrl) {
-        const container = document.getElementById('dedupe-results'); 
-        selectedItems.clear(); let keys = Object.keys(groups);
+    // 🔥 完美电影/剧集分离与折叠引擎
+    function renderResults(groups, embyUrl, serverId) {
+        const containerEmpty = document.getElementById('dedupe-empty-state'); 
+        const cMovies = document.getElementById('dedupe-results-movies'); 
+        const cTv = document.getElementById('dedupe-results-tv');
+        
+        selectedItems.clear(); 
+        let keys = Object.keys(groups);
         
         if (keys.length === 0) {
-            container.innerHTML = `<div class="text-center py-24 text-gray-400 lg:col-span-2 2xl:col-span-3"><i class="fa-solid fa-box-archive text-6xl mb-5 opacity-20"></i><p class="text-[15px] font-medium">您的媒体库非常纯净，没有发现重复项。</p></div>`;
+            containerEmpty.style.display = 'block'; cMovies.classList.add('hidden'); cTv.classList.add('hidden');
             updateActionPill(); return;
         }
+        containerEmpty.style.display = 'none';
         
         const finalEmbyUrl = embyUrl || globalEmbyBaseUrl || window.location.origin;
-        const serverParam = globalEmbyServerId ? `&serverId=${globalEmbyServerId}` : '';
+        const serverParam = serverId ? `&serverId=${serverId}` : '';
         
-        // 核心：把同一部剧的不同集聚合成一个超级组
-        const displayGroups = {};
+        const movieGroups = {}; const tvDisplayGroups = {};
+        
         keys.forEach(gKey => {
             const items = groups[gKey];
             const first = items[0];
             
             if (first.media_type === 'Movie') {
-                displayGroups[`movie_${gKey}`] = { type: 'Movie', title: first.title, targetImageId: first.item_id, itemCount: items.length, itemGroups: [ { gKey: gKey, items: items } ] };
+                movieGroups[`movie_${gKey}`] = { type: 'Movie', title: first.title, targetImageId: first.item_id, itemCount: items.length, itemGroups: [ { gKey: gKey, items: items } ] };
             } else {
                 const seriesName = first.title || "未知剧集";
-                const seriesKey = `tv_${seriesName}`;
-                if (!displayGroups[seriesKey]) {
-                    displayGroups[seriesKey] = { type: 'Episode', title: seriesName, targetImageId: first.item_id, itemCount: 0, epCount: 0, itemGroups: [] };
+                const seriesKey = `tv_show_${first.tmdb_id}`; 
+                if (!tvDisplayGroups[seriesKey]) {
+                    tvDisplayGroups[seriesKey] = { type: 'Episode', title: seriesName, targetImageId: first.item_id, itemCount: 0, epCount: 0, itemGroups: [] };
                 }
-                displayGroups[seriesKey].itemGroups.push({ gKey: gKey, season: first.season_num, episode: first.episode_num, items: items });
-                displayGroups[seriesKey].itemCount += items.length;
-                displayGroups[seriesKey].epCount += 1;
+                tvDisplayGroups[seriesKey].itemGroups.push({ gKey: gKey, season: first.season_num, episode: first.episode_num, items: items });
+                tvDisplayGroups[seriesKey].itemCount += items.length;
+                tvDisplayGroups[seriesKey].epCount += 1;
             }
         });
 
-        let html = '';
-        Object.values(displayGroups).forEach((dg, index) => {
-            const titleInfo = dg.type === 'Movie' ? `🎬 ${dg.title}` : `📺 ${dg.title}`;
-            const subInfo = dg.type === 'Movie' ? `包含 ${dg.itemCount} 个重复版本` : `含 ${dg.epCount} 集重复 (共 ${dg.itemCount} 个文件)`;
-            const uniqueId = `group_${index}`;
+        // 通用渲染块函数
+        const buildCards = (displayData, isTv) => {
+            let html = '';
+            Object.values(displayData).forEach((dg, index) => {
+                const titleInfo = isTv ? `📺 ${dg.title}` : `🎬 ${dg.title}`;
+                const subInfo = isTv ? `含 ${dg.epCount} 集重复 (共 ${dg.itemCount} 个文件)` : `包含 ${dg.itemCount} 个重复版本`;
+                const uniqueId = isTv ? `tv_grp_${index}` : `mv_grp_${index}`;
 
-            html += `
-            <div class="bg-white dark:bg-apple-cardDark rounded-[16px] shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-brand-500/30 group">
-                <div class="pl-3 pr-4 py-2 flex items-center justify-between cursor-pointer bg-gray-50/50 dark:bg-black/20 select-none" onclick="toggleAccordion('${uniqueId}')">
-                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                        <img src="/api/proxy/smart_image?item_id=${dg.targetImageId}&type=Primary" class="w-8 h-12 object-cover rounded shadow-sm border border-gray-200 dark:border-white/10" onerror="this.style.display='none'">
-                        <div class="flex flex-col min-w-0">
-                            <h3 class="font-bold text-[14px] text-gray-900 dark:text-white truncate">${titleInfo}</h3>
-                            <span class="text-[10px] text-brand-500 dark:text-brand-400 font-bold">${subInfo}</span>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-chevron-down text-[12px] text-gray-400 transition-transform duration-300 ml-2" id="icon-${uniqueId}"></i>
-                </div>
-                <div id="body-${uniqueId}" class="flex flex-col border-t border-gray-100 dark:border-white/5">`;
-
-            // 如果是电视剧，按季和集排序
-            dg.itemGroups.sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
-
-            dg.itemGroups.forEach(ig => {
-                // 剧集分组小标题
-                if (dg.type === 'Episode') {
-                    html += `<div class="bg-gray-50/80 dark:bg-black/40 px-3 py-1.5 border-b border-gray-100 dark:border-white/5 text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2"><i class="fa-solid fa-folder-open text-brand-500/70"></i> 第 ${ig.season} 季, 第 ${ig.episode} 集</div>`;
-                }
-
-                ig.items.forEach(item => {
-                    const sizeStr = formatBytes(item.size_bytes);
-                    const vCodec = item.video_codec || "未知编码"; const aCodec = item.audio_codec || "未知音轨";
-                    let badgesHtml = '';
-                    
-                    if (item.resolution === '4K') badgesHtml += `<span class="bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-purple-200 dark:border-purple-500/30">4K</span>`;
-                    else if (item.resolution === '1080P') badgesHtml += `<span class="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-blue-200 dark:border-blue-500/30">1080P</span>`;
-                    else badgesHtml += `<span class="bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-gray-200 dark:border-white/10">${item.resolution}</span>`;
-                    
-                    if (item.has_dovi === 1) badgesHtml += `<span class="bg-yellow-100 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-yellow-200 dark:border-yellow-500/30"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>DoVi</span>`;
-                    else if (item.has_hdr === 1) badgesHtml += `<span class="bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-orange-200 dark:border-orange-500/30">HDR10</span>`;
-                    
-                    if (item.has_ass_sub === 1) badgesHtml += `<span class="bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-green-200 dark:border-green-500/30">中字 ASS</span>`;
-                    else if (item.has_chi_sub === 1) badgesHtml += `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-emerald-200 dark:border-emerald-500/30">中字</span>`;
-                    else badgesHtml += `<span class="text-gray-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap line-through border border-gray-200 dark:border-white/10">无字</span>`;
-
-                    let isChecked = false; let disabledAttr = ''; let rowBg = ''; let actionBtnHtml = '';
-
-                    if (item.is_exempt === 1) {
-                        disabledAttr = 'disabled'; actionBtnHtml = `<span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-shield-halved"></i> 豁免</span>`;
-                    } else if (item.is_recommended_del === 1) {
-                        isChecked = true; rowBg = 'bg-red-50/50 dark:bg-red-500/10'; selectedItems.set(item.item_id, item.size_bytes);
-                        actionBtnHtml = `<span class="text-[10px] font-bold text-red-500"><i class="fa-solid fa-trash-can"></i> 清理</span>`;
-                    } else if (item.score === ig.items[0].score) { 
-                        actionBtnHtml = `<span class="text-[10px] font-bold text-brand-500"><i class="fa-solid fa-trophy"></i> 最佳</span>`;
-                    }
-
-                    // 🔥 修复 1: 正确拼接带有 serverId 的直达链接
-                    const playUrl = `${finalEmbyUrl}/web/index.html#!/item?id=${item.item_id}${serverParam}`;
-                    const safePath = item.file_path ? `<i class="fa-regular fa-folder-open text-gray-400 mr-1"></i>${item.file_path}` : '';
-                    
-                    html += `
-                    <div id="row-${item.item_id}" class="flex items-start py-2.5 px-3 md:px-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2.5 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
-                        <div class="pt-0.5 md:pt-1 shrink-0">
-                            <input type="checkbox" id="chk-${item.item_id}" class="ep-checkbox" ${isChecked ? 'checked' : ''} ${disabledAttr} onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
-                        </div>
-                        
-                        <div class="flex flex-col min-w-0 flex-1">
-                            <a href="${playUrl}" target="_blank" class="text-[13px] font-bold text-gray-800 dark:text-gray-200 truncate hover:text-brand-500 transition-colors block leading-tight mb-0.5" title="${item.file_name}">${item.file_name}</a>
-                            <div class="text-[9px] text-gray-400 font-mono truncate mb-1" title="${item.file_path}">${safePath}</div>
-                            <div class="flex flex-wrap items-center gap-1.5">
-                                <span class="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1 rounded">${sizeStr}</span>
-                                <span class="text-[9px] text-gray-400">${vCodec} | ${aCodec}</span>
-                                ${badgesHtml}
+                html += `
+                <div class="bg-white dark:bg-apple-cardDark rounded-[16px] shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-brand-500/30 group flex flex-col h-fit">
+                    <div class="pl-3 pr-4 py-2 flex items-center justify-between cursor-pointer bg-gray-50/50 dark:bg-black/20 select-none hover:bg-gray-100/50 dark:hover:bg-white/5" onclick="toggleAccordion('${uniqueId}')">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                            <img src="/api/proxy/smart_image?item_id=${dg.targetImageId}&type=Primary" class="w-8 h-12 object-cover rounded shadow-sm border border-gray-200 dark:border-white/10" onerror="this.style.display='none'">
+                            <div class="flex flex-col min-w-0">
+                                <h3 class="font-bold text-[14px] text-gray-900 dark:text-white truncate">${titleInfo}</h3>
+                                <span class="text-[10px] text-brand-500 dark:text-brand-400 font-bold">${subInfo}</span>
                             </div>
                         </div>
+                        <i class="fa-solid fa-chevron-down text-[12px] text-gray-400 transition-transform duration-300 ml-2" id="icon-${uniqueId}"></i>
+                    </div>
+                    <div id="body-${uniqueId}" class="flex flex-col border-t border-gray-100 dark:border-white/5">`;
+
+                if (isTv) dg.itemGroups.sort((a, b) => (a.season - b.season) || (a.episode - b.episode));
+
+                dg.itemGroups.forEach(ig => {
+                    if (isTv) {
+                        html += `<div class="bg-gray-50/80 dark:bg-black/40 px-3 py-1.5 border-b border-gray-100 dark:border-white/5 text-[11px] font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2"><i class="fa-solid fa-folder-open text-indigo-500/70"></i> 第 ${ig.season} 季, 第 ${ig.episode} 集</div>`;
+                    }
+                    ig.items.forEach(item => {
+                        const sizeStr = formatBytes(item.size_bytes);
+                        const vCodec = item.video_codec || "未知"; const aCodec = item.audio_codec || "未知";
+                        let badgesHtml = '';
                         
-                        <div class="flex flex-col justify-center items-end shrink-0 pl-2">
-                            ${actionBtnHtml}
-                        </div>
-                    </div>`;
+                        if (item.resolution === '4K') badgesHtml += `<span class="bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-purple-200 dark:border-purple-500/30">4K</span>`;
+                        else if (item.resolution === '1080P') badgesHtml += `<span class="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-blue-200 dark:border-blue-500/30">1080P</span>`;
+                        else badgesHtml += `<span class="bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-gray-200 dark:border-white/10">${item.resolution}</span>`;
+                        
+                        if (item.has_dovi === 1) badgesHtml += `<span class="bg-yellow-100 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-yellow-200 dark:border-yellow-500/30"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>DoVi</span>`;
+                        else if (item.has_hdr === 1) badgesHtml += `<span class="bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-orange-200 dark:border-orange-500/30">HDR</span>`;
+                        
+                        if (item.has_ass_sub === 1) badgesHtml += `<span class="bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-green-200 dark:border-green-500/30">中字 ASS</span>`;
+                        else if (item.has_chi_sub === 1) badgesHtml += `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-emerald-200 dark:border-emerald-500/30">中字</span>`;
+                        else badgesHtml += `<span class="text-gray-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap line-through border border-gray-200 dark:border-white/10">无字</span>`;
+
+                        let isChecked = false; let disabledAttr = ''; let rowBg = ''; let actionBtnHtml = '';
+
+                        if (item.is_exempt === 1) {
+                            disabledAttr = 'disabled'; actionBtnHtml = `<span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-shield-halved"></i> 豁免</span>`;
+                        } else if (item.is_recommended_del === 1) {
+                            isChecked = true; rowBg = 'bg-red-50/50 dark:bg-red-500/10'; selectedItems.set(item.item_id, item.size_bytes);
+                            actionBtnHtml = `<span class="text-[10px] font-bold text-red-500"><i class="fa-solid fa-trash-can"></i> 清理</span>`;
+                        } else if (item.score === ig.items[0].score) { 
+                            actionBtnHtml = `<span class="text-[10px] font-bold text-brand-500"><i class="fa-solid fa-trophy"></i> 最佳</span>`;
+                        }
+
+                        const playUrl = `${finalEmbyUrl}/web/index.html#!/item?id=${item.item_id}${serverParam}`;
+                        const safePath = item.file_path ? `<i class="fa-regular fa-folder-open text-gray-400 mr-1"></i>${item.file_path}` : '';
+                        
+                        html += `
+                        <div id="row-${item.item_id}" class="flex items-start py-2.5 px-3 md:px-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2.5 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
+                            <div class="pt-0.5 md:pt-1 shrink-0"><input type="checkbox" id="chk-${item.item_id}" class="ep-checkbox" ${isChecked ? 'checked' : ''} ${disabledAttr} onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)"></div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <a href="${playUrl}" target="_blank" class="text-[13px] font-bold text-gray-800 dark:text-gray-200 truncate hover:text-brand-500 transition-colors block leading-tight mb-0.5" title="${item.file_name}">${item.file_name}</a>
+                                <div class="text-[9px] text-gray-400 font-mono truncate mb-1" title="${item.file_path}">${safePath}</div>
+                                <div class="flex flex-wrap items-center gap-1.5"><span class="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1 rounded">${sizeStr}</span><span class="text-[9px] text-gray-400">${vCodec} | ${aCodec}</span>${badgesHtml}</div>
+                            </div>
+                            <div class="flex flex-col justify-center items-end shrink-0 pl-2">${actionBtnHtml}</div>
+                        </div>`;
+                    });
                 });
+                html += `</div></div>`;
             });
-            html += `</div></div>`;
-        });
-        container.innerHTML = html; updateActionPill();
+            return html;
+        };
+
+        const mKeys = Object.keys(movieGroups);
+        const tKeys = Object.keys(tvDisplayGroups);
+
+        if (mKeys.length > 0) {
+            cMovies.innerHTML = cMovies.innerHTML.split('')[0] + buildCards(movieGroups, false);
+            cMovies.classList.remove('hidden'); document.getElementById('movie-count-badge').innerText = `${mKeys.length} 组`;
+        } else { cMovies.classList.add('hidden'); }
+
+        if (tKeys.length > 0) {
+            cTv.innerHTML = cTv.innerHTML.split('')[0] + buildCards(tvDisplayGroups, true);
+            cTv.classList.remove('hidden'); document.getElementById('tv-count-badge').innerText = `${tKeys.length} 部`;
+        } else { cTv.classList.add('hidden'); }
+
+        updateActionPill();
     }
 
     // 白名单管理
