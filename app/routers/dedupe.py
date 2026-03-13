@@ -266,10 +266,15 @@ async def get_scan_status():
 @router.get("/results")
 async def get_results():
     rows = query_db("SELECT * FROM dedupe_results ORDER BY group_key, score DESC")
-    if not rows: return {"success": True, "data": {}}
     result_tree = defaultdict(list)
-    for r in rows: result_tree[r["group_key"]].append(dict(r))
-    return {"success": True, "data": result_tree}
+    if rows:
+        for r in rows: result_tree[r["group_key"]].append(dict(r))
+        
+    # 🔥 获取准确的 Emby 外部地址，供前端跳转使用
+    base_url = cfg.get("emby_public_url") or cfg.get("emby_host") or ""
+    if base_url.endswith('/'): base_url = base_url[:-1]
+    
+    return {"success": True, "data": result_tree, "emby_url": base_url}
 
 @router.post("/ignore")
 async def ignore_groups(req: IgnoreReq):

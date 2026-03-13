@@ -11,7 +11,7 @@
         </div>
         <div class="relative z-10">
             <h1 class="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                洗版与去重中心
+                <i class="fa-solid fa-clone text-brand-500"></i> 去重管理
             </h1>
             <p class="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400 mt-2 font-medium">释放无效的存储空间，永远为您保留最极致的视听体验。</p>
         </div>
@@ -49,8 +49,8 @@
         <span id="summary-text">扫描完成。</span>
     </div>
 
-    <div id="dedupe-results" class="flex flex-col gap-4 pb-28">
-        <div class="text-center py-24 text-gray-400">
+    <div id="dedupe-results" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-28 items-start">
+        <div class="text-center py-24 text-gray-400 md:col-span-2 xl:col-span-3">
             <i class="fa-solid fa-layer-group text-6xl mb-5 opacity-20"></i>
             <p class="text-[15px] font-medium text-gray-500">准备就绪，等待您的扫描指令</p>
         </div>
@@ -300,30 +300,35 @@
                     clearInterval(pollInterval);
                     document.getElementById('scan-progress-container').classList.add('hidden');
                     document.getElementById('btn-scan').disabled = false; document.getElementById('btn-scan').classList.remove('opacity-50');
-                    if(state.message.includes('✅')) document.getElementById('summary-text').innerText = state.message;
+                    if(state.message.includes('✅')) {
+                        document.getElementById('summary-text').innerText = state.message;
+                        document.getElementById('result-summary').classList.remove('hidden');
+                    }
                     loadResults(); 
                 }
             }
         } catch(e) { console.error(e); }
     }
 
-    // 渲染结果 (🔥 极度紧凑排版)
+    // 渲染结果
     async function loadResults() {
         try {
             const res = await fetch('/api/dedupe/results'); const data = await res.json();
-            if (data.success) { allGroups = data.data; renderResults(allGroups); }
+            if (data.success) { allGroups = data.data; renderResults(allGroups, data.emby_url); }
         } catch(e) { console.error(e); }
     }
 
-    function renderResults(groups) {
+    function renderResults(groups, embyUrl) {
         const container = document.getElementById('dedupe-results'); const summary = document.getElementById('result-summary');
         selectedItems.clear(); let keys = Object.keys(groups);
         if (keys.length === 0) {
-            summary.classList.add('hidden'); container.innerHTML = `<div class="text-center py-24 text-gray-400"><i class="fa-solid fa-box-archive text-6xl mb-5 opacity-20"></i><p class="text-[15px] font-medium">您的媒体库非常纯净，没有发现重复项。</p></div>`;
+            container.innerHTML = `<div class="text-center py-24 text-gray-400 md:col-span-2 xl:col-span-3"><i class="fa-solid fa-box-archive text-6xl mb-5 opacity-20"></i><p class="text-[15px] font-medium">您的媒体库非常纯净，没有发现重复项。</p></div>`;
             updateActionPill(); return;
         }
-        summary.classList.remove('hidden'); let html = '';
         
+        let html = '';
+        const finalEmbyUrl = embyUrl || globalEmbyBaseUrl || window.location.origin;
+
         keys.forEach(gKey => {
             const items = groups[gKey];
             const titleInfo = items[0].media_type === 'Movie' ? `🎬 ${items[0].title}` : `📺 ${items[0].title} <span class="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-white/10 rounded text-[10px] font-mono">S${String(items[0].season_num).padStart(2,'0')}E${String(items[0].episode_num).padStart(2,'0')}</span>`;
@@ -348,7 +353,6 @@
                 const vCodec = item.video_codec || "未知编码"; const aCodec = item.audio_codec || "未知音轨";
                 let badgesHtml = '';
                 
-                // 徽章微调更紧凑
                 if (item.resolution === '4K') badgesHtml += `<span class="bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-purple-200 dark:border-purple-500/30">4K</span>`;
                 else if (item.resolution === '1080P') badgesHtml += `<span class="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-blue-200 dark:border-blue-500/30">1080P</span>`;
                 else badgesHtml += `<span class="bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-gray-200 dark:border-white/10">${item.resolution}</span>`;
@@ -366,18 +370,18 @@
                     disabledAttr = 'disabled'; actionBtnHtml = `<span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-shield-halved"></i> 豁免</span>`;
                 } else if (item.is_recommended_del === 1) {
                     isChecked = true; rowBg = 'bg-red-50/50 dark:bg-red-500/10'; selectedItems.set(item.item_id, item.size_bytes);
-                    actionBtnHtml = `<span class="text-[10px] font-bold text-red-500"><i class="fa-solid fa-trash-can"></i> 建议清理</span>`;
+                    actionBtnHtml = `<span class="text-[10px] font-bold text-red-500"><i class="fa-solid fa-trash-can"></i> 清理</span>`;
                 } else if (item.score === items[0].score) {
                     actionBtnHtml = `<span class="text-[10px] font-bold text-brand-500"><i class="fa-solid fa-trophy"></i> 最佳</span>`;
                 }
 
-                // 🔥 修复：加入跳转链接与物理路径显示
-                const playUrl = `${globalEmbyBaseUrl}/web/index.html#!/item?id=${item.item_id}&serverId=${globalEmbyServerId}`;
+                // 🔥 修复：去除多余的 ServerId 造成的尾部跳转报错
+                const playUrl = `${finalEmbyUrl}/web/index.html#!/item?id=${item.item_id}`;
                 const safePath = item.file_path ? `<i class="fa-regular fa-folder-open text-gray-400 mr-1"></i>${item.file_path}` : '';
                 
                 html += `
-                <div id="row-${item.item_id}" class="flex items-start md:items-center py-2.5 px-3 md:px-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2.5 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
-                    <div class="pt-0.5 md:pt-0 shrink-0">
+                <div id="row-${item.item_id}" class="flex items-start py-2.5 px-3 md:px-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2.5 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
+                    <div class="pt-0.5 md:pt-1 shrink-0">
                         <input type="checkbox" id="chk-${item.item_id}" class="ep-checkbox" ${isChecked ? 'checked' : ''} ${disabledAttr} onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
                     </div>
                     
