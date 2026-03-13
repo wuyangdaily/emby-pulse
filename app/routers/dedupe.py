@@ -51,17 +51,22 @@ def init_dedupe_db():
             is_exempt INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )''')
+        # 白名单表增加了 title 字段方便展示
         c.execute('''CREATE TABLE IF NOT EXISTS dedupe_whitelist (
             group_key TEXT PRIMARY KEY,
+            title TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )''')
         
-        # 字段热更新 (兼容旧库)
+        # 字段热更新兼容
         c.execute("PRAGMA table_info(dedupe_results)")
         cols = [col[1] for col in c.fetchall()]
-        if "file_path" not in cols:
-            c.execute("ALTER TABLE dedupe_results ADD COLUMN file_path TEXT")
+        if "file_path" not in cols: c.execute("ALTER TABLE dedupe_results ADD COLUMN file_path TEXT")
             
+        c.execute("PRAGMA table_info(dedupe_whitelist)")
+        w_cols = [col[1] for col in c.fetchall()]
+        if "title" not in w_cols: c.execute("ALTER TABLE dedupe_whitelist ADD COLUMN title TEXT")
+
         conn.commit()
         conn.close()
     except Exception as e:
@@ -69,24 +74,24 @@ def init_dedupe_db():
 
 init_dedupe_db()
 
-# 🔥 核心：增加 custom_weights 支持
 def calculate_score(src: dict, strategy: str = "quality", custom_weights: dict = None):
     score = 0
     video = next((s for s in src.get("MediaStreams", []) if s.get("Type") == "Video"), {})
     audio = next((s for s in src.get("MediaStreams", []) if s.get("Type") == "Audio"), {})
     subs = [s for s in src.get("MediaStreams", []) if s.get("Type") == "Subtitle"]
     
-    # 解析权重 (默认画质流)
     w = {"res": 40, "bitrate": 20, "codec": 5, "hdr": 15, "chi": 10, "ass": 15}
     if strategy == "subs": w = {"res": 15, "bitrate": 10, "codec": 5, "hdr": 10, "chi": 40, "ass": 30}
     elif strategy == "size": w = {"res": 20, "bitrate": 10, "codec": 30, "hdr": 10, "chi": 10, "ass": 10}
-    elif strategy == "custom" and custom_weights:
-        w = custom_weights
+    elif strategy == "custom" and custom_weights: w = custom_weights
 
     width = video.get("Width", 0)
-    if width >= 3800: score += w.get("res", 40)
-    elif width >= 1900: score += w.get("res", 40) // 2
-    elif width >= 1200: score += w.get("res", 40) // 4
+    # 🔥 修复 1: 规范化分辨率名称
+    res_str = "未知"
+    if width >= 3800: score += w.get("res", 40); res_str = "4K"
+    elif width >= 1900: score += w.get("res", 40) // 2; res_str = "1080P"
+    elif width >= 1200: score += w.get("res", 40) // 4; res_str = "720P"
+    elif width > 0: res_str = f"{width}P"
     
     bitrate = src.get("Bitrate", 0)
     if bitrate > 0: score += min(w.get("bitrate", 20), int((bitrate / 1000000) / 2))
@@ -112,24 +117,22 @@ def calculate_score(src: dict, strategy: str = "quality", custom_weights: dict =
     if has_ass: score += w.get("ass", 15)
         
     size = src.get("Size", 0)
-    if strategy == "size" and size > 0:
-        gb = size / (1024**3)
-        score -= int(gb * 2) # 体积大扣分
+    if strategy == "size" and size > 0: score -= int((size / (1024**3)) * 2)
         
     return score, {
-        "res": f"{width}P" if width else "未知",
+        "res": res_str,
         "has_hdr": 1 if ("HDR" in v_range or "HDR" in v_title) else 0,
         "has_dovi": 1 if ("DOVI" in v_title or "DOLBY VISION" in v_title) else 0,
         "has_chi": 1 if has_chi else 0,
         "has_ass": 1 if has_ass else 0,
-        "v_codec": codec.upper() if codec else "未知",
-        "a_codec": a_codec.upper() if a_codec else "未知"
+        "v_codec": codec.upper() if codec else "未知编码",
+        "a_codec": a_codec.upper() if a_codec else "未知音轨"
     }
 
 def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
     global scan_state
     start_time = time.time()
-    logger.info(f"🚀 [去重引擎] 开始全库扫描，当前采用策略: {strategy}...")
+    logger.info(f"🚀 [去重引擎] 开始全库扫描，策略: {strategy}...")
     
     scan_state["is_scanning"] = True
     scan_state["progress"] = 0
@@ -183,12 +186,11 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
             parsed_items = []
             for d in details:
                 is_exempt = 1 if d.get("IndexNumberEnd") and d.get("IndexNumberEnd") > d.get("IndexNumber", 0) else 0
-                src = d.get("MediaSources", [{}])[0]
+                src = d.get("MediaSources", [{}])[0] if d.get("MediaSources") else {}
                 score, tags = calculate_score(src, strategy, custom_weights)
                 
-                # 🔥 记录完整文件路径
                 full_path = src.get("Path", "")
-                file_name = full_path.split("/")[-1].split("\\")[-1] if full_path else "未知文件"
+                file_name = full_path.split("/")[-1].split("\\")[-1] if full_path else d.get("Name", "未知文件")
                 
                 parsed_items.append({
                     "g_key": g_key, "tmdb": d.get("ProviderIds", {}).get("Tmdb"),
@@ -218,13 +220,12 @@ def run_dedupe_scan(strategy: str = "quality", custom_weights: dict = None):
                          pi['a_codec'], pi['hdr'], pi['dovi'], pi['chi'], pi['ass'], pi['score'], pi['del_mark'], pi['exempt'])
                     )
             conn.commit()
-            time.sleep(0.1) 
+            time.sleep(0.05)
             
         conn.close()
         elapsed = time.time() - start_time
-        # 🔥 增加扫描结果打印日志
-        logger.info(f"✅ [去重引擎] 扫描完成！共遍历 {scan_state['total_items']} 个媒体，发现 {scan_state['duplicate_groups']} 组重复。耗时: {elapsed:.2f} 秒。")
-        scan_state["message"] = f"✅ 扫描完成！发现 {scan_state['duplicate_groups']} 组重复项 (耗时 {int(elapsed)}s)。"
+        logger.info(f"✅ [去重引擎] 扫描完成！共遍历 {scan_state['total_items']} 个资源，耗时: {elapsed:.2f} 秒。")
+        scan_state["message"] = f"✅ 扫描完成！遍历 {scan_state['total_items']} 项，耗时 {int(elapsed)}s"
         
     except Exception as e:
         logger.error(f"[去重引擎] 扫描异常: {e}")
@@ -242,7 +243,14 @@ class DeleteReq(BaseModel):
     username: str
     password: str
 
+class IgnoreItem(BaseModel):
+    group_key: str
+    title: str
+
 class IgnoreReq(BaseModel):
+    items: List[IgnoreItem]
+
+class RemoveWhitelistReq(BaseModel):
     group_keys: List[str]
 
 @router.post("/scan")
@@ -267,28 +275,37 @@ async def get_results():
 async def ignore_groups(req: IgnoreReq):
     try:
         conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-        for gk in req.group_keys:
-            c.execute("INSERT OR IGNORE INTO dedupe_whitelist (group_key) VALUES (?)", (gk,))
-            c.execute("DELETE FROM dedupe_results WHERE group_key = ?", (gk,))
+        for item in req.items:
+            c.execute("INSERT OR REPLACE INTO dedupe_whitelist (group_key, title) VALUES (?, ?)", (item.group_key, item.title))
+            c.execute("DELETE FROM dedupe_results WHERE group_key = ?", (item.group_key,))
         conn.commit(); conn.close()
         return {"success": True, "msg": "已加入永久白名单"}
+    except Exception as e: return {"success": False, "msg": str(e)}
+
+@router.get("/whitelist")
+async def get_whitelist():
+    rows = query_db("SELECT * FROM dedupe_whitelist ORDER BY created_at DESC")
+    return {"success": True, "data": [dict(r) for r in rows] if rows else []}
+
+@router.post("/whitelist/remove")
+async def remove_whitelist(req: RemoveWhitelistReq):
+    try:
+        conn = sqlite3.connect(DB_PATH); c = conn.cursor()
+        for gk in req.group_keys: c.execute("DELETE FROM dedupe_whitelist WHERE group_key = ?", (gk,))
+        conn.commit(); conn.close()
+        return {"success": True, "msg": "已移出白名单"}
     except Exception as e: return {"success": False, "msg": str(e)}
 
 @router.post("/delete")
 async def delete_items(req: DeleteReq):
     key = cfg.get("emby_api_key"); host = cfg.get("emby_host")
-    
-    # 🔥 核心：通过 Emby 原生 API 验证管理员账号密码
     try:
         auth_url = f"{host}/emby/Users/AuthenticateByName?api_key={key}"
         auth_res = requests.post(auth_url, json={"Username": req.username, "Pw": req.password}, timeout=5)
-        if auth_res.status_code != 200:
-            return {"success": False, "msg": "🚫 权限被拒绝：Emby 管理员账号或密码错误！"}
+        if auth_res.status_code != 200: return {"success": False, "msg": "🚫 权限被拒绝：Emby 管理员账号或密码错误！"}
         user_info = auth_res.json().get("User", {})
-        if not user_info.get("Policy", {}).get("IsAdministrator"):
-            return {"success": False, "msg": "🚫 权限被拒绝：该账号不具备管理员权限！"}
-    except Exception as e:
-        return {"success": False, "msg": f"⚠️ 连接 Emby 安全验证服务器失败: {e}"}
+        if not user_info.get("Policy", {}).get("IsAdministrator"): return {"success": False, "msg": "🚫 权限被拒绝：该账号不具备管理员权限！"}
+    except Exception as e: return {"success": False, "msg": f"⚠️ 连接 Emby 安全验证服务器失败: {e}"}
     
     success_count = 0; fail_count = 0
     for item_id in req.item_ids:

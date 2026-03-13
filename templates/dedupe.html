@@ -5,108 +5,154 @@
 {% block content %}
 <div class="p-4 md:p-8 max-w-7xl mx-auto flex flex-col gap-6 relative min-h-screen">
     
-    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-            <h1 class="text-2xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-500 dark:bg-violet-500/20 flex items-center justify-center shadow-inner">
-                    <i class="fa-solid fa-clone"></i>
-                </div>
+    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 md:p-8 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 text-brand-500/5 dark:text-white/5 pointer-events-none">
+            <i class="fa-solid fa-layer-group text-[150px] rotate-12"></i>
+        </div>
+        <div class="relative z-10">
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
                 洗版与去重中心
             </h1>
-            <p class="text-[13px] text-gray-500 dark:text-gray-400 mt-2 font-medium">全局扫描媒体库，智能对比参数，一键释放无用空间。</p>
+            <p class="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400 mt-2 font-medium">释放无效的存储空间，永远为您保留最极致的视听体验。</p>
         </div>
         
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <select id="scan-strategy" class="bg-gray-50 dark:bg-[#2C2C2E] text-gray-800 dark:text-gray-200 text-[14px] font-bold px-4 py-2.5 rounded-xl outline-none border border-gray-200/50 dark:border-white/5 cursor-pointer shadow-sm">
-                <option value="quality">🏆 策略：画质与音效至上</option>
-                <option value="subs">🇨🇳 策略：中文字幕优先</option>
-                <option value="size">💾 策略：空间体积最小化</option>
-                <option value="custom">⚙️ 策略：极客自定义权重...</option>
-            </select>
-            <button onclick="startScan()" id="btn-scan" class="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2.5 rounded-xl text-[14px] font-bold shadow-md shadow-brand-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-radar"></i> 开始全库扫描
+        <div class="relative z-10 flex flex-wrap items-center gap-3">
+            <button onclick="openWhitelistModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved"></i> 白名单
+            </button>
+            <button onclick="openConfigModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i> 扫描配置
+            </button>
+            <button onclick="startScan()" id="btn-scan" class="h-11 bg-brand-500 hover:bg-brand-600 text-white px-6 rounded-xl text-[14px] font-bold shadow-lg shadow-brand-500/30 transition-all active:scale-95 flex items-center gap-2">
+                <i class="fa-solid fa-radar"></i> 智能全库扫描
             </button>
         </div>
     </div>
 
-    <div id="scan-progress-container" class="hidden bg-white dark:bg-apple-cardDark rounded-[24px] p-6 shadow-sm border border-brand-100 dark:border-brand-500/20 relative overflow-hidden">
+    <div id="scan-progress-container" class="hidden bg-white dark:bg-apple-cardDark rounded-[20px] p-5 shadow-sm border border-brand-100 dark:border-brand-500/20 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gray-100 dark:bg-white/5">
             <div id="scan-progress-bar" class="h-full bg-brand-500 transition-all duration-300" style="width: 0%"></div>
         </div>
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-full bg-brand-50 dark:bg-brand-500/10 flex justify-center items-center shrink-0">
-                <i class="fa-solid fa-compact-disc text-brand-500 text-xl animate-spin-slow"></i>
+            <div class="w-10 h-10 rounded-full bg-brand-50 dark:bg-brand-500/10 flex justify-center items-center shrink-0">
+                <i class="fa-solid fa-compact-disc text-brand-500 animate-spin-slow"></i>
             </div>
             <div class="flex-1">
-                <h3 class="font-bold text-[15px] text-gray-900 dark:text-white mb-1">系统正在执行漏斗式扫描...</h3>
-                <p id="scan-status-text" class="text-[12px] text-gray-500 font-mono">正在初始化...</p>
+                <h3 class="font-bold text-[14px] text-gray-900 dark:text-white mb-0.5">扫描正在进行中...</h3>
+                <p id="scan-status-text" class="text-[12px] text-gray-500 font-mono">正在分析文件结构...</p>
             </div>
         </div>
     </div>
 
-    <div id="result-summary" class="hidden flex items-center gap-3 px-4 py-3 bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-500 rounded-xl text-[13px] font-bold border border-amber-100 dark:border-amber-500/20">
-        <i class="fa-solid fa-circle-exclamation text-lg"></i>
-        <span id="summary-text">发现 0 组重复媒体，已为您智能预选出劣质版本。</span>
+    <div id="result-summary" class="hidden flex items-center gap-3 px-5 py-3.5 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 rounded-[16px] text-[13px] font-bold border border-brand-100 dark:border-brand-500/20">
+        <i class="fa-solid fa-circle-check text-lg"></i>
+        <span id="summary-text">扫描完成。</span>
     </div>
 
-    <div id="dedupe-results" class="flex flex-col gap-5 pb-24">
-        <div class="text-center py-20 text-gray-400">
-            <i class="fa-solid fa-box-archive text-5xl mb-4 opacity-20"></i>
-            <p class="text-[14px] font-medium">暂无数据，请点击上方按钮开始全库扫描</p>
+    <div id="dedupe-results" class="flex flex-col gap-4 pb-28">
+        <div class="text-center py-24 text-gray-400">
+            <i class="fa-solid fa-layer-group text-6xl mb-5 opacity-20"></i>
+            <p class="text-[15px] font-medium text-gray-500">准备就绪，等待您的扫描指令</p>
         </div>
     </div>
 
-    <div id="action-pill" class="fixed left-1/2 -translate-x-1/2 bottom-[90px] md:bottom-8 z-[90] bg-white/95 dark:bg-[#2C2C2E]/95 apple-blur border border-gray-200 dark:border-white/10 rounded-[24px] shadow-[0_20px_40px_rgba(0,0,0,0.2)] px-4 py-3 flex items-center gap-4 transition-all duration-400 transform translate-y-32 opacity-0 pointer-events-none">
-        <div class="flex flex-col justify-center px-2">
-            <div class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0.5">即将清理</div>
-            <div class="text-[15px] font-black text-gray-900 dark:text-white leading-none">
-                已选 <span id="pill-count" class="text-red-500">0</span> 项
+    <div id="action-pill" class="fixed bottom-[90px] md:bottom-8 left-1/2 -translate-x-1/2 z-[90] w-[92%] md:w-auto min-w-[320px] max-w-3xl bg-white/95 dark:bg-[#2C2C2E]/95 apple-blur border border-gray-200 dark:border-white/10 rounded-[20px] shadow-[0_20px_40px_rgba(0,0,0,0.3)] p-2.5 md:px-4 md:py-3 flex items-center justify-between transition-all duration-400 transform translate-y-32 opacity-0 pointer-events-none">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+            <button onclick="clearSelection()" class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-black/30 dark:hover:bg-black/50 text-gray-500 flex items-center justify-center transition-colors shrink-0 tooltip" title="取消所有选择">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex flex-col min-w-0">
+                <span class="text-[11px] font-bold text-gray-500 uppercase">即将抹除 <span id="pill-count" class="text-red-500 text-[13px]">0</span> 项</span>
+                <span class="text-[14px] font-mono font-black text-brand-500 leading-tight truncate" id="pill-size">0.0 GB</span>
             </div>
         </div>
-        <div class="h-8 w-[1px] bg-gray-200 dark:bg-white/10"></div>
-        <div class="flex flex-col justify-center px-2">
-            <div class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0.5">释放空间</div>
-            <div class="text-[15px] font-mono font-bold text-brand-500 leading-none" id="pill-size">0.0 GB</div>
-        </div>
-        <div class="flex items-center gap-2 ml-2">
-            <button onclick="batchIgnore()" class="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-black/30 dark:hover:bg-black/50 text-gray-600 dark:text-gray-300 flex justify-center items-center transition-colors tooltip">
-                <i class="fa-solid fa-eye-slash"></i>
+        <div class="flex items-center gap-2 shrink-0 border-l border-gray-200 dark:border-white/10 pl-3">
+            <button onclick="batchIgnore()" class="h-10 px-3 md:px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-black/30 dark:hover:bg-black/50 text-gray-600 dark:text-gray-300 font-bold text-[12px] md:text-[13px] transition-colors tooltip" title="加入白名单">
+                忽略
             </button>
-            <button onclick="checkAuthAndExecute()" class="px-5 h-10 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-[14px] shadow-lg shadow-red-500/30 flex items-center gap-2 transition-all active:scale-95">
-                <i class="fa-solid fa-trash-can"></i> 确认处决
+            <button onclick="checkAuthAndExecute()" class="h-10 px-4 md:px-6 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-[13px] md:text-[14px] shadow-lg shadow-red-500/30 transition-all active:scale-95 flex items-center gap-1.5">
+                <i class="fa-solid fa-trash-can"></i> <span class="hidden sm:inline">删除</span>
             </button>
         </div>
     </div>
-
 </div>
 
-<div id="custom-weight-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
-    <div class="bg-apple-bgLight dark:bg-apple-cardDark w-full max-w-md rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5">
-        <div class="mb-5 flex justify-between items-center">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white"><i class="fa-solid fa-sliders text-brand-500 mr-2"></i>自定义打分引擎权重</h3>
-            <button onclick="closeCustomModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+<div id="config-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
+    <div class="bg-apple-bgLight dark:bg-apple-cardDark w-full max-w-2xl rounded-[28px] shadow-2xl p-6 md:p-8 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5 max-h-[90vh] overflow-y-auto mac-scrollbar">
+        <div class="mb-6 flex justify-between items-center">
+            <h3 class="text-xl font-black text-gray-900 dark:text-white"><i class="fa-solid fa-sliders text-brand-500 mr-2"></i>打分引擎策略配置</h3>
+            <button onclick="closeConfigModal()" class="w-8 h-8 bg-gray-100 dark:bg-white/5 rounded-full text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="space-y-5">
-            <div>
-                <label class="flex justify-between text-[13px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>📺 画质指标 (分辨率/码率)</span><span id="val-res" class="text-brand-500 font-mono">60</span></label>
-                <input type="range" id="slider-res" min="0" max="100" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-res').innerText=this.value">
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <label class="strategy-card cursor-pointer relative border-2 rounded-2xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/5" data-val="quality">
+                <input type="radio" name="st_radio" value="quality" class="hidden">
+                <div class="text-2xl mb-2">🏆</div>
+                <div class="font-bold text-[14px] text-gray-900 dark:text-white">画质与音效至上</div>
+                <div class="text-[11px] text-gray-500 mt-1">优先保留 4K、高码率与杜比全景声，适合发烧友。</div>
+            </label>
+            <label class="strategy-card cursor-pointer relative border-2 rounded-2xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/5" data-val="subs">
+                <input type="radio" name="st_radio" value="subs" class="hidden">
+                <div class="text-2xl mb-2">🇨🇳</div>
+                <div class="font-bold text-[14px] text-gray-900 dark:text-white">中文字幕优先</div>
+                <div class="text-[11px] text-gray-500 mt-1">画质再好不如有熟肉。优先保留携带 ASS 特效中字的资源。</div>
+            </label>
+            <label class="strategy-card cursor-pointer relative border-2 rounded-2xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/5" data-val="size">
+                <input type="radio" name="st_radio" value="size" class="hidden">
+                <div class="text-2xl mb-2">💾</div>
+                <div class="font-bold text-[14px] text-gray-900 dark:text-white">空间体积最小化</div>
+                <div class="text-[11px] text-gray-500 mt-1">严厉惩罚大体积文件，偏好 HEVC/AV1 小体积高压版。</div>
+            </label>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-white/10 pt-6">
+            <div class="flex items-center justify-between mb-4 cursor-pointer select-none" onclick="toggleCustomPanel()">
+                <div class="font-bold text-[14px] text-gray-800 dark:text-gray-200"><i class="fa-solid fa-code-branch text-indigo-500 mr-2"></i>极客自定义权重</div>
+                <input type="checkbox" id="custom-toggle" class="ep-checkbox">
             </div>
-            <div>
-                <label class="flex justify-between text-[13px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>🗜️ 编码指标 (HEVC/AV1)</span><span id="val-codec" class="text-brand-500 font-mono">15</span></label>
-                <input type="range" id="slider-codec" min="0" max="100" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-codec').innerText=this.value">
-            </div>
-            <div>
-                <label class="flex justify-between text-[13px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>✨ 特效指标 (HDR/DoVi)</span><span id="val-hdr" class="text-brand-500 font-mono">20</span></label>
-                <input type="range" id="slider-hdr" min="0" max="100" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-hdr').innerText=this.value">
-            </div>
-            <div>
-                <label class="flex justify-between text-[13px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>🇨🇳 字幕指标 (中文字幕/ASS)</span><span id="val-sub" class="text-brand-500 font-mono">35</span></label>
-                <input type="range" id="slider-sub" min="0" max="100" value="35" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-sub').innerText=this.value">
+            <div id="custom-panel" class="hidden space-y-5 bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-gray-100 dark:border-white/5 mt-2">
+                <div>
+                    <label class="flex justify-between text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>📺 画质指标 (分辨率/码率)</span><span id="val-res" class="text-brand-500 font-mono">40</span></label>
+                    <input type="range" id="slider-res" min="0" max="100" value="40" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-res').innerText=this.value">
+                </div>
+                <div>
+                    <label class="flex justify-between text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>🗜️ 编码与体积 (HEVC/AV1)</span><span id="val-codec" class="text-brand-500 font-mono">5</span></label>
+                    <input type="range" id="slider-codec" min="0" max="100" value="5" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-codec').innerText=this.value">
+                </div>
+                <div>
+                    <label class="flex justify-between text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>✨ 特效指标 (HDR/DoVi)</span><span id="val-hdr" class="text-brand-500 font-mono">15</span></label>
+                    <input type="range" id="slider-hdr" min="0" max="100" value="15" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-hdr').innerText=this.value">
+                </div>
+                <div>
+                    <label class="flex justify-between text-[12px] font-bold text-gray-700 dark:text-gray-300 mb-2"><span>🇨🇳 字幕指标 (中文字幕/ASS)</span><span id="val-sub" class="text-brand-500 font-mono">25</span></label>
+                    <input type="range" id="slider-sub" min="0" max="100" value="25" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-brand-500" oninput="document.getElementById('val-sub').innerText=this.value">
+                </div>
             </div>
         </div>
+
         <div class="mt-8 flex gap-3">
-            <button onclick="closeCustomModal()" class="flex-1 py-3 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-xl font-bold text-[13px] transition-colors">取消</button>
-            <button onclick="applyCustomRules()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold text-[13px] shadow-md transition-colors active:scale-95">应用并开始扫描</button>
+            <button onclick="closeConfigModal()" class="flex-1 py-3 bg-gray-200 dark:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 rounded-xl font-bold text-[14px] transition-colors">确认保存</button>
+        </div>
+    </div>
+</div>
+
+<div id="whitelist-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
+    <div class="bg-white dark:bg-apple-cardDark w-full max-w-2xl rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform duration-300 border border-white/50 dark:border-white/5 flex flex-col max-h-[80vh]">
+        <div class="mb-4 flex justify-between items-center shrink-0">
+            <h3 class="text-lg font-black text-gray-900 dark:text-white"><i class="fa-solid fa-shield-halved text-indigo-500 mr-2"></i>永久豁免白名单</h3>
+            <button onclick="closeWhitelistModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <p class="text-xs text-gray-500 mb-4 shrink-0">被加入白名单的影视剧，系统扫描时将永远直接跳过，保护您的特殊收藏。</p>
+        
+        <div id="whitelist-container" class="flex-1 overflow-y-auto mac-scrollbar bg-gray-50 dark:bg-black/10 rounded-xl border border-gray-100 dark:border-white/5 p-2 space-y-1">
+            <div class="text-center py-10 text-gray-400 text-xs">加载中...</div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-100 dark:border-white/5 flex justify-between items-center shrink-0">
+            <span class="text-xs text-gray-500" id="wl-count-text">已选择 0 项</span>
+            <button onclick="removeWhitelistItems()" class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-sm transition-colors active:scale-95 disabled:opacity-50" id="btn-rm-wl" disabled>
+                <i class="fa-solid fa-trash-can mr-1"></i> 移出白名单
+            </button>
         </div>
     </div>
 </div>
@@ -118,15 +164,15 @@
                 <i class="fa-solid fa-shield-halved text-2xl"></i>
             </div>
             <h3 class="text-lg font-black text-gray-900 dark:text-white">高危操作验证</h3>
-            <p class="text-xs text-gray-500 mt-1 px-2">为了防止误删珍贵媒体，由于您是首次删除或删除数量较多，请输入 <b class="text-brand-500">Emby管理员账号与密码</b> 进行确权。</p>
+            <p class="text-[12px] text-gray-500 mt-1.5 px-2 leading-relaxed">为了防止误删珍贵媒体，由于您是首次操作，必须输入 <b class="text-brand-500">Emby管理员密码</b> 进行确权。</p>
         </div>
         <div class="space-y-3">
             <input type="text" id="auth-user" class="w-full bg-gray-50 dark:bg-[#2C2C2E] border border-gray-200 dark:border-white/5 rounded-xl px-4 py-3 text-[14px] focus:ring-2 focus:ring-brand-500 outline-none dark:text-white placeholder-gray-400" placeholder="Emby 管理员账号">
             <input type="password" id="auth-pwd" class="w-full bg-gray-50 dark:bg-[#2C2C2E] border border-gray-200 dark:border-white/5 rounded-xl px-4 py-3 text-[14px] focus:ring-2 focus:ring-brand-500 outline-none dark:text-white placeholder-gray-400" placeholder="Emby 管理员密码">
         </div>
         <div class="mt-6 flex gap-3">
-            <button onclick="closeAuthModal()" class="flex-1 py-2.5 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-xl font-bold text-[13px] transition-colors">取消</button>
-            <button onclick="executeFinalDelete()" class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-md shadow-red-500/20 transition-colors active:scale-95">确权并删除</button>
+            <button onclick="closeAuthModal()" class="flex-1 py-3 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-xl font-bold text-[13px] transition-colors">取消</button>
+            <button onclick="executeFinalDelete()" class="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-[13px] shadow-md shadow-red-500/20 transition-colors active:scale-95">确权并物理删除</button>
         </div>
     </div>
 </div>
@@ -139,114 +185,106 @@
     .ep-checkbox {
         appearance: none; background-color: transparent; margin: 0; color: currentColor;
         width: 1.3em; height: 1.3em; border: 2px solid #9CA3AF; border-radius: 0.35em;
-        display: grid; place-content: center; transition: all 0.2s ease-in-out; cursor: pointer;
+        display: grid; place-content: center; transition: all 0.2s ease-in-out; cursor: pointer; shrink-0;
     }
     .ep-checkbox::before {
         content: ""; width: 0.65em; height: 0.65em; transform: scale(0); transition: 120ms transform ease-in-out;
         box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
     }
     .ep-checkbox:checked { background-color: #EF4444; border-color: #EF4444; }
+    .ep-checkbox.brand-cb:checked { background-color: #007AFF; border-color: #007AFF; }
     .ep-checkbox:checked::before { transform: scale(1); }
     .ep-checkbox:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .strategy-card.active { border-color: #007AFF; background-color: rgba(0,122,255,0.05); }
+    .strategy-card { border-color: transparent; }
 </style>
 
 <script>
     let pollInterval = null;
     let selectedItems = new Map(); 
     let allGroups = {};
-    let customWeights = null;
+    let currentStrategy = 'quality';
     let hasVerifiedPassword = false;
-
-    // 监听规则下拉框，如果选了自定义，弹出设置窗
-    document.getElementById('scan-strategy').addEventListener('change', (e) => {
-        if (e.target.value === 'custom') {
-            const modal = document.getElementById('custom-weight-modal');
-            modal.classList.remove('hidden'); void modal.offsetWidth;
-            modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
-        } else {
-            customWeights = null; // 清空自定义权重
-        }
+    
+    // UI 控制
+    function updateStrategyUI() {
+        document.querySelectorAll('.strategy-card').forEach(el => {
+            el.classList.remove('active', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-500/10');
+            el.classList.add('border-gray-200', 'dark:border-white/10');
+            if(el.dataset.val === currentStrategy && !document.getElementById('custom-toggle').checked) {
+                el.classList.add('active', 'border-brand-500', 'bg-brand-50', 'dark:bg-brand-500/10');
+                el.classList.remove('border-gray-200', 'dark:border-white/10');
+            }
+        });
+    }
+    document.querySelectorAll('.strategy-card').forEach(el => {
+        el.addEventListener('click', () => {
+            document.getElementById('custom-toggle').checked = false;
+            document.getElementById('custom-panel').classList.add('hidden');
+            currentStrategy = el.dataset.val; updateStrategyUI();
+        });
     });
-
-    function closeCustomModal() {
-        const modal = document.getElementById('custom-weight-modal');
-        modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-        if(!customWeights) document.getElementById('scan-strategy').value = 'quality'; // 回退
+    function toggleCustomPanel() {
+        const cb = document.getElementById('custom-toggle'); cb.checked = !cb.checked;
+        const panel = document.getElementById('custom-panel');
+        if(cb.checked) { panel.classList.remove('hidden'); currentStrategy = 'custom'; updateStrategyUI(); }
+        else { panel.classList.add('hidden'); currentStrategy = 'quality'; updateStrategyUI(); }
+    }
+    function openConfigModal() {
+        const m = document.getElementById('config-modal'); m.classList.remove('hidden'); void m.offsetWidth; m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95'); updateStrategyUI();
+    }
+    function closeConfigModal() {
+        const m = document.getElementById('config-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300);
     }
 
-    function applyCustomRules() {
-        customWeights = {
-            res: parseInt(document.getElementById('slider-res').value),
-            codec: parseInt(document.getElementById('slider-codec').value),
-            hdr: parseInt(document.getElementById('slider-hdr').value),
-            chi: parseInt(document.getElementById('slider-sub').value) - 10, 
-            ass: parseInt(document.getElementById('slider-sub').value)
-        };
-        closeCustomModal();
-        startScan();
-    }
-
+    // 格式化与基础逻辑
     function formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        if (bytes === 0) return '0 B'; const k = 1024; const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-
     function updateActionPill() {
         const pill = document.getElementById('action-pill');
         if (selectedItems.size > 0) {
-            pill.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none');
-            pill.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            pill.classList.remove('translate-y-32', 'opacity-0', 'pointer-events-none'); pill.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
             document.getElementById('pill-count').innerText = selectedItems.size;
             let totalBytes = 0; selectedItems.forEach(size => totalBytes += size);
             document.getElementById('pill-size').innerText = formatBytes(totalBytes);
         } else {
-            pill.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none');
-            pill.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            pill.classList.add('translate-y-32', 'opacity-0', 'pointer-events-none'); pill.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
         }
     }
-
+    function clearSelection() {
+        selectedItems.clear(); document.querySelectorAll('.ep-checkbox[id^="chk-"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('[id^="row-"]').forEach(r => r.classList.remove('bg-red-50/50', 'dark:bg-red-500/10')); updateActionPill();
+    }
     function toggleSelection(itemId, sizeBytes, event) {
         if(event && event.target.tagName.toLowerCase() === 'a') return;
-        const checkbox = document.getElementById(`chk-${itemId}`);
-        if(checkbox.disabled) return;
-        
+        const checkbox = document.getElementById(`chk-${itemId}`); if(checkbox.disabled) return;
         if(event && event.target !== checkbox) checkbox.checked = !checkbox.checked;
-        
-        if (checkbox.checked) {
-            selectedItems.set(itemId, sizeBytes);
-            document.getElementById(`row-${itemId}`).classList.add('bg-red-50/50', 'dark:bg-red-500/10');
-        } else {
-            selectedItems.delete(itemId);
-            document.getElementById(`row-${itemId}`).classList.remove('bg-red-50/50', 'dark:bg-red-500/10');
-        }
+        if (checkbox.checked) { selectedItems.set(itemId, sizeBytes); document.getElementById(`row-${itemId}`).classList.add('bg-red-50/50', 'dark:bg-red-500/10'); } 
+        else { selectedItems.delete(itemId); document.getElementById(`row-${itemId}`).classList.remove('bg-red-50/50', 'dark:bg-red-500/10'); }
         updateActionPill();
     }
-
     function toggleAccordion(groupKey) {
-        const body = document.getElementById(`body-${groupKey}`);
-        const icon = document.getElementById(`icon-${groupKey}`);
-        if (body.classList.contains('hidden')) {
-            body.classList.remove('hidden'); icon.classList.add('rotate-180');
-        } else {
-            body.classList.add('hidden'); icon.classList.remove('rotate-180');
-        }
+        const body = document.getElementById(`body-${groupKey}`); const icon = document.getElementById(`icon-${groupKey}`);
+        if (body.classList.contains('hidden')) { body.classList.remove('hidden'); icon.classList.add('rotate-180'); } 
+        else { body.classList.add('hidden'); icon.classList.remove('rotate-180'); }
     }
 
+    // 扫描控制
     async function startScan() {
-        const strategy = document.getElementById('scan-strategy').value;
-        const payload = { strategy: strategy };
-        if (strategy === 'custom' && customWeights) payload.custom_weights = customWeights;
-
+        const payload = { strategy: currentStrategy };
+        if (currentStrategy === 'custom') {
+            payload.custom_weights = { res: parseInt(document.getElementById('slider-res').value), codec: parseInt(document.getElementById('slider-codec').value), hdr: parseInt(document.getElementById('slider-hdr').value), chi: parseInt(document.getElementById('slider-sub').value) - 10, ass: parseInt(document.getElementById('slider-sub').value) };
+        }
         try {
             const res = await fetch('/api/dedupe/scan', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
             const data = await res.json();
             if (data.success) {
                 document.getElementById('scan-progress-container').classList.remove('hidden');
                 document.getElementById('btn-scan').disabled = true; document.getElementById('btn-scan').classList.add('opacity-50');
-                pollInterval = setInterval(checkStatus, 1500);
+                pollInterval = setInterval(checkStatus, 1000);
             } else { alert(data.msg); }
         } catch(e) { console.error(e); }
     }
@@ -258,17 +296,18 @@
                 const state = data.data;
                 document.getElementById('scan-progress-bar').style.width = `${state.progress}%`;
                 document.getElementById('scan-status-text').innerText = state.message;
-                
                 if (!state.is_scanning) {
                     clearInterval(pollInterval);
                     document.getElementById('scan-progress-container').classList.add('hidden');
                     document.getElementById('btn-scan').disabled = false; document.getElementById('btn-scan').classList.remove('opacity-50');
+                    if(state.message.includes('✅')) document.getElementById('summary-text').innerText = state.message;
                     loadResults(); 
                 }
             }
         } catch(e) { console.error(e); }
     }
 
+    // 渲染结果 (🔥 极度紧凑排版)
     async function loadResults() {
         try {
             const res = await fetch('/api/dedupe/results'); const data = await res.json();
@@ -277,166 +316,177 @@
     }
 
     function renderResults(groups) {
-        const container = document.getElementById('dedupe-results');
-        const summary = document.getElementById('result-summary');
-        selectedItems.clear(); 
-        
-        let keys = Object.keys(groups);
+        const container = document.getElementById('dedupe-results'); const summary = document.getElementById('result-summary');
+        selectedItems.clear(); let keys = Object.keys(groups);
         if (keys.length === 0) {
-            summary.classList.add('hidden');
-            container.innerHTML = `<div class="text-center py-20 text-gray-400"><i class="fa-solid fa-box-archive text-5xl mb-4 opacity-20"></i><p class="text-[14px] font-medium">当前媒体库非常干净，没有发现重复项！</p></div>`;
+            summary.classList.add('hidden'); container.innerHTML = `<div class="text-center py-24 text-gray-400"><i class="fa-solid fa-box-archive text-6xl mb-5 opacity-20"></i><p class="text-[15px] font-medium">您的媒体库非常纯净，没有发现重复项。</p></div>`;
             updateActionPill(); return;
         }
-
-        summary.classList.remove('hidden');
-        document.getElementById('summary-text').innerText = `扫描完毕：发现 ${keys.length} 组重复媒体，已为您智能预选出应当清理的版本。`;
-
-        let html = '';
+        summary.classList.remove('hidden'); let html = '';
+        
         keys.forEach(gKey => {
             const items = groups[gKey];
-            const titleInfo = items[0].media_type === 'Movie' ? `🎬 ${items[0].title}` : `📺 ${items[0].title} - S${String(items[0].season_num).padStart(2,'0')}E${String(items[0].episode_num).padStart(2,'0')}`;
+            const titleInfo = items[0].media_type === 'Movie' ? `🎬 ${items[0].title}` : `📺 ${items[0].title} <span class="ml-1 px-1.5 py-0.5 bg-gray-200 dark:bg-white/10 rounded text-[10px] font-mono">S${String(items[0].season_num).padStart(2,'0')}E${String(items[0].episode_num).padStart(2,'0')}</span>`;
             const targetImageId = items[0].item_id; 
 
-            // 🔥 增加海报展示与折叠 UI 的美化
             html += `
-            <div class="bg-white dark:bg-apple-cardDark rounded-[20px] shadow-sm border border-gray-100 dark:border-white/5 overflow-hidden transition-colors hover:border-brand-500/30">
-                <div class="px-5 py-3 flex items-center justify-between cursor-pointer bg-gray-50/50 dark:bg-black/10 select-none hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" onclick="toggleAccordion('${gKey}')">
-                    <div class="flex items-center gap-4">
-                        <img src="/api/proxy/smart_image?item_id=${targetImageId}&type=Primary" class="w-10 h-14 object-cover rounded-md shadow-sm border border-gray-200 dark:border-white/10" onerror="this.style.display='none'">
-                        <div class="flex flex-col">
-                            <h3 class="font-bold text-[15px] text-gray-900 dark:text-white">${titleInfo}</h3>
-                            <span class="text-[11px] text-gray-500 font-medium">包含 ${items.length} 个重复版本</span>
+            <div class="bg-white dark:bg-apple-cardDark rounded-[16px] shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden transition-colors hover:border-brand-500/30 group">
+                <div class="pl-3 pr-4 py-2 flex items-center justify-between cursor-pointer bg-gray-50/50 dark:bg-black/20 select-none" onclick="toggleAccordion('${gKey}')">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <img src="/api/proxy/smart_image?item_id=${targetImageId}&type=Primary" class="w-8 h-12 object-cover rounded shadow-sm border border-gray-200 dark:border-white/10" onerror="this.style.display='none'">
+                        <div class="flex flex-col min-w-0">
+                            <h3 class="font-bold text-[14px] text-gray-900 dark:text-white truncate">${titleInfo}</h3>
+                            <span class="text-[10px] text-gray-400 font-medium">包含 ${items.length} 个版本</span>
                         </div>
                     </div>
-                    <i class="fa-solid fa-chevron-down text-gray-400 transition-transform duration-300" id="icon-${gKey}"></i>
+                    <i class="fa-solid fa-chevron-down text-[12px] text-gray-400 transition-transform duration-300 ml-2" id="icon-${gKey}"></i>
                 </div>
                 <div id="body-${gKey}" class="flex flex-col border-t border-gray-100 dark:border-white/5">`;
 
             items.forEach(item => {
                 const sizeStr = formatBytes(item.size_bytes);
-                // 🔥 修复 undefined 报错
-                const vCodec = item.video_codec || "未知编码";
-                const aCodec = item.audio_codec || "未知音轨";
+                const vCodec = item.video_codec || "未知编码"; const aCodec = item.audio_codec || "未知音轨";
                 let badgesHtml = '';
                 
-                if (item.resolution === '4K') badgesHtml += `<span class="bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">4K</span> `;
-                else if (item.resolution === '1080P') badgesHtml += `<span class="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">1080P</span> `;
-                else badgesHtml += `<span class="bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">${item.resolution}</span> `;
+                // 徽章微调更紧凑
+                if (item.resolution === '4K') badgesHtml += `<span class="bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-purple-200 dark:border-purple-500/30">4K</span>`;
+                else if (item.resolution === '1080P') badgesHtml += `<span class="bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-blue-200 dark:border-blue-500/30">1080P</span>`;
+                else badgesHtml += `<span class="bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-gray-200 dark:border-white/10">${item.resolution}</span>`;
                 
-                if (item.has_dovi === 1) badgesHtml += `<span class="bg-yellow-100 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>DoVi</span> `;
-                else if (item.has_hdr === 1) badgesHtml += `<span class="bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap">HDR10</span> `;
+                if (item.has_dovi === 1) badgesHtml += `<span class="bg-yellow-100 text-yellow-600 dark:bg-yellow-500/20 dark:text-yellow-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-yellow-200 dark:border-yellow-500/30"><i class="fa-solid fa-wand-magic-sparkles mr-0.5"></i>DoVi</span>`;
+                else if (item.has_hdr === 1) badgesHtml += `<span class="bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-orange-200 dark:border-orange-500/30">HDR10</span>`;
                 
-                if (item.has_ass_sub === 1) badgesHtml += `<span class="bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-language mr-0.5"></i>中字 ASS</span> `;
-                else if (item.has_chi_sub === 1) badgesHtml += `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-language mr-0.5"></i>简中</span> `;
-                else badgesHtml += `<span class="border border-gray-200 dark:border-white/10 text-gray-400 px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm whitespace-nowrap line-through">生肉无字</span> `;
+                if (item.has_ass_sub === 1) badgesHtml += `<span class="bg-green-100 text-green-600 dark:bg-green-500/20 dark:text-green-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-green-200 dark:border-green-500/30">中字 ASS</span>`;
+                else if (item.has_chi_sub === 1) badgesHtml += `<span class="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap border border-emerald-200 dark:border-emerald-500/30">中字</span>`;
+                else badgesHtml += `<span class="text-gray-400 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold whitespace-nowrap line-through border border-gray-200 dark:border-white/10">无字</span>`;
 
-                let tagHtml = ''; let isChecked = false; let disabledAttr = ''; let rowBg = '';
+                let isChecked = false; let disabledAttr = ''; let rowBg = ''; let actionBtnHtml = '';
 
                 if (item.is_exempt === 1) {
-                    tagHtml = `<span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-1 rounded border border-indigo-100 dark:border-indigo-500/20"><i class="fa-solid fa-shield-halved"></i> 豁免项</span>`;
-                    disabledAttr = 'disabled';
+                    disabledAttr = 'disabled'; actionBtnHtml = `<span class="text-[10px] font-bold text-indigo-500"><i class="fa-solid fa-shield-halved"></i> 豁免</span>`;
                 } else if (item.is_recommended_del === 1) {
-                    tagHtml = `<span class="text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-500/10 px-2 py-1 rounded border border-red-100 dark:border-red-500/20"><i class="fa-solid fa-trash-can"></i> 建议清理</span>`;
                     isChecked = true; rowBg = 'bg-red-50/50 dark:bg-red-500/10'; selectedItems.set(item.item_id, item.size_bytes);
+                    actionBtnHtml = `<span class="text-[10px] font-bold text-red-500"><i class="fa-solid fa-trash-can"></i> 建议清理</span>`;
                 } else if (item.score === items[0].score) {
-                    tagHtml = `<span class="text-[10px] font-bold text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded border border-brand-100 dark:border-brand-500/20"><i class="fa-solid fa-trophy"></i> 最佳保留</span>`;
-                } else {
-                    tagHtml = `<span class="text-[10px] font-bold text-yellow-600 bg-yellow-50 dark:bg-yellow-500/10 px-2 py-1 rounded border border-yellow-200 dark:border-yellow-500/20"><i class="fa-solid fa-scale-balanced"></i> 悬而未决</span>`;
+                    actionBtnHtml = `<span class="text-[10px] font-bold text-brand-500"><i class="fa-solid fa-trophy"></i> 最佳</span>`;
                 }
 
-                // 🔥 修复文件路径显示
-                const safePath = item.file_path ? item.file_path : '';
+                // 🔥 修复：加入跳转链接与物理路径显示
+                const playUrl = `${globalEmbyBaseUrl}/web/index.html#!/item?id=${item.item_id}&serverId=${globalEmbyServerId}`;
+                const safePath = item.file_path ? `<i class="fa-regular fa-folder-open text-gray-400 mr-1"></i>${item.file_path}` : '';
                 
                 html += `
-                <div id="row-${item.item_id}" class="flex flex-col md:flex-row p-4 md:items-center border-b border-gray-50/50 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-3 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
-                    <div class="flex items-start md:items-center gap-3 md:w-[45%] min-w-0">
-                        <input type="checkbox" id="chk-${item.item_id}" class="ep-checkbox shrink-0 mt-1 md:mt-0" ${isChecked ? 'checked' : ''} ${disabledAttr} onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
-                        <div class="flex flex-col min-w-0 flex-1">
-                            <span class="text-[13px] font-bold text-gray-800 dark:text-gray-200 truncate" title="${item.file_name}">${item.file_name}</span>
-                            <span class="text-[10px] text-gray-400 mt-0.5 truncate" title="${safePath}">${safePath}</span>
-                            <span class="text-[10px] font-mono text-gray-500 dark:text-gray-400 mt-1">${sizeStr} | ${vCodec} | ${aCodec}</span>
+                <div id="row-${item.item_id}" class="flex items-start md:items-center py-2.5 px-3 md:px-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-colors gap-2.5 ${rowBg}" onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
+                    <div class="pt-0.5 md:pt-0 shrink-0">
+                        <input type="checkbox" id="chk-${item.item_id}" class="ep-checkbox" ${isChecked ? 'checked' : ''} ${disabledAttr} onclick="toggleSelection('${item.item_id}', ${item.size_bytes}, event)">
+                    </div>
+                    
+                    <div class="flex flex-col min-w-0 flex-1">
+                        <a href="${playUrl}" target="_blank" class="text-[13px] font-bold text-gray-800 dark:text-gray-200 truncate hover:text-brand-500 transition-colors block leading-tight mb-0.5" title="${item.file_name}">${item.file_name}</a>
+                        <div class="text-[9px] text-gray-400 font-mono truncate mb-1" title="${item.file_path}">${safePath}</div>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/5 px-1 rounded">${sizeStr}</span>
+                            <span class="text-[9px] text-gray-400">${vCodec} | ${aCodec}</span>
+                            ${badgesHtml}
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-1.5 md:flex-1 pl-7 md:pl-0">
-                        ${badgesHtml}
-                    </div>
-                    <div class="flex justify-end items-center md:w-[15%] shrink-0 pr-2">
-                        ${tagHtml}
+                    
+                    <div class="flex flex-col justify-center items-end shrink-0 pl-2">
+                        ${actionBtnHtml}
                     </div>
                 </div>`;
             });
             html += `</div></div>`;
         });
-        
         container.innerHTML = html; updateActionPill();
     }
 
-    // 🔥 增加安全防护流程
-    function checkAuthAndExecute() {
-        if(selectedItems.size === 0) return;
-        const totalSize = document.getElementById('pill-size').innerText;
-        
-        if (!hasVerifiedPassword || selectedItems.size > 10) {
-            // 需要验证密码
-            const modal = document.getElementById('auth-modal');
-            modal.classList.remove('hidden'); void modal.offsetWidth;
-            modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
-            
-            // 尝试回填用户名
-            try { const u = JSON.parse(localStorage.getItem('user')); if(u && (u.username || u.Name)) document.getElementById('auth-user').value = u.username || u.Name; } catch(e){}
-        } else {
-            // 已验证过且删除少于 10 个，直接弹基础确认框
-            if(confirm(`确定删除这 ${selectedItems.size} 个视频文件？将释放 ${totalSize} 空间。`)) executeDeleteAPI('', '');
-        }
+    // 白名单管理
+    let whitelistSelected = new Set();
+    function openWhitelistModal() {
+        const m = document.getElementById('whitelist-modal'); m.classList.remove('hidden'); void m.offsetWidth; m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95');
+        fetchWhitelist();
     }
-
-    function closeAuthModal() {
-        const modal = document.getElementById('auth-modal');
-        modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
-        setTimeout(() => { modal.classList.add('hidden'); document.getElementById('auth-pwd').value = ''; }, 300);
+    function closeWhitelistModal() {
+        const m = document.getElementById('whitelist-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(() => m.classList.add('hidden'), 300);
     }
-
-    function executeFinalDelete() {
-        const user = document.getElementById('auth-user').value.trim();
-        const pwd = document.getElementById('auth-pwd').value.trim();
-        if(!user || !pwd) { alert("请输入账号和密码！"); return; }
-        
-        closeAuthModal();
-        executeDeleteAPI(user, pwd);
-    }
-
-    async function executeDeleteAPI(username, password) {
-        document.getElementById('action-pill').style.opacity = '0.5';
-        document.getElementById('action-pill').style.pointerEvents = 'none';
-        
+    async function fetchWhitelist() {
+        whitelistSelected.clear(); updateWlBtn();
         try {
-            const itemIds = Array.from(selectedItems.keys());
-            const res = await fetch('/api/dedupe/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({item_ids: itemIds, username: username, password: password}) });
-            const data = await res.json();
-            
-            if (data.success) {
-                alert(data.msg);
-                hasVerifiedPassword = true; // 记录本次 Session 验证状态
-                loadResults(); 
-            } else {
-                alert(data.msg);
-                document.getElementById('action-pill').style.opacity = '1';
-                document.getElementById('action-pill').style.pointerEvents = 'auto';
-            }
-        } catch(e) { console.error(e); alert("网络请求失败"); }
+            const res = await fetch('/api/dedupe/whitelist'); const data = await res.json();
+            const c = document.getElementById('whitelist-container');
+            if(!data.success || data.data.length === 0) { c.innerHTML = '<div class="text-center py-10 text-gray-400 text-xs">白名单空空如也</div>'; return; }
+            let html = '';
+            data.data.forEach(item => {
+                html += `
+                <label class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer transition-colors border border-transparent">
+                    <input type="checkbox" class="ep-checkbox brand-cb wl-cb" value="${item.group_key}" onchange="toggleWl('${item.group_key}', this)">
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-[13px] font-bold text-gray-800 dark:text-gray-200 truncate">${item.title || item.group_key}</span>
+                        <span class="text-[10px] text-gray-400 font-mono mt-0.5">添加于: ${item.created_at.substring(0,16)}</span>
+                    </div>
+                </label>`;
+            });
+            c.innerHTML = html;
+        } catch(e) { console.error(e); }
+    }
+    function toggleWl(key, el) { if(el.checked) whitelistSelected.add(key); else whitelistSelected.delete(key); updateWlBtn(); }
+    function updateWlBtn() { 
+        document.getElementById('wl-count-text').innerText = `已选择 ${whitelistSelected.size} 项`;
+        document.getElementById('btn-rm-wl').disabled = whitelistSelected.size === 0; 
+    }
+    async function removeWhitelistItems() {
+        if(whitelistSelected.size === 0) return;
+        try {
+            const res = await fetch('/api/dedupe/whitelist/remove', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({group_keys: Array.from(whitelistSelected)}) });
+            const data = await res.json(); fetchWhitelist();
+        } catch(e) {}
     }
 
     async function batchIgnore() {
         if(selectedItems.size === 0) return;
-        if(!confirm(`要把这些文件所在的组别加入永久白名单吗？\n以后全库扫描将永远跳过它们。`)) return;
         try {
-            const groupKeysToIgnore = new Set();
+            const itemsToIgnore = [];
             selectedItems.forEach((_, itemId) => {
-                for (let gKey in allGroups) { if (allGroups[gKey].find(i => i.item_id === itemId)) groupKeysToIgnore.add(gKey); }
+                for (let gKey in allGroups) {
+                    if (allGroups[gKey].find(i => i.item_id === itemId)) {
+                        const first = allGroups[gKey][0];
+                        const title = first.media_type === 'Movie' ? first.title : `${first.title} S${first.season_num}E${first.episode_num}`;
+                        if(!itemsToIgnore.find(x => x.group_key === gKey)) itemsToIgnore.push({group_key: gKey, title: title});
+                    }
+                }
             });
-            const res = await fetch('/api/dedupe/ignore', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({group_keys: Array.from(groupKeysToIgnore)}) });
-            const data = await res.json(); alert(data.msg); loadResults();
+            const res = await fetch('/api/dedupe/ignore', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({items: itemsToIgnore}) });
+            const data = await res.json(); alert(data.msg); loadResults(); clearSelection();
         } catch(e) { console.error(e); }
+    }
+
+    // 安全删除
+    function checkAuthAndExecute() {
+        if(selectedItems.size === 0) return;
+        if (!hasVerifiedPassword) {
+            const m = document.getElementById('auth-modal'); m.classList.remove('hidden'); void m.offsetWidth; m.classList.remove('opacity-0'); m.querySelector('div').classList.remove('scale-95');
+            try { const u = JSON.parse(localStorage.getItem('user')); if(u && (u.username || u.Name)) document.getElementById('auth-user').value = u.username || u.Name; } catch(e){}
+        } else {
+            if(confirm(`⚠️ 确定物理删除这 ${selectedItems.size} 个视频文件？将释放 ${document.getElementById('pill-size').innerText}。此操作不可逆！`)) executeDeleteAPI('', '');
+        }
+    }
+    function closeAuthModal() {
+        const m = document.getElementById('auth-modal'); m.classList.add('opacity-0'); m.querySelector('div').classList.add('scale-95'); setTimeout(() => { m.classList.add('hidden'); document.getElementById('auth-pwd').value = ''; }, 300);
+    }
+    function executeFinalDelete() {
+        const u = document.getElementById('auth-user').value.trim(); const p = document.getElementById('auth-pwd').value.trim();
+        if(!u || !p) { alert("必须输入账号和密码！"); return; }
+        closeAuthModal(); executeDeleteAPI(u, p);
+    }
+    async function executeDeleteAPI(u, p) {
+        document.getElementById('action-pill').style.opacity = '0.5'; document.getElementById('action-pill').style.pointerEvents = 'none';
+        try {
+            const res = await fetch('/api/dedupe/delete', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({item_ids: Array.from(selectedItems.keys()), username: u, password: p}) });
+            const data = await res.json();
+            if (data.success) { alert(data.msg); hasVerifiedPassword = true; loadResults(); } 
+            else { alert(data.msg); document.getElementById('action-pill').style.opacity = '1'; document.getElementById('action-pill').style.pointerEvents = 'auto'; }
+        } catch(e) { console.error(e); alert("网络请求失败"); }
     }
 
     document.addEventListener('DOMContentLoaded', () => { loadResults(); });
