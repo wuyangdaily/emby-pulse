@@ -420,7 +420,6 @@ class NotificationBot:
         wecom_img = backdrop_io or primary_io or REPORT_COVER_URL
         self.send_photo("sys_notify", tg_img, caption, reply_markup=keyboard, platform="all", wecom_photo_io=wecom_img)
 
-    # 🔥 修复进度条格式化算法，防止 ticks 传入异常格式导致崩溃变 00:00:00
     def _format_ticks(self, ticks):
         if not ticks: return "00:00:00"
         try:
@@ -435,7 +434,6 @@ class NotificationBot:
     def on_playback_event(self, data, action):
         if not cfg.get("enable_notify"): return
         try:
-            # 兼容 Emby Webhook Plugin 与原生 Webhook
             session = data.get("Session") or data
             item = data.get("Item") or session.get("NowPlayingItem") or {}
             user = data.get("User") or session
@@ -458,19 +456,42 @@ class NotificationBot:
             ip = session.get("RemoteEndPoint") or data.get("RemoteEndPoint") or "127.0.0.1"
             loc = self._get_location(ip)
             
-            # 🔥 多维度抓取进度，防止某个对象为空导致进度全变 00:00:00
+            # 多维度尝试抓取进度数据
             play_state = session.get("PlayState", {})
             playback_info = data.get("PlaybackInfo", {})
             
-            pos_ticks = data.get("PositionTicks") or playback_info.get("PositionTicks") or play_state.get("PositionTicks") or 0
-            run_ticks = item.get("RunTimeTicks") or session.get("NowPlayingItem", {}).get("RunTimeTicks") or data.get("RunTimeTicks") or 1
+            pos_ticks = data.get("PlaybackPositionTicks") or data.get("PositionTicks") or playback_info.get("PositionTicks") or play_state.get("PositionTicks") or 0
+            run_ticks = item.get("RunTimeTicks") or session.get("NowPlayingItem", {}).get("RunTimeTicks") or data.get("RunTimeTicks") or 0
             
             try: pos_ticks = int(pos_ticks)
             except: pos_ticks = 0
             try: run_ticks = int(run_ticks)
-            except: run_ticks = 1
+            except: run_ticks = 0
+
+            target_id = item.get("Id")
             
-            if run_ticks <= 0: run_ticks = 1
+            # 🔥 逆向反查补全：如果 Webhook 给的是“阉割版”数据，主动去 Emby 把时长和进度抓回来！
+            if target_id and (run_ticks <= 0 or pos_ticks <= 0):
+                try:
+                    host = cfg.get("emby_host")
+                    key = cfg.get("emby_api_key")
+                    
+                    # 补全总时长
+                    if run_ticks <= 0:
+                        detail_res = requests.get(f"{host}/emby/Items/{target_id}?api_key={key}", timeout=2).json()
+                        run_ticks = int(detail_res.get("RunTimeTicks") or 0)
+                        
+                    # 补全当前进度 (仅针对活跃 Session)
+                    if pos_ticks <= 0 and session.get("Id"):
+                        sess_res = requests.get(f"{host}/emby/Sessions?api_key={key}", timeout=2).json()
+                        for s in sess_res:
+                            if s.get("Id") == session.get("Id"):
+                                pos_ticks = int(s.get("PlayState", {}).get("PositionTicks") or 0)
+                                break
+                except:
+                    pass
+            
+            if run_ticks <= 0: run_ticks = 1 # 最终兜底，防止除以0报错
 
             pct = int((pos_ticks / run_ticks) * 100) if run_ticks > 1 else 0
             pct = min(max(pct, 0), 100)
@@ -487,17 +508,17 @@ class NotificationBot:
                    f"📱 <b>设备</b>：{client} on {device}\n"
                    f"🕒 <b>时间</b>：{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             
-            target_id = item.get("Id")
-            if raw_type == "Episode" and item.get("SeriesId"): target_id = item.get("SeriesId")
-            elif raw_type == "Audio" and item.get("AlbumId"): target_id = item.get("AlbumId")
+            target_jump_id = target_id
+            if raw_type == "Episode" and item.get("SeriesId"): target_jump_id = item.get("SeriesId")
+            elif raw_type == "Audio" and item.get("AlbumId"): target_jump_id = item.get("AlbumId")
             
             base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
             if base_url and base_url.endswith('/'): base_url = base_url[:-1]
-            play_url = f"{base_url}/web/index.html#!/item?id={target_id}&serverId={item.get('ServerId','')}" if base_url else "#"
+            play_url = f"{base_url}/web/index.html#!/item?id={target_jump_id}&serverId={item.get('ServerId','')}" if base_url else "#"
             keyboard = {"inline_keyboard": [[{"text": "🔗 跳转详情", "url": play_url}]]}
 
-            primary_io = self._download_emby_image(target_id, 'Primary') 
-            backdrop_io = self._download_emby_image(target_id, 'Backdrop')
+            primary_io = self._download_emby_image(target_jump_id, 'Primary') 
+            backdrop_io = self._download_emby_image(target_jump_id, 'Backdrop')
             if not primary_io and not backdrop_io:
                 primary_io = self._download_emby_image(item.get("Id"), 'Primary')
                 backdrop_io = self._download_emby_image(item.get("Id"), 'Backdrop')
@@ -642,9 +663,12 @@ class NotificationBot:
             return ip
         except: return ip
 
+    # 🔥 核心修复：IP 破折号与标点符号清理
     def _clean_location(self, loc):
         if not loc: return ""
         loc = re.sub(r'(中国|省|市|自治区|自治州|特别行政区|移动|联通|电信|铁通|教育网|广电|通信|数据中心|IDC)', ' ', loc)
+        # 将横杠、下划线、逗号全部替换为空格
+        loc = re.sub(r'[-_、,，]', ' ', loc)
         loc = re.sub(r'\s+', ' ', loc).strip() 
         return loc
 
