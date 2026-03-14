@@ -5,27 +5,45 @@
 {% block content %}
 <div class="p-4 md:p-8 w-full max-w-[100%] mx-auto flex flex-col gap-6 relative min-h-screen">
     
-    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 md:p-8 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+    <div class="bg-white dark:bg-apple-cardDark rounded-[24px] p-6 md:p-8 shadow-sm border border-gray-100 dark:border-white/5 flex flex-col gap-6 relative overflow-hidden">
         <div class="absolute -right-10 -top-10 text-brand-500/5 dark:text-white/5 pointer-events-none">
             <i class="fa-solid fa-layer-group text-[150px] rotate-12"></i>
         </div>
-        <div class="relative z-10">
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
-                <i class="fa-solid fa-clone text-brand-500"></i> 去重管理
-            </h1>
-            <p class="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400 mt-2 font-medium">释放无效的存储空间，永远为您保留最极致的视听体验。</p>
-        </div>
         
-        <div class="relative z-10 flex flex-wrap items-center gap-3">
-            <button onclick="openWhitelistModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
-                <i class="fa-solid fa-shield-halved"></i> 白名单
-            </button>
-            <button onclick="openConfigModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
-                <i class="fa-solid fa-sliders"></i> 扫描配置
-            </button>
-            <button onclick="startScan()" id="btn-scan" class="h-11 bg-brand-500 hover:bg-brand-600 text-white px-6 rounded-xl text-[14px] font-bold shadow-lg shadow-brand-500/30 transition-all active:scale-95 flex items-center gap-2">
-                <i class="fa-solid fa-radar"></i> 智能全库扫描
-            </button>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black tracking-tight text-gray-900 dark:text-white flex items-center gap-3">
+                    <i class="fa-solid fa-clone text-brand-500"></i> 去重管理
+                </h1>
+                <p class="text-[13px] md:text-[14px] text-gray-500 dark:text-gray-400 mt-2 font-medium">释放无效的存储空间，永远为您保留最极致的视听体验。</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3">
+                <button onclick="openWhitelistModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved"></i> 白名单
+                </button>
+                <button onclick="openConfigModal()" class="h-11 px-4 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-[#2C2C2E] dark:hover:bg-[#3A3A3C] text-gray-700 dark:text-gray-300 font-bold text-[13px] transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> 扫描配置
+                </button>
+                <button onclick="startScan()" id="btn-scan" class="h-11 bg-brand-500 hover:bg-brand-600 text-white px-6 rounded-xl text-[14px] font-bold shadow-lg shadow-brand-500/30 transition-all active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-radar"></i> 智能全库扫描
+                </button>
+            </div>
+        </div>
+
+        <div id="type-tabs" class="hidden border-t border-gray-100 dark:border-white/5 pt-5 flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-1.5 h-4 bg-brand-500 rounded-full"></div>
+                <span class="text-[13px] font-bold text-gray-700 dark:text-gray-300">分类检索面板</span>
+            </div>
+            <div class="bg-gray-100/80 dark:bg-black/30 p-1 rounded-xl flex w-full sm:w-auto shadow-inner border border-gray-200/50 dark:border-white/5">
+                <button id="tab-btn-movies" onclick="switchTab('movies')" class="flex-1 sm:flex-none px-6 py-2 rounded-lg text-[13px] font-bold transition-all bg-white dark:bg-apple-hoverDark shadow-sm text-gray-900 dark:text-white">
+                    🎬 电影 (<span id="tab-count-movies">0</span>)
+                </button>
+                <button id="tab-btn-tv" onclick="switchTab('tv')" class="flex-1 sm:flex-none px-6 py-2 rounded-lg text-[13px] font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    📺 剧集 (<span id="tab-count-tv">0</span>)
+                </button>
+            </div>
         </div>
     </div>
 
@@ -47,17 +65,6 @@
     <div id="result-summary" class="hidden flex items-center gap-3 px-5 py-3.5 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 rounded-[16px] text-[13px] font-bold border border-brand-100 dark:border-brand-500/20">
         <i class="fa-solid fa-circle-check text-lg"></i>
         <span id="summary-text">扫描完成。</span>
-    </div>
-
-    <div id="type-tabs" class="hidden justify-center mt-2 mb-2">
-        <div class="bg-gray-100/80 dark:bg-black/30 p-1 rounded-xl inline-flex gap-1 shadow-inner border border-gray-200/50 dark:border-white/5">
-            <button id="tab-btn-movies" onclick="switchTab('movies')" class="px-8 py-2 rounded-lg text-[14px] font-bold transition-all bg-white dark:bg-apple-hoverDark shadow-sm text-gray-900 dark:text-white">
-                🎬 电影 (<span id="tab-count-movies">0</span>)
-            </button>
-            <button id="tab-btn-tv" onclick="switchTab('tv')" class="px-8 py-2 rounded-lg text-[14px] font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                📺 剧集 (<span id="tab-count-tv">0</span>)
-            </button>
-        </div>
     </div>
 
     <div id="dedupe-empty-state" class="text-center py-24 text-gray-400">
@@ -239,19 +246,23 @@
         return '📁 ... ❯ ' + parts.slice(-3).join(' ❯ ');
     }
 
+    // 🔥 JS 更新：同步修改标签切换时的样式（包含适配手机的 flex-1）
     function switchTab(tab) {
         currentTab = tab;
         const btnM = document.getElementById('tab-btn-movies');
         const btnT = document.getElementById('tab-btn-tv');
         
+        const activeClass = 'flex-1 sm:flex-none px-6 py-2 rounded-lg text-[13px] font-bold transition-all bg-white dark:bg-apple-hoverDark shadow-sm text-gray-900 dark:text-white';
+        const inactiveClass = 'flex-1 sm:flex-none px-6 py-2 rounded-lg text-[13px] font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200';
+
         if (tab === 'movies') {
-            btnM.className = 'px-8 py-2 rounded-lg text-[14px] font-bold transition-all bg-white dark:bg-apple-hoverDark shadow-sm text-gray-900 dark:text-white';
-            btnT.className = 'px-8 py-2 rounded-lg text-[14px] font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200';
+            btnM.className = activeClass;
+            btnT.className = inactiveClass;
             document.getElementById('dedupe-results-movies').classList.remove('hidden');
             document.getElementById('dedupe-results-tv').classList.add('hidden');
         } else {
-            btnT.className = 'px-8 py-2 rounded-lg text-[14px] font-bold transition-all bg-white dark:bg-apple-hoverDark shadow-sm text-gray-900 dark:text-white';
-            btnM.className = 'px-8 py-2 rounded-lg text-[14px] font-bold transition-all text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200';
+            btnT.className = activeClass;
+            btnM.className = inactiveClass;
             document.getElementById('dedupe-results-movies').classList.add('hidden');
             document.getElementById('dedupe-results-tv').classList.remove('hidden');
         }
@@ -357,7 +368,6 @@
         updateActionPill();
     }
 
-    // 🔥 修复1：极其精确的 DOM ID 匹配展开函数
     function toggleAccordion(groupKey) {
         const body = document.getElementById(`body-${groupKey}`); 
         const icon = document.getElementById(`icon-${groupKey}`);
@@ -411,7 +421,6 @@
         } catch(e) { console.error(e); }
     }
 
-    // 扁平化渲染引擎
     function renderResults(groups, embyUrl, serverId) {
         const containerEmpty = document.getElementById('dedupe-empty-state'); 
         const cMovies = document.getElementById('dedupe-results-movies'); 
@@ -427,14 +436,17 @@
             containerEmpty.style.display = 'block'; cMovies.classList.add('hidden'); cTv.classList.add('hidden'); typeTabs.classList.add('hidden');
             updateActionPill(); return;
         }
-        containerEmpty.style.display = 'none'; typeTabs.classList.remove('hidden'); typeTabs.classList.add('flex');
+        
+        // 🔥 将原先的独立模块，改为内置元素的弹性展开展示
+        containerEmpty.style.display = 'none'; 
+        typeTabs.classList.remove('hidden'); 
+        typeTabs.classList.add('flex');
         
         const finalEmbyUrl = embyUrl || globalEmbyBaseUrl || window.location.origin;
         const serverParam = serverId ? `&serverId=${serverId}` : '';
         
         const movieGroups = {}; const tvDisplayGroups = {};
         
-        // 数据拆分
         keys.forEach(gKey => {
             const items = groups[gKey]; const first = items[0];
             if (first.media_type === 'Movie') {
@@ -449,7 +461,6 @@
             }
         });
 
-        // 渲染电影
         const mKeys = Object.keys(movieGroups);
         document.getElementById('tab-count-movies').innerText = mKeys.length;
         if (mKeys.length > 0) {
@@ -490,7 +501,6 @@
             cMovieCards.innerHTML = mHtml;
         }
 
-        // 渲染剧集 (修复了展开逻辑与物理聚合)
         const tKeys = Object.keys(tvDisplayGroups);
         document.getElementById('tab-count-tv').innerText = tKeys.length;
         if (tKeys.length > 0) {
@@ -499,7 +509,6 @@
                 const show = tvDisplayGroups[showKey]; const uniqueId = `tv_grp_${index}`;
                 const groupPlayUrl = `${finalEmbyUrl}/web/index.html#!/item?id=${show.targetImageId}${serverParam}`;
                 
-                // 🔥 物理目录级绝对聚合：只要处于同一个文件夹，全部算一家人
                 const folders = {};
                 show.allItems.forEach(item => {
                     const dir = getDirName(item.file_path);
@@ -544,7 +553,6 @@
 
                     const folderPlayUrl = f.items.length > 0 ? `${finalEmbyUrl}/web/index.html#!/item?id=${f.items[0].item_id}${serverParam}` : '#';
 
-                    // 文件夹级渲染，强制允许所有文件夹均可展开
                     tHtml += `<div class="border-b border-gray-100 dark:border-white/5 last:border-b-0">`;
                     tHtml += `<div class="p-3.5 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer" onclick="toggleAccordion('${folderId}_content')">`;
                     tHtml += `<div class="pt-0.5 shrink-0">`;
@@ -564,7 +572,6 @@
                     }
                     tHtml += `</div></div>`; 
                     
-                    // 单集列表 (修复了点击事件防冒泡)
                     tHtml += `<div id="body-${folderId}_content" class="hidden bg-gray-50/50 dark:bg-black/20 pl-8 pr-3 py-2 space-y-2 border-t border-gray-100 dark:border-white/5 shadow-inner" onclick="event.stopPropagation()">`;
                     
                     let sortedItems = f.items.slice().sort((a,b) => (a.season_num - b.season_num) || (a.episode_num - b.episode_num));
