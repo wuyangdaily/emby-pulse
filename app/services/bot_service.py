@@ -9,12 +9,15 @@ import json
 import re
 import ipaddress
 import sqlite3
+import urllib3
 from collections import defaultdict
 from app.core.config import cfg, REPORT_COVER_URL, FALLBACK_IMAGE_URL
 from app.core.database import query_db, get_base_filter, add_sys_notification, DB_PATH
 from app.services.report_service import report_gen, HAS_PIL
 from app.core.event_bus import bus
 
+# 禁用 HTTPS 测速时的无用警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger("uvicorn")
 
 def get_admin_id():
@@ -199,6 +202,21 @@ class SystemDaemon:
         except: return None
 
     def _push_episode_group(self, series_id, episodes):
+        key = cfg.get("emby_api_key"); host = cfg.get("emby_host")
+        admin_id = get_admin_id()
+        series_info = {}
+        
+        # 🔥 优化：在核销缺集前，先提取出该剧集的精确名称
+        try:
+            url = f"{host}/emby/Users/{admin_id}/Items/{series_id}?api_key={key}"
+            res = requests.get(url, timeout=10)
+            if res.status_code == 200: series_info = res.json()
+        except: pass
+        if not series_info: series_info = episodes[0]
+
+        series_name = series_info.get('Name', '未知剧集')
+
+        # 执行残卷自动核销并带上剧集名称
         try:
             for ep in episodes:
                 s_idx = ep.get('ParentIndexNumber'); e_idx = ep.get('IndexNumber')
@@ -206,18 +224,8 @@ class SystemDaemon:
                 res = query_db("SELECT id FROM gap_records WHERE series_id=? AND season_number=? AND episode_number=? AND status=2", (series_id, s_idx, e_idx))
                 if res:
                     query_db("DELETE FROM gap_records WHERE id=?", (res[0]['id'],))
-                    bus.publish("notify.gap_cleared", {"s_idx": s_idx, "e_idx": e_idx})
+                    bus.publish("notify.gap_cleared", {"s_idx": s_idx, "e_idx": e_idx, "series_name": series_name})
         except Exception as e: pass
-
-        key = cfg.get("emby_api_key"); host = cfg.get("emby_host")
-        admin_id = get_admin_id()
-        series_info = {}
-        try:
-            url = f"{host}/emby/Users/{admin_id}/Items/{series_id}?api_key={key}"
-            res = requests.get(url, timeout=10)
-            if res.status_code == 200: series_info = res.json()
-        except: pass
-        if not series_info: series_info = episodes[0]
 
         st_tmdb = series_info.get("ProviderIds", {}).get("Tmdb")
         if st_tmdb: self._auto_finish_request(st_tmdb)
@@ -360,10 +368,12 @@ class NotificationBot:
         except Exception as e:
             logger.error(f"写入风控通知失败: {e}")
 
+    # 🔥 优化：残卷补全带有剧集名称
     def on_gap_cleared(self, data):
         if not cfg.get("enable_library_notify"): return
         s_idx = data["s_idx"]; e_idx = data["e_idx"]
-        msg = (f"🎉 <b>残卷补全成功！</b>\n\n📺 剧集已刮削：<b>S{str(s_idx).zfill(2)}E{str(e_idx).zfill(2)}</b>\n"
+        series_name = data.get("series_name", "未知剧集")
+        msg = (f"🎉 <b>残卷补全成功！</b>\n\n📺 剧集已入库：<b>《{series_name}》 S{str(s_idx).zfill(2)}E{str(e_idx).zfill(2)}</b>\n"
                f"✅ 状态：缺集工单已自动核销闭环\n<i>拼图已圆满，强迫症得到治愈。</i>")
         self.send_message("sys_notify", msg, platform="all")
 
@@ -587,6 +597,15 @@ class NotificationBot:
             item = data.get("Item") or data
             raw_type = item.get("Type", "")
             title = item.get("Name") or item.get("Title") or "未知资源"
+            
+            # 🔥 优化：解耦拦截“用户被删除”这一特殊事件，防止它被识别成媒体删除
+            if raw_type == "User" or "删除了用户" in title:
+                msg = (f"🗑️ <b>系统安全告警</b>\n\n"
+                       f"👤 <b>事件：</b>{title}\n"
+                       f"🕒 <b>时间：</b>{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+                self.send_message("sys_notify", msg, platform="all")
+                return
+
             series_name = item.get("SeriesName")
             season_num = item.get("ParentIndexNumber")
             ep_num = item.get("IndexNumber")
@@ -867,6 +886,16 @@ class NotificationBot:
             if item_id_match and pic_url == REPORT_COVER_URL:
                 base_emby = (cfg.get_main_public_url() or cfg.get("emby_host")).rstrip('/')
                 pic_url = f"{base_emby}/emby/Items/{item_id_match.group(1)}/Images/Primary?maxHeight=800&maxWidth=600&api_key={cfg.get('emby_api_key')}"
+
+            # 🔥 优化：企微的系统/求片事件，自动纠正跳转到 EmbyPulse 后台
+            pulse_url = cfg.get("pulse_url")
+            if pulse_url and any(kw in title for kw in ["求片", "心愿", "报错", "工单", "风控", "系统告警", "安全告警"]):
+                base_pulse = pulse_url.rstrip('/')
+                if "求片" in title or "心愿" in title: jump_url = f"{base_pulse}/requests_admin"
+                elif "报错" in title or "工单" in title: jump_url = f"{base_pulse}/requests_admin"
+                elif "风控" in title: jump_url = f"{base_pulse}/risk"
+                elif "用户" in title: jump_url = f"{base_pulse}/users"
+                else: jump_url = base_pulse
 
             res = requests.post(f"{proxy_url}/cgi-bin/message/send?access_token={token}", json={"touser": touser, "msgtype": "news", "agentid": int(agentid), "news": {"articles": [{"title": title, "description": desc, "url": jump_url, "picurl": pic_url}]}}, timeout=10)
             if res.status_code != 200 or res.json().get("errcode", 0) != 0: self._send_wecom_message(html_text, inline_keyboard, touser)
@@ -1351,7 +1380,35 @@ class NotificationBot:
                        f"🎬 电影：{movie_count} 部\n"
                        f"📺 剧集：{series_count} 部 (共 {ep_count} 集)\n\n"
                        f"👥 <b>当前活跃</b>：{active_users} 人正在观看")
-                self.send_message(cid, msg, platform=platform)
+
+                # 🔥 优化：在探针指令里增加公网入口节点的独立测速
+                try:
+                    raw_url_str = cfg.get("emby_public_url", "")
+                    routes = []
+                    try:
+                        parsed = json.loads(raw_url_str)
+                        if isinstance(parsed, list): routes = parsed
+                    except:
+                        if raw_url_str: routes = [{"name": "默认主线路", "url": raw_url_str}]
+
+                    if routes:
+                        msg += "\n\n🌐 <b>公网节点延迟测速</b>\n"
+                        for r in routes:
+                            r_name = r.get("name", "未命名线路")
+                            r_url = r.get("url", "").rstrip('/')
+                            if r_url:
+                                try:
+                                    r_start = time.time()
+                                    requests.get(f"{r_url}/web/favicon.ico", timeout=3, verify=False)
+                                    r_delay = int((time.time() - r_start) * 1000)
+                                    icon = "🟢" if r_delay < 100 else ("🟡" if r_delay < 300 else "🔴")
+                                    msg += f"{icon} {r_name}: {r_delay}ms\n"
+                                except:
+                                    msg += f"🔴 {r_name}: 超时/离线\n"
+                except Exception as e:
+                    logger.error(f"Route ping error in bot check: {e}")
+
+                self.send_message(cid, msg.strip(), platform=platform)
         except: self.send_message(cid, "❌ 离线或无法连接到服务器", platform=platform)
 
     def _cmd_help(self, cid, platform):
@@ -1367,7 +1424,7 @@ class NotificationBot:
                "/recent - 查看本站最近的 10 条播放历史\n"
                "/search [关键词] - 搜索影视资源并获取直达链接\n\n"
                "🛠 <b>系统管理指令</b>\n"
-               "/check - 测试 Emby 服务器连通性与容量大盘\n"
+               "/check - 测试 Emby 服务器连通性与测速探针\n"
                "/help - 获取本帮助菜单")
         self.send_message(cid, msg.strip(), platform=platform)
 
