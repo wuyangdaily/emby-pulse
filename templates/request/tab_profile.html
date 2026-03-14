@@ -63,43 +63,65 @@
                         }
                     }"
                     x-init="$watch('serverUrl', val => { if(val){ parseRoutes(); pingAll(); } }); if(serverUrl) { parseRoutes(); setTimeout(() => pingAll(), 500); }"
-                    class="w-full mt-2 z-10 bg-slate-50 dark:bg-[#111] rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden text-left relative transition-all duration-300">
+                    class="w-full mt-2 z-10 bg-slate-50 dark:bg-[#111] rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden text-left shadow-sm">
 
-                    <div class="p-3 flex items-center justify-between cursor-pointer group" @click="expanded = !expanded; if(expanded) pingAll();">
-                        <div class="flex flex-col truncate w-full">
-                            <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1 flex items-center gap-1.5">
-                                <i class="fa-solid fa-network-wired text-brand-500"></i> 服务器访问节点
+                    <div x-show="expanded" style="display: none;" class="px-3 py-2.5 flex items-center justify-between border-b border-slate-100 dark:border-white/5 cursor-pointer group hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" @click="expanded = false">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-network-wired text-brand-500"></i>
+                            <span class="text-[11px] font-bold text-slate-700 dark:text-zinc-200 tracking-wide">服务器访问节点测速</span>
+                            <span class="bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 px-1.5 py-0.5 rounded text-[9px] font-black shadow-sm" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button @click.stop="showUrls = !showUrls" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors" title="显示/隐藏地址">
+                                <i class="fa-regular" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                            <div class="w-6 h-6 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors">
+                                <i class="fa-solid fa-chevron-up text-[10px] transition-transform duration-300"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="!expanded" class="p-2 cursor-pointer group" @click="expanded = true; pingAll();">
+                        <div class="flex items-center justify-between px-1 mb-1.5">
+                            <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-network-wired text-brand-500"></i> 访问节点
                                 <span class="bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-300 px-1.5 rounded text-[8px]" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 rounded-full shrink-0 transition-colors" :class="routes[0]?.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
-                                <div class="text-xs font-bold text-slate-800 dark:text-zinc-200 truncate">
-                                    <span x-text="routes[0]?.name || '加载中...'"></span>
+                            <div class="flex items-center gap-1">
+                                <button @click.stop="showUrls = !showUrls" class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 transition-colors">
+                                    <i class="fa-regular text-[10px]" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                                <div class="w-5 h-5 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors">
+                                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300"></i>
                                 </div>
-                            </div>
-                            <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate pl-4">
-                                <span x-show="showUrls" x-text="routes[0]?.url || '...'"></span>
-                                <span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span>
                             </div>
                         </div>
                         
-                        <div class="flex flex-col items-end gap-1.5 shrink-0 pl-2">
-                            <div class="flex items-center gap-1.5">
-                                <button @click.stop="showUrls = !showUrls" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors" title="显示/隐藏地址">
-                                    <i class="fa-regular" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                                <div class="w-6 h-6 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors">
-                                    <i class="fa-solid text-[10px] transition-transform duration-300" :class="expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                        <div class="flex items-center justify-between p-2 bg-white dark:bg-white/5 rounded-lg border border-slate-100 dark:border-white/5 shadow-sm group-hover:border-brand-300 transition-colors">
+                            <div class="flex items-center gap-2 overflow-hidden w-full pl-1">
+                                <div class="w-1.5 h-1.5 rounded-full shrink-0 transition-colors" :class="routes[0]?.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
+                                <div class="flex flex-col truncate w-full">
+                                    <div class="text-[11px] font-bold text-slate-800 dark:text-zinc-200 flex items-center truncate">
+                                        <span x-text="routes[0]?.name"></span>
+                                        <span class="px-1 py-[0.5px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[8px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">当前首选</span>
+                                    </div>
+                                    <div class="text-[9px] text-slate-400 font-mono mt-0.5 truncate">
+                                        <span x-show="showUrls" x-text="routes[0]?.url" class="select-all"></span>
+                                        <span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span>
+                                    </div>
                                 </div>
                             </div>
-                            <span class="text-[10px] font-mono font-bold" :class="routes[0]?.color || 'text-slate-400'" x-text="routes[0]?.ping || '等待'"></span>
+                            <div class="flex items-center gap-2 shrink-0 pl-2">
+                                <span class="text-[10px] font-mono font-bold w-9 text-right" :class="routes[0]?.color || 'text-slate-400'" x-text="routes[0]?.ping || '等待'"></span>
+                                <button @click.stop="copyToClipboard(routes[0]?.url); showToast('节点地址已复制')" class="w-6 h-6 rounded bg-slate-100 dark:bg-[#222] text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors flex justify-center items-center shadow-sm" title="复制地址"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                            </div>
                         </div>
                     </div>
 
                     <div x-show="expanded" style="display: none;">
-                        <div class="px-2 pb-2 pt-0 space-y-1 border-t border-slate-200/50 dark:border-white/5 mt-1">
+                        <div class="p-2 space-y-1.5">
                             <template x-for="(r, idx) in routes" :key="idx">
-                                <div class="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-white/5 rounded-lg transition-colors group border border-transparent hover:border-slate-200/80 dark:hover:border-white/10 mt-1">
+                                <div class="flex items-center justify-between p-2 bg-white dark:bg-white/5 hover:border-brand-300 dark:hover:border-brand-500/50 rounded-lg border border-slate-100 dark:border-white/5 shadow-sm transition-colors group">
                                     <div class="flex items-center gap-2 overflow-hidden w-full pl-1">
                                         <div class="w-1.5 h-1.5 rounded-full shrink-0 transition-colors" :class="r.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
                                         <div class="flex flex-col truncate w-full">
@@ -115,11 +137,11 @@
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0 pl-2">
                                         <span class="text-[10px] font-mono font-bold w-9 text-right" :class="r.color || 'text-slate-400'" x-text="r.ping || '等待'"></span>
-                                        <button @click.stop="copyToClipboard(r.url); showToast('节点地址已复制')" class="w-6 h-6 rounded bg-slate-200/50 dark:bg-[#222] text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors flex justify-center items-center" title="复制地址"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                        <button @click.stop="copyToClipboard(r.url); showToast('节点地址已复制')" class="w-6 h-6 rounded bg-slate-100 dark:bg-[#222] text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors flex justify-center items-center shadow-sm" title="复制地址"><i class="fa-regular fa-copy text-[10px]"></i></button>
                                     </div>
                                 </div>
                             </template>
-                            <button @click.stop="pingAll()" class="w-full mt-1.5 py-1.5 bg-slate-200/50 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-brand-500 text-[10px] font-bold rounded-lg transition-colors flex justify-center items-center gap-1.5">
+                            <button @click.stop="pingAll()" class="w-full mt-1 py-2 bg-slate-100/50 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 hover:text-brand-500 text-[10px] font-bold rounded-lg transition-colors flex justify-center items-center gap-1.5 border border-slate-200/50 dark:border-transparent">
                                 <i class="fa-solid fa-rotate-right"></i> 重新测速所有节点
                             </button>
                         </div>
