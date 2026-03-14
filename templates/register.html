@@ -91,8 +91,11 @@
                 </div>
             </div>
 
-            <div id="welcome-msg-box" class="mt-4 p-3 bg-blue-50 text-blue-800 text-xs rounded-lg text-left hidden">
-                <i class="fa-solid fa-circle-info mr-1"></i> <span id="res-msg"></span>
+            <div id="welcome-msg-box" class="mt-4 p-4 bg-blue-50/80 border border-blue-100 text-blue-800 text-[13px] rounded-xl text-left hidden shadow-sm leading-relaxed">
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-circle-info mt-1 text-blue-500 text-lg"></i> 
+                    <div id="res-msg" class="flex-1 w-full"></div>
+                </div>
             </div>
 
             <div class="mt-6">
@@ -134,12 +137,14 @@
                     document.getElementById('res-user').textContent = u;
                     document.getElementById('res-pass').textContent = p;
                     
+                    // 🔥 核心更新：使用 innerHTML 并将换行符 \n 替换为 <br> 标签
                     if (json.welcome_message) {
-                        document.getElementById('res-msg').textContent = json.welcome_message;
+                        const formattedMsg = json.welcome_message.replace(/\n/g, '<br>');
+                        document.getElementById('res-msg').innerHTML = formattedMsg;
                         document.getElementById('welcome-msg-box').classList.remove('hidden');
                     }
 
-                    // 🔥 渲染多节点测速面板
+                    // 渲染多节点测速面板
                     let rawUrlStr = json.server_url || "";
                     let pingRoutes = [];
                     try {
@@ -181,7 +186,6 @@
             }
 
             let html = '';
-            // 主线路置顶
             pingRoutes.sort((a, b) => (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0)).forEach((r, idx) => {
                 const badge = r.is_main ? '<span class="px-1.5 py-[1px] rounded bg-indigo-100 text-indigo-600 text-[9px] font-bold ml-1">极速推荐</span>' : '';
                 
@@ -190,7 +194,7 @@
                         <div class="flex items-center gap-2 overflow-hidden w-full">
                             <div id="ping-status-${idx}" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></div>
                             <div class="flex flex-col truncate w-full">
-                                <div class="text-xs font-bold text-gray-800 flex items-center truncate">${r.name} ${badge}</div>
+                                <div class="text-xs font-bold text-gray-800 flex items-center truncate">${r.name || '备用线路'} ${badge}</div>
                                 <div class="text-[10px] text-gray-400 font-mono truncate mt-0.5 select-all">${r.url}</div>
                             </div>
                         </div>
