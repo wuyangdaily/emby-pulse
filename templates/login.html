@@ -6,82 +6,164 @@
     <title>登录 - EmbyPulse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' },
+                    },
+                    fontFamily: { sans: ['Noto Sans SC', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;500;700;900&display=swap');
-        body { font-family: 'Noto Sans SC', sans-serif; background-color: #111; }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+        body { background-color: #f8fafc; transition: background-color 0.5s ease; }
+        html.dark body { background-color: #111111; }
         
         .bg-poster {
-            position: fixed; inset: 0; z-index: -1;
+            position: fixed; inset: 0; z-index: -2;
             background-size: cover; background-position: center;
-            transition: opacity 1.5s ease-in-out;
-            opacity: 0;
+            transition: opacity 1.5s ease-in-out, transform 10s linear;
+            opacity: 0; transform: scale(1.05);
         }
-        .bg-overlay {
-            position: fixed; inset: 0; z-index: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.4));
-            backdrop-filter: blur(5px);
+        .bg-poster.loaded { opacity: 1; transform: scale(1); }
+
+        /* 亮色模式渐变遮罩 */
+        .bg-overlay-light {
+            position: fixed; inset: 0; z-index: -1;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,1) 100%);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: opacity 0.5s ease; opacity: 1;
         }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+        /* 暗色模式渐变遮罩 */
+        .bg-overlay-dark {
+            position: fixed; inset: 0; z-index: -1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(17,17,17,0.85) 50%, rgba(17,17,17,1) 100%);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: opacity 0.5s ease; opacity: 0;
+        }
+        html.dark .bg-overlay-light { opacity: 0; }
+        html.dark .bg-overlay-dark { opacity: 1; }
+
+        /* 极致的毛玻璃卡片 */
+        .apple-glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        html.dark .apple-glass {
+            background: rgba(28, 28, 30, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
+
+        /* 登录失败震动特效 */
         .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        /* 自动填充样式修复 */
+        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{ -webkit-box-shadow: 0 0 0 30px rgba(255,255,255,0.9) inset !important; }
+        html.dark input:-webkit-autofill, html.dark input:-webkit-autofill:hover, html.dark input:-webkit-autofill:focus, html.dark input:-webkit-autofill:active{ -webkit-box-shadow: 0 0 0 30px rgba(0,0,0,0.5) inset !important; -webkit-text-fill-color: white !important; }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen text-white">
+<body class="flex items-center justify-center min-h-screen selection:bg-brand-500 selection:text-white">
+
+    <button onclick="toggleTheme()" class="absolute top-5 right-5 md:top-8 md:right-8 w-11 h-11 rounded-full flex items-center justify-center z-50 bg-white/50 dark:bg-black/40 backdrop-blur-md border border-white/60 dark:border-white/10 text-gray-600 dark:text-gray-300 hover:scale-105 active:scale-95 transition-all shadow-sm">
+        <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+    </button>
 
     <div id="bg-img" class="bg-poster"></div>
-    <div class="bg-overlay"></div>
+    <div class="bg-overlay-light"></div>
+    <div class="bg-overlay-dark"></div>
 
-    <div class="glass-panel w-full max-w-md p-8 rounded-3xl z-10 mx-4 transition-all duration-300" id="login-card">
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 backdrop-blur-md border border-green-500/30">
-                <i class="fa-solid fa-heart-pulse text-green-400 text-3xl animate-pulse"></i>
+    <div class="apple-glass w-full max-w-[420px] mx-5 p-8 md:p-10 rounded-[32px] z-10" id="login-card">
+        
+        <div class="text-center mb-10">
+            <div class="w-[72px] h-[72px] bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-500 rounded-[22px] flex items-center justify-center mx-auto mb-5 border border-brand-100 dark:border-brand-500/20 shadow-inner">
+                <i class="fa-solid fa-heart-pulse text-[32px] animate-[pulse_3s_ease-in-out_infinite]"></i>
             </div>
-            <h1 class="text-3xl font-black tracking-tight mb-1">EmbyPulse</h1>
-            <p class="text-gray-400 text-xs uppercase tracking-widest font-bold">Admin Access</p>
+            <h1 class="text-[28px] font-black tracking-tight text-gray-900 dark:text-white mb-1.5">EmbyPulse</h1>
+            <p class="text-[12px] text-gray-500 dark:text-gray-400 font-bold tracking-[0.2em] uppercase">Administrator Access</p>
         </div>
 
         <form id="login-form" class="space-y-5" onsubmit="handleLogin(event)">
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 mb-2 ml-1">Emby Username</label>
+                <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 pl-1 uppercase tracking-wider">系统账号 (Username)</label>
                 <div class="relative group">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 group-focus-within:text-green-400 transition"><i class="fa-solid fa-user"></i></span>
-                    <input type="text" id="username" required 
-                        class="w-full bg-black/30 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition text-sm font-medium"
-                        placeholder="请输入用户名">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4.5 text-gray-400 group-focus-within:text-brand-500 transition-colors">
+                        <i class="fa-solid fa-user text-[14px]"></i>
+                    </span>
+                    <input type="text" id="username" required autocomplete="username"
+                        class="w-full bg-white/70 dark:bg-black/30 border border-gray-200/80 dark:border-white/10 rounded-[16px] py-3.5 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 focus:bg-white dark:focus:bg-black/50 transition-all text-[14px] font-medium shadow-sm"
+                        placeholder="请输入 Emby 管理员账号">
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 mb-2 ml-1">Password</label>
+                <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 mb-2 pl-1 uppercase tracking-wider">身份凭证 (Password)</label>
                 <div class="relative group">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 group-focus-within:text-green-400 transition"><i class="fa-solid fa-lock"></i></span>
-                    <input type="password" id="password"
-                        class="w-full bg-black/30 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition text-sm font-medium"
-                        placeholder="请输入密码 (选填)">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4.5 text-gray-400 group-focus-within:text-brand-500 transition-colors">
+                        <i class="fa-solid fa-lock text-[14px]"></i>
+                    </span>
+                    <input type="password" id="password" autocomplete="current-password"
+                        class="w-full bg-white/70 dark:bg-black/30 border border-gray-200/80 dark:border-white/10 rounded-[16px] py-3.5 pl-12 pr-4 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 focus:bg-white dark:focus:bg-black/50 transition-all text-[14px] font-medium shadow-sm"
+                        placeholder="请输入密码 (如未设置请留空)">
                 </div>
             </div>
 
             <button type="submit" id="submit-btn"
-                class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-green-900/20 transform transition hover:scale-[1.02] active:scale-95 flex items-center justify-center mt-2">
-                <span>进入仪表盘</span>
-                <i class="fa-solid fa-chevron-right ml-2 text-xs opacity-70"></i>
+                class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-[16px] shadow-lg shadow-brand-600/25 dark:shadow-brand-600/40 transform transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] flex items-center justify-center gap-2 mt-4 border border-brand-500">
+                <span id="btn-text" class="text-[15px] tracking-wide">登录大盘</span>
+                <i id="btn-icon" class="fa-solid fa-arrow-right-to-bracket text-[14px] opacity-80"></i>
             </button>
         </form>
         
         <div class="text-center mt-8">
-            <p class="text-[10px] text-gray-600 font-mono" id="bg-source">Wallpaper from TMDB</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono tracking-tight" id="bg-source">Wallpaper from TMDB</p>
         </div>
     </div>
 
     <script>
+        // 主题初始化逻辑：严格执行你的要求，默认亮色模式
+        function initTheme() {
+            const icon = document.getElementById('theme-icon');
+            // 只有当本地明确存储了 dark 时，才开启暗色，否则一律亮色
+            if (localStorage.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                icon.className = 'fa-solid fa-sun text-lg';
+            } else {
+                document.documentElement.classList.remove('dark');
+                icon.className = 'fa-solid fa-moon text-lg';
+            }
+        }
+
+        // 手动切换主题
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+                icon.className = 'fa-solid fa-moon text-lg';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+                icon.className = 'fa-solid fa-sun text-lg';
+            }
+        }
+
+        // 立即执行主题初始化
+        initTheme();
+
+        // 获取并渲染 TMDB 背景
         async function loadBackground() {
             try {
-                // 优先尝试从后端获取 TMDB 壁纸
                 const res = await fetch('/api/wallpaper');
                 const json = await res.json();
                 
@@ -91,7 +173,7 @@
                     img.onload = () => {
                         const el = document.getElementById('bg-img');
                         el.style.backgroundImage = `url('${json.url}')`;
-                        el.style.opacity = '1';
+                        el.classList.add('loaded'); // 触发缩放渐显动画
                         if(json.title) document.getElementById('bg-source').innerText = json.title;
                     };
                 }
@@ -99,17 +181,21 @@
         }
         loadBackground();
 
+        // 处理登录逻辑
         async function handleLogin(e) {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
             const card = document.getElementById('login-card');
             const user = document.getElementById('username').value;
             const pass = document.getElementById('password').value;
 
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+            // 登录中状态
+            btnText.innerText = "验证中...";
+            btnIcon.className = "fa-solid fa-circle-notch fa-spin text-[14px]";
             btn.disabled = true;
-            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            btn.classList.add('opacity-80', 'cursor-not-allowed', 'scale-[0.98]');
 
             try {
                 const res = await fetch('/api/login', {
@@ -120,21 +206,30 @@
                 const json = await res.json();
 
                 if(json.status === 'success') {
-                    window.location.href = '/';
+                    btnText.innerText = "登录成功";
+                    btnIcon.className = "fa-solid fa-check text-[14px]";
+                    btn.classList.replace('bg-brand-600', 'bg-emerald-500');
+                    btn.classList.replace('border-brand-500', 'border-emerald-400');
+                    btn.classList.replace('shadow-brand-600/25', 'shadow-emerald-500/30');
+                    setTimeout(() => window.location.href = '/', 400);
                 } else {
                     throw new Error(json.message);
                 }
             } catch (err) {
-                btn.innerHTML = originalContent;
+                // 恢复按钮状态
+                btnText.innerText = "登录大盘";
+                btnIcon.className = "fa-solid fa-arrow-right-to-bracket text-[14px] opacity-80";
                 btn.disabled = false;
-                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                btn.classList.remove('opacity-80', 'cursor-not-allowed', 'scale-[0.98]');
                 
+                // 触发震动动效
                 card.classList.add('shake');
                 setTimeout(() => card.classList.remove('shake'), 500);
                 
+                // 弹出美化的错误提示 (适配双色模式)
                 const toast = document.createElement('div');
-                toast.className = 'fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-500/90 backdrop-blur text-white px-6 py-3 rounded-full shadow-2xl z-50 text-sm font-bold flex items-center animate-bounce border border-red-400/30';
-                toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${err.message}`;
+                toast.className = 'fixed top-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-[#2C2C2E] text-red-500 border border-red-200 dark:border-red-500/20 px-6 py-3.5 rounded-full shadow-2xl z-50 text-[13px] font-bold flex items-center animate-bounce';
+                toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2.5 text-lg"></i> ${err.message}`;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 3000);
             }
