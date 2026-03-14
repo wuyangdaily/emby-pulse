@@ -287,7 +287,6 @@ async def get_results():
     if rows:
         for r in rows: result_tree[r["group_key"]].append(dict(r))
         
-    # 🔥 核心修复：调用纯净的主线路提取器
     base_url = cfg.get_main_public_url() or cfg.get("emby_host") or ""
     if base_url.endswith('/'): base_url = base_url[:-1]
     
@@ -295,10 +294,17 @@ async def get_results():
     try:
         host = cfg.get("emby_host"); key = cfg.get("emby_api_key")
         info_res = requests.get(f"{host}/emby/System/Info?api_key={key}", timeout=2).json()
-        server_id = info_res.get("Id", "")
+        raw_id = info_res.get("Id", "")
+        if raw_id:
+            # 🔥 这里同样强制干掉换行符
+            server_id = str(raw_id).replace('\r', '').replace('\n', '').strip()
+            
         if not server_id:
             item_res = requests.get(f"{host}/emby/Items?Limit=1&api_key={key}", timeout=2).json()
-            if item_res.get("Items"): server_id = item_res["Items"][0].get("ServerId", "")
+            if item_res.get("Items"): 
+                raw_id_2 = item_res["Items"][0].get("ServerId", "")
+                if raw_id_2:
+                    server_id = str(raw_id_2).replace('\r', '').replace('\n', '').strip()
     except: pass
     
     return {"success": True, "data": result_tree, "emby_url": base_url, "server_id": server_id}

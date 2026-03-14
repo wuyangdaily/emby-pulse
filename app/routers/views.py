@@ -1,5 +1,6 @@
 import os
 import requests
+import json
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -19,15 +20,30 @@ def check_login(request: Request):
     if user and user.get("is_admin"): return True
     return False
 
-# 🔥 全局注入引擎：给所有页面注入最纯净的主线路地址
 def get_common_vars(request: Request, active_page: str, extra_vars: dict = None):
-    emby_url = cfg.get_main_public_url() or cfg.get("emby_public_host") or cfg.get("emby_host") or ""
-    emby_url = emby_url.rstrip('/')
+    raw_url = cfg.get("emby_public_url") or cfg.get("emby_public_host") or cfg.get("emby_host") or ""
+    emby_url = raw_url
+    try:
+        routes = json.loads(raw_url)
+        if isinstance(routes, list) and len(routes) > 0:
+            emby_url = routes[0].get("url", "")
+            for r in routes:
+                if r.get("is_main"): 
+                    emby_url = r.get("url", "")
+                    break
+    except Exception:
+        pass
+        
+    emby_url = emby_url.strip().rstrip('/')
     
     server_id = ""
     try:
         sys_res = requests.get(f"{cfg.get('emby_host')}/emby/System/Info?api_key={cfg.get('emby_api_key')}", timeout=2)
-        if sys_res.status_code == 200: server_id = sys_res.json().get("Id", "")
+        if sys_res.status_code == 200: 
+            raw_id = sys_res.json().get("Id", "")
+            # 🔥 核心防线：强制剥离所有换行、回车及首尾空白字符
+            if raw_id:
+                server_id = str(raw_id).replace('\r', '').replace('\n', '').strip()
     except: pass
 
     vars_dict = {
