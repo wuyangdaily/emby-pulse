@@ -49,7 +49,6 @@ DEFAULT_CONFIG = {
     "enable_bot": False,  
     "enable_notify": False,
     "enable_library_notify": False,
-    # 🔥 新增：细颗粒度事件开关
     "notify_user_login": False,   
     "notify_item_deleted": False, 
     "webhook_token": "embypulse",
@@ -88,6 +87,23 @@ class ConfigManager:
     def get(self, key, default=None): 
         return self.config.get(key, default if default is not None else DEFAULT_CONFIG.get(key))
     
+    # 🔥 核心解耦提取器：确保内部业务逻辑拿到的永远是绝对正确的“主线路”
+    def get_main_public_url(self):
+        raw_url_str = self.get("emby_public_url", "")
+        if not raw_url_str:
+            return ""
+        try:
+            routes = json.loads(raw_url_str)
+            if isinstance(routes, list):
+                for r in routes:
+                    if r.get("is_main"):
+                        return r.get("url", "").rstrip('/')
+                if routes:
+                    return routes[0].get("url", "").rstrip('/')
+        except Exception:
+            pass
+        return raw_url_str.strip().rstrip('/')
+
     def __getitem__(self, key):
         return self.config.get(key, DEFAULT_CONFIG.get(key))
 

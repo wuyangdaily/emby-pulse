@@ -30,7 +30,6 @@ def get_admin_id():
     except: pass
     return None
 
-# 🔥 新增：初始化静音规则数据库
 def init_notify_rules_db():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -306,7 +305,6 @@ class NotificationBot:
         bus.subscribe("notify.daily_report", self.on_daily_report)
         bus.subscribe("notify.risk.alert", self.on_risk_alert)
 
-    # 🔥 核心拦截器：判断是否在静音黑名单内
     def _is_muted(self, user_id, event_type):
         if not user_id: return False
         try:
@@ -345,7 +343,7 @@ class NotificationBot:
         if uid:
             keyboard["inline_keyboard"].append([{"text": "🚫 立即封禁此违规账号", "callback_data": f"risk_ban_{uid}"}])
             
-        admin_url = cfg.get("pulse_url") or cfg.get("emby_public_url")
+        admin_url = cfg.get("pulse_url") or cfg.get_main_public_url()
         if admin_url:
             risk_url = f"{admin_url.rstrip('/')}/risk"
             keyboard["inline_keyboard"].append([{"text": "🛡️ 前往风控大盘拔网线", "url": risk_url}])
@@ -408,8 +406,7 @@ class NotificationBot:
         overview = series_info.get("Overview", "暂无简介...") 
         if len(overview) > 150: overview = overview[:140] + "..."
         
-        base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
-        if base_url.endswith('/'): base_url = base_url[:-1]
+        base_url = cfg.get_main_public_url() or cfg.get("emby_host")
         play_url = f"{base_url}/web/index.html#!/item?id={series_id}&serverId={series_info.get('ServerId','')}"
 
         caption = (f"📺 <b>新入库 剧集 {series_name}</b> {title_suffix}\n\n📌 年份：{year}  |  ⭐ 评分：{rating}\n"
@@ -434,8 +431,7 @@ class NotificationBot:
         type_cn = "电影"; type_icon = "🎬"
         if type_raw in ["Series", "Episode"]: type_cn = "剧集"; type_icon = "📺"
         
-        base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
-        if base_url.endswith('/'): base_url = base_url[:-1]
+        base_url = cfg.get_main_public_url() or cfg.get("emby_host")
         play_url = f"{base_url}/web/index.html#!/item?id={item['Id']}&serverId={item.get('ServerId','')}"
 
         caption = (f"{type_icon} <b>新入库 {type_cn} {name}</b> ({year})\n\n⭐ 评分：{rating} / 10\n"
@@ -469,7 +465,6 @@ class NotificationBot:
             user_name = user.get("Name") or user.get("UserName") or "未知用户"
             user_id = user.get("Id") or session.get("UserId")
             
-            # 🔥 拦截器：如果用户被静音了播放通知，直接抛弃不发
             if self._is_muted(user_id, "playback"):
                 logger.info(f"🔇 [静音规则] 拦截了用户 {user_name} 的播放通知")
                 return
@@ -541,8 +536,7 @@ class NotificationBot:
             if raw_type == "Episode" and item.get("SeriesId"): target_jump_id = item.get("SeriesId")
             elif raw_type == "Audio" and item.get("AlbumId"): target_jump_id = item.get("AlbumId")
             
-            base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
-            if base_url and base_url.endswith('/'): base_url = base_url[:-1]
+            base_url = cfg.get_main_public_url() or cfg.get("emby_host")
             play_url = f"{base_url}/web/index.html#!/item?id={target_jump_id}&serverId={item.get('ServerId','')}" if base_url else "#"
             keyboard = {"inline_keyboard": [[{"text": "🔗 跳转详情", "url": play_url}]]}
 
@@ -566,7 +560,6 @@ class NotificationBot:
             user_id = user.get("Id") or data.get("UserId")
             user_name = user.get("Name") or data.get("Title") or data.get("UserName") or "未知账号"
             
-            # 🔥 拦截器：如果用户被静音了登录通知，直接抛弃不发
             if self._is_muted(user_id, "login"):
                 logger.info(f"🔇 [静音规则] 拦截了用户 {user_name} 的登录通知")
                 return
@@ -862,7 +855,7 @@ class NotificationBot:
             desc = re.sub(r'\n{3,}', '\n\n', '\n'.join(lines[1:]).strip()) if len(lines) > 1 else ""
             if len(desc.encode('utf-8')) > 500: desc = desc[:150] + "..."
 
-            jump_url = cfg.get("emby_public_url") or cfg.get("emby_host") or "https://emby.media"
+            jump_url = cfg.get_main_public_url() or cfg.get("emby_host") or "https://emby.media"
             if inline_keyboard and "inline_keyboard" in inline_keyboard:
                 try: jump_url = inline_keyboard["inline_keyboard"][0][0]["url"]
                 except: pass
@@ -872,7 +865,7 @@ class NotificationBot:
 
             item_id_match = re.search(r'id=([a-zA-Z0-9]+)', jump_url)
             if item_id_match and pic_url == REPORT_COVER_URL:
-                base_emby = (cfg.get("emby_public_url") or cfg.get("emby_host")).rstrip('/')
+                base_emby = (cfg.get_main_public_url() or cfg.get("emby_host")).rstrip('/')
                 pic_url = f"{base_emby}/emby/Items/{item_id_match.group(1)}/Images/Primary?maxHeight=800&maxWidth=600&api_key={cfg.get('emby_api_key')}"
 
             res = requests.post(f"{proxy_url}/cgi-bin/message/send?access_token={token}", json={"touser": touser, "msgtype": "news", "agentid": int(agentid), "news": {"articles": [{"title": title, "description": desc, "url": jump_url, "picurl": pic_url}]}}, timeout=10)
@@ -1195,8 +1188,7 @@ class NotificationBot:
             type_icon = "🎬" if type_raw == "Movie" else "📺"
             info_line = f"{ep_count_str} | {tech_info_str}" if type_raw == "Series" else tech_info_str
             
-            base_url = cfg.get("emby_public_url") or cfg.get("emby_host")
-            if base_url.endswith('/'): base_url = base_url[:-1]
+            base_url = cfg.get_main_public_url() or cfg.get("emby_host")
             play_url = f"{base_url}/web/index.html#!/item?id={top.get('Id')}&serverId={top.get('ServerId')}"
 
             caption = (f"{type_icon} <b>{name}</b> {year_str}\n"

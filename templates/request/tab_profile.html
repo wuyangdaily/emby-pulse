@@ -25,18 +25,99 @@
                     <i class="fa-solid fa-wand-magic-sparkles"></i> 生成专属观影海报
                 </button>
                 
-                <div class="w-full mt-2 z-10 bg-slate-50 dark:bg-[#111] p-3 rounded-xl border border-slate-200 dark:border-white/5 text-left relative group">
-                    <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase mb-1">🔗 服务器直连地址</div>
-                    <div class="text-xs font-mono font-bold text-slate-800 dark:text-zinc-300 truncate pr-16 flex items-center gap-2">
-                        <span x-show="showServerUrl" x-text="serverUrl"></span>
-                        <span x-show="!showServerUrl" class="tracking-[0.3em] text-slate-400 mt-1">••••••••••••••••</span>
+                <div x-data="{
+                        routes: [],
+                        expanded: false,
+                        parseRoutes() {
+                            if(!serverUrl) return;
+                            try {
+                                let parsed = JSON.parse(serverUrl);
+                                if(Array.isArray(parsed)) {
+                                    this.routes = parsed.sort((a, b) => (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0));
+                                } else { throw new Error(); }
+                            } catch(e) {
+                                this.routes = [{name: '默认首选线路', url: serverUrl, is_main: true}];
+                            }
+                        },
+                        pingAll() {
+                            this.routes.forEach(r => {
+                                r.ping = '测速中';
+                                r.color = 'text-blue-400';
+                                r.dot = 'bg-blue-400 animate-pulse';
+                                let start = Date.now();
+                                let img = new Image();
+                                img.src = r.url.replace(/\/$/, '') + '/web/favicon.ico?t=' + Math.random();
+                                img.onload = () => {
+                                    let ms = Date.now() - start;
+                                    r.ping = ms + 'ms';
+                                    if(ms < 80) { r.color='text-green-500'; r.dot='bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'; }
+                                    else if(ms < 200) { r.color='text-amber-500'; r.dot='bg-amber-500'; }
+                                    else { r.color='text-red-500'; r.dot='bg-red-500'; }
+                                };
+                                img.onerror = () => { r.ping = '超时'; r.color='text-red-500'; r.dot='bg-red-500'; };
+                                setTimeout(() => {
+                                    if(r.ping === '测速中') { r.ping = '超时'; r.color='text-red-500'; r.dot='bg-red-500'; }
+                                }, 3000);
+                            });
+                        }
+                    }"
+                    x-init="$watch('serverUrl', val => { if(val){ parseRoutes(); pingAll(); } }); if(serverUrl) { parseRoutes(); setTimeout(() => pingAll(), 500); }"
+                    class="w-full mt-2 z-10 bg-white dark:bg-[#111] rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden shadow-sm text-left">
+                    
+                    <div class="px-3 py-2.5 flex justify-between items-center bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5 cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10 transition-colors" @click="expanded = !expanded; if(expanded) pingAll();">
+                        <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                            <i class="fa-solid fa-satellite-dish text-brand-500"></i> 服务器访问节点
+                        </div>
+                        <div class="text-[10px] text-slate-400 flex items-center gap-1.5 font-bold">
+                            <span x-text="routes.length + ' 个可用'"></span>
+                            <i class="fa-solid transition-transform" :class="expanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                        </div>
                     </div>
-                    <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                        <button @click="showServerUrl = !showServerUrl" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"><i class="fa-regular" :class="showServerUrl ? 'fa-eye-slash' : 'fa-eye'"></i></button>
-                        <button @click="copyToClipboard(serverUrl); showToast('地址已复制')" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"><i class="fa-regular fa-copy"></i></button>
+
+                    <div x-show="expanded" style="display: none;">
+                        <div class="p-1.5 space-y-1">
+                            <template x-for="(r, idx) in routes" :key="idx">
+                                <div class="flex items-center justify-between p-2.5 hover:bg-slate-50 dark:hover:bg-white/5 rounded-lg transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-white/10">
+                                    <div class="flex items-center gap-2.5 overflow-hidden w-full">
+                                        <div class="w-2 h-2 rounded-full shrink-0" :class="r.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
+                                        <div class="flex flex-col truncate w-full">
+                                            <div class="text-[12px] font-bold text-slate-800 dark:text-zinc-200 flex items-center truncate">
+                                                <span x-text="r.name"></span>
+                                                <span x-show="r.is_main" class="px-1.5 py-[1px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[9px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">首选</span>
+                                            </div>
+                                            <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate select-all" x-text="r.url"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0 pl-2">
+                                        <span class="text-[10px] font-mono font-bold w-10 text-right" :class="r.color || 'text-slate-400'" x-text="r.ping || '等待'"></span>
+                                        <button @click.stop="copyToClipboard(r.url); showToast('节点地址已复制，去播放器粘贴吧！')" class="w-6 h-6 rounded bg-slate-100 dark:bg-[#222] text-slate-500 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/20 transition-colors flex justify-center items-center shadow-sm" title="复制地址"><i class="fa-regular fa-copy text-[11px]"></i></button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="px-3 pb-3 pt-1">
+                            <button @click.stop="pingAll()" class="w-full py-2 bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-brand-500 text-[11px] font-bold rounded-lg transition-colors flex justify-center items-center gap-1.5 shadow-sm border border-slate-200 dark:border-white/5">
+                                <i class="fa-solid fa-rotate-right"></i> 重新测速所有节点
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div x-show="!expanded" class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 transition-colors" @click="expanded = true; pingAll();">
+                        <div class="flex items-center gap-2.5 overflow-hidden w-full">
+                            <div class="w-2 h-2 rounded-full shrink-0" :class="routes[0]?.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
+                            <div class="flex flex-col truncate w-full">
+                                <div class="text-[12px] font-bold text-slate-800 dark:text-zinc-200 flex items-center truncate">
+                                    当前首选: <span class="ml-1 text-brand-500" x-text="routes[0]?.name || '加载中...'"></span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-mono mt-0.5 truncate" x-text="routes[0]?.url || '...'"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 pl-2">
+                             <span class="text-[10px] font-mono font-bold w-10 text-right" :class="routes[0]?.color || 'text-slate-400'" x-text="routes[0]?.ping || '等待'"></span>
+                             <div class="w-6 h-6 rounded-full bg-slate-100 dark:bg-[#222] flex justify-center items-center text-slate-400 shadow-sm border border-slate-200 dark:border-white/5"><i class="fa-solid fa-angle-down text-[10px]"></i></div>
+                        </div>
                     </div>
                 </div>
-                
                 <div class="w-full mt-2 grid grid-cols-2 gap-2 z-10">
                     <button @click="openQueueModal('request')" class="py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-blue-200 dark:border-blue-500/20"><i class="fa-solid fa-list-check text-lg mb-1"></i> 我的心愿</button>
                     <button @click="openQueueModal('feedback')" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 text-xs font-bold transition flex flex-col items-center justify-center border border-rose-200 dark:border-rose-500/20"><i class="fa-solid fa-triangle-exclamation text-lg mb-1"></i> 我的报错</button>

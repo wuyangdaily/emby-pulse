@@ -10,6 +10,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;500;700&display=swap');
         body { font-family: 'Noto Sans SC', sans-serif; }
+        
+        .mac-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .mac-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .mac-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.4); border-radius: 10px; }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -59,30 +63,31 @@
                 <i class="fa-solid fa-check text-3xl text-green-500"></i>
             </div>
             <h2 class="text-2xl font-bold text-gray-800 mb-2">注册成功！</h2>
-            <p class="text-gray-500 text-sm mb-6">请截屏或复制下方信息登录</p>
+            <p class="text-gray-500 text-[13px] mb-4">请截图保存账号，并在下方选择最快节点登录</p>
 
             <div class="bg-gray-50 rounded-xl p-4 text-left space-y-3 border border-gray-200">
-                <div>
-                    <span class="text-xs text-gray-400 block mb-1">服务器地址</span>
-                    <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded border border-gray-100">
-                        <code class="text-sm font-mono text-indigo-600 truncate" id="res-server">...</code>
-                        <button onclick="copyText('res-server')" class="text-gray-400 hover:text-indigo-500 ml-2"><i class="fa-regular fa-copy"></i></button>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3 mb-2">
                     <div>
-                        <span class="text-xs text-gray-400 block mb-1">用户名</span>
-                        <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded border border-gray-100">
+                        <span class="text-xs font-bold text-gray-500 block mb-1">👤 用户名</span>
+                        <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded-lg border border-gray-200 shadow-sm">
                             <code class="text-sm font-bold text-gray-800 truncate" id="res-user">...</code>
-                            <button onclick="copyText('res-user')" class="text-gray-400 hover:text-indigo-500 ml-2"><i class="fa-regular fa-copy"></i></button>
+                            <button onclick="copyText('res-user')" class="text-gray-400 hover:text-indigo-500 ml-2" title="复制用户名"><i class="fa-regular fa-copy"></i></button>
                         </div>
                     </div>
                     <div>
-                        <span class="text-xs text-gray-400 block mb-1">密码</span>
-                        <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded border border-gray-100">
+                        <span class="text-xs font-bold text-gray-500 block mb-1">🔑 密码</span>
+                        <div class="flex items-center justify-between bg-white px-2 py-1.5 rounded-lg border border-gray-200 shadow-sm">
                             <code class="text-sm font-mono text-gray-800 truncate" id="res-pass">...</code>
                         </div>
                     </div>
+                </div>
+
+                <div id="server-routes-section" class="pt-2 border-t border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-500"><i class="fa-solid fa-satellite-dish text-indigo-500 mr-1"></i> 可访问节点 (自动测速)</span>
+                    </div>
+                    <div id="route-list-display" class="space-y-1.5 max-h-48 overflow-y-auto mac-scrollbar pr-1">
+                        </div>
                 </div>
             </div>
 
@@ -91,7 +96,7 @@
             </div>
 
             <div class="mt-6">
-                <a href="{{ client_download_url }}" target="_blank" class="block w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2.5 rounded-lg transition text-sm text-center">
+                <a href="{{ client_download_url }}" target="_blank" class="block w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2.5 rounded-lg transition text-sm text-center shadow-md">
                     <i class="fa-solid fa-download mr-2"></i> 下载客户端
                 </a>
             </div>
@@ -123,19 +128,28 @@
                 const json = await res.json();
                 
                 if (json.status === 'success') {
-                    // 切换视图
                     document.getElementById('register-form').classList.add('hidden');
                     document.getElementById('success-view').classList.remove('hidden');
                     
-                    // 填充数据
-                    document.getElementById('res-server').textContent = json.server_url || "请联系管理员获取";
                     document.getElementById('res-user').textContent = u;
-                    document.getElementById('res-pass').textContent = p; // 显示明文密码方便截图
+                    document.getElementById('res-pass').textContent = p;
                     
                     if (json.welcome_message) {
                         document.getElementById('res-msg').textContent = json.welcome_message;
                         document.getElementById('welcome-msg-box').classList.remove('hidden');
                     }
+
+                    // 🔥 渲染多节点测速面板
+                    let rawUrlStr = json.server_url || "";
+                    let pingRoutes = [];
+                    try {
+                        pingRoutes = JSON.parse(rawUrlStr);
+                        if(!Array.isArray(pingRoutes)) throw new Error();
+                    } catch(e) {
+                        pingRoutes = rawUrlStr ? [{name: "默认推荐节点", url: rawUrlStr, is_main: true}] : [];
+                    }
+                    renderDisplayRoutes(pingRoutes);
+
                 } else {
                     alert("注册失败: " + json.message);
                     btn.disabled = false;
@@ -151,8 +165,86 @@
         function copyText(id) {
             const text = document.getElementById(id).textContent;
             navigator.clipboard.writeText(text).then(() => {
-                // 简单的视觉反馈
-                alert("已复制");
+                alert("用户名已复制");
+            });
+        }
+
+        function copyToBoard(text) {
+            navigator.clipboard.writeText(text).then(() => alert('节点地址已复制，去播放器粘贴吧！'));
+        }
+
+        function renderDisplayRoutes(pingRoutes) {
+            const container = document.getElementById('route-list-display');
+            if(pingRoutes.length === 0) {
+                container.innerHTML = '<div class="text-center text-[11px] text-gray-400 py-3">管理员未配置访问节点</div>';
+                return;
+            }
+
+            let html = '';
+            // 主线路置顶
+            pingRoutes.sort((a, b) => (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0)).forEach((r, idx) => {
+                const badge = r.is_main ? '<span class="px-1.5 py-[1px] rounded bg-indigo-100 text-indigo-600 text-[9px] font-bold ml-1">极速推荐</span>' : '';
+                
+                html += `
+                    <div class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-gray-100 shadow-sm group hover:border-indigo-200 transition-colors">
+                        <div class="flex items-center gap-2 overflow-hidden w-full">
+                            <div id="ping-status-${idx}" class="w-2 h-2 rounded-full bg-gray-300 shrink-0"></div>
+                            <div class="flex flex-col truncate w-full">
+                                <div class="text-xs font-bold text-gray-800 flex items-center truncate">${r.name} ${badge}</div>
+                                <div class="text-[10px] text-gray-400 font-mono truncate mt-0.5 select-all">${r.url}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0 pl-2">
+                            <span id="ping-ms-${idx}" class="text-[10px] font-mono font-bold text-gray-400 w-10 text-right">等待中</span>
+                            <button onclick="copyToBoard('${r.url}')" class="w-6 h-6 rounded bg-gray-50 hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 transition-colors flex justify-center items-center" title="复制地址"><i class="fa-regular fa-copy text-[11px]"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            setTimeout(() => startPingTest(pingRoutes), 300);
+        }
+
+        function startPingTest(pingRoutes) {
+            pingRoutes.forEach((r, idx) => {
+                const statusDot = document.getElementById(`ping-status-${idx}`);
+                const msText = document.getElementById(`ping-ms-${idx}`);
+                statusDot.className = "w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0";
+                msText.innerText = "测速中";
+
+                const start = Date.now();
+                const img = new Image();
+                img.src = `${r.url.replace(/\/$/, '')}/web/favicon.ico?t=${Math.random()}`;
+                
+                img.onload = () => {
+                    const latency = Date.now() - start;
+                    msText.innerText = `${latency}ms`;
+                    if(latency < 80) {
+                        statusDot.className = "w-2 h-2 rounded-full bg-green-500 shrink-0";
+                        msText.className = "text-[10px] font-mono font-bold text-green-500 w-10 text-right";
+                    } else if(latency < 200) {
+                        statusDot.className = "w-2 h-2 rounded-full bg-yellow-500 shrink-0";
+                        msText.className = "text-[10px] font-mono font-bold text-yellow-500 w-10 text-right";
+                    } else {
+                        statusDot.className = "w-2 h-2 rounded-full bg-red-500 shrink-0";
+                        msText.className = "text-[10px] font-mono font-bold text-red-500 w-10 text-right";
+                    }
+                };
+                
+                img.onerror = () => {
+                    msText.innerText = "超时";
+                    statusDot.className = "w-2 h-2 rounded-full bg-red-500 shrink-0";
+                    msText.className = "text-[10px] font-mono font-bold text-red-500 w-10 text-right";
+                };
+
+                setTimeout(() => {
+                    if(msText.innerText === "测速中") {
+                        img.src = ""; // 强行阻断
+                        msText.innerText = "超时";
+                        statusDot.className = "w-2 h-2 rounded-full bg-red-500 shrink-0";
+                        msText.className = "text-[10px] font-mono font-bold text-red-500 w-10 text-right";
+                    }
+                }, 3000);
             });
         }
     </script>
