@@ -332,7 +332,7 @@ def check_local_status(media_type: str, tmdb_id: int):
     exists = check_emby_exists(tmdb_id, media_type)
     return {"status": "success", "exists": exists}
 
-# 注意：这里改为了 async def，并直接解析 request.json()
+# 🔥 修复 1：改为 async def 绕过模型限制直接拿 JSON
 @router.post("/api/requests/submit")
 async def submit_media_request(request: Request):
     user = request.session.get("req_user")
@@ -342,7 +342,7 @@ async def submit_media_request(request: Request):
     uname = user['Name']
 
     try:
-        # 🔥 修复 1：绕过 Pydantic 模型，直接安全解析 JSON
+        # 直接解析请求体
         data = await request.json()
         tmdb_id = data.get("tmdb_id")
         media_type = data.get("media_type")
@@ -396,13 +396,21 @@ async def submit_media_request(request: Request):
         conn.commit()
         conn.close()
         
-        # --- 5. 触发推送通知 ---
+        # --- 5. 触发推送通知 (带审批按钮) ---
         try:
             add_sys_notification("request", f"收到新求片: {title}", f"用户 {uname} 提交了新的心愿单", "/requests_admin")
             season_str = f" 第 {season} 季" if media_type == "tv" else ""
             msg = f"🎬 <b>收到新求片心愿</b>\n\n👤 <b>用户：</b>{uname}\n📺 <b>内容：</b>{title} ({year}){season_str}\n\n请及时前往后台审批处理。"
+            
+            # 🔥 恢复快捷操作按钮键盘
+            admin_url = cfg.get("pulse_url") or cfg.get_main_public_url() or "http://127.0.0.1:10307"
+            keyboard = {"inline_keyboard": [
+                [{"text": "🚀 推送 MP", "callback_data": f"req_approve_{tmdb_id}"}, {"text": "✋ 手动接单", "callback_data": f"req_manual_{tmdb_id}"}],
+                [{"text": "❌ 拒绝求片", "callback_data": f"req_reject_menu_{tmdb_id}"}, {"text": "💻 网页审批", "url": f"{admin_url.rstrip('/')}/requests_admin"}]
+            ]}
+            
             from app.services.bot_service import bot
-            bot.send_photo("sys_notify", f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else REPORT_COVER_URL, msg, platform="all")
+            bot.send_photo("sys_notify", f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else REPORT_COVER_URL, msg, reply_markup=keyboard, platform="all")
         except: pass
 
         return {"status": "success", "message": "心愿已提交！系统将尽快处理您的请求。"}
