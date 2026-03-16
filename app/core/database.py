@@ -3,6 +3,7 @@ import os
 import requests
 import json
 import logging
+import datetime  # 🔥 新增导入 datetime 模块
 from app.core.config import cfg, DB_PATH
 
 logger = logging.getLogger("uvicorn")
@@ -148,9 +149,6 @@ def query_db(query, args=(), one=False):
                     else:
                         final_data = [raw_data] if raw_data else []
                     
-                    # 打印成功缝合的战报
-                    print(f"[API 引擎] 🎯 完美缝合数据: {len(final_data)} 条 (API 穿透成功)")
-                    
                     # 使用神级 APIRow 类包裹，前端不再罢工
                     data = [APIRow(item) if isinstance(item, dict) else item for item in final_data]
 
@@ -204,14 +202,19 @@ def get_base_filter(user_id_filter):
         
     return where, params
 
-# 👇 新增：向数据库写入系统通知的基础函数
+# 👇 核心修复：强制获取北京时间并显式写入，拒绝使用 SQLite 默认的 UTC 零时区！
 def add_sys_notification(notify_type: str, title: str, message: str, action_url: str = ""):
     try:
+        # 获取精准的北京时间 (UTC+8)
+        now_str = (datetime.datetime.utcnow() + datetime.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
+        
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
+        
+        # 显式指定 created_at 为咱们算好的北京时间
         cur.execute(
-            "INSERT INTO sys_notifications (type, title, message, action_url) VALUES (?, ?, ?, ?)",
-            (notify_type, title, message, action_url)
+            "INSERT INTO sys_notifications (type, title, message, action_url, created_at) VALUES (?, ?, ?, ?, ?)",
+            (notify_type, title, message, action_url, now_str)
         )
         conn.commit()
         conn.close()
