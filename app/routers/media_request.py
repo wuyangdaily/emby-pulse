@@ -333,62 +333,73 @@ def check_local_status(media_type: str, tmdb_id: int):
     return {"status": "success", "exists": exists}
 
 @router.post("/api/requests/submit")
-def submit_media_request(data: MediaRequestSubmitModel, request: Request):
+def submit_media_request(data: BaseSubmitModel, request: Request = None):
     user = request.session.get("req_user")
-    if not user: return {"status": "error", "message": "请重新登录"}
-    uid = str(user.get("Id", "")); uname = user.get("Name") or "未知用户"
-    results = []
-
-    for sn in data.seasons:
-        if check_emby_exists(data.tmdb_id, data.media_type, sn): continue
-        conn = sqlite3.connect(DB_PATH); c = conn.cursor()
-        c.execute("SELECT status FROM media_requests WHERE tmdb_id = ? AND season = ?", (data.tmdb_id, sn))
-        existing = c.fetchone()
-        
-        if not existing:
-            execute_sql("INSERT INTO media_requests (tmdb_id, media_type, title, year, poster_path, status, season) VALUES (?, ?, ?, ?, ?, 0, ?)", (data.tmdb_id, data.media_type, data.title, data.year, data.poster_path, sn))
-        elif existing[0] == 3: 
-            execute_sql("UPDATE media_requests SET status = 0, reject_reason = NULL WHERE tmdb_id = ? AND season = ?", (data.tmdb_id, sn))
-        elif existing[0] == 2: 
-            conn.close(); continue
-            
-        execute_sql("INSERT OR REPLACE INTO request_users (tmdb_id, user_id, username, season) VALUES (?, ?, ?, ?)", (data.tmdb_id, uid, uname, sn))
-        results.append(sn)
-        conn.close()
-
-    if not results: return {"status": "error", "message": "所选资源均已入库或排队中"}
-
-    if data.media_type == 'tv': type_name = "剧集"; season_info = f"\n📦 <b>季数</b>：第 {', '.join(map(str, results))} 季"
-    else: type_name = "电影"; season_info = ""
-
-    overview_text = data.overview[:110] + "..." if data.overview and len(data.overview) > 110 else (data.overview or "无")
-    bot_msg = (f"🔔 <b>新求片提醒</b>\n\n"
-               f"👤 <b>用户</b>：{uname}\n"
-               f"📌 <b>片名</b>：{data.title} ({data.year})\n"
-               f"🏷️ <b>类型</b>：{type_name}{season_info}\n\n📝 <b>简介：</b>\n{overview_text}")
-    admin_url = cfg.get("pulse_url") or str(request.base_url).rstrip('/')
+    if not user: return {"status": "error", "message": "请先绑定 Emby 账号"}
     
-    keyboard = {"inline_keyboard": [
-        [{"text": "🚀 推送 MP", "callback_data": f"req_approve_{data.tmdb_id}"},
-         {"text": "✋ 手动接单", "callback_data": f"req_manual_{data.tmdb_id}"}],
-        [{"text": "❌ 拒绝求片", "callback_data": f"req_reject_menu_{data.tmdb_id}"},
-         {"text": "💻 网页审批", "url": f"{admin_url}/requests_admin"}]
-    ]}
-    
-    bot.send_photo("sys_notify", data.poster_path or REPORT_COVER_URL, bot_msg, reply_markup=keyboard, platform="all")
-    
-    # 👇 新增：写入全局通知中心
+    uid = user['Id']
+    uname = user['Name']
+
     try:
-        add_sys_notification(
-            notify_type="request",
-            title=f"🎬 新求片: {uname}",
-            message=f"{data.title} ({data.year})",
-            action_url="/requests_admin"
-        )
-    except Exception as e:
-        print(f"写入求片通知失败: {e}")
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # --- 🔥 1. 积分拦截系统：先过海关，检查兜里钱够不够 ---
+        c.execute("SELECT value FROM point_config WHERE key = 'enable_req_cost'")
+        enable_cost_row = c.fetchone()
+        enable_cost = (enable_cost_row[0] == "1") if enable_cost_row else False
+        
+        req_cost = 0
+        current_points = 0
+        
+        if enable_cost:
+            c.execute("SELECT value FROM point_config WHERE key = 'req_cost'")
+            cost_val = c.fetchone()
+            req_cost = int(cost_val[0]) if cost_val else 50
+            
+            c.execute("SELECT points FROM users_meta WHERE user_id = ?", (uid,))
+            pt_row = c.fetchone()
+            current_points = pt_row[0] if pt_row else 0
+            
+            if current_points < req_cost:
+                conn.close()
+                return {"status": "error", "message": f"积分不足！求片需消耗 {req_cost} 积分，当前仅有 {current_points} 积分。请前往首页签到。"}
 
-    return {"status": "success", "message": f"成功提交 {len(results)} 项求片请求"}
+        # --- 2. 工单查重逻辑：看看库里是不是已经有了 ---
+        c.execute("SELECT status FROM media_requests WHERE tmdb_id = ? AND season = ?", (data.tmdb_id, data.season))
+        existing = c.fetchone()
+        if existing:
+            conn.close()
+            status_map = {0: "处理中", 1: "下载中", 2: "已完成", 3: "已拒绝", 4: "待手动处理"}
+            return {"status": "error", "message": f"该资源工单已存在，当前状态：{status_map.get(existing[0], '未知')}"}
+
+        # --- 🔥 3. 查重通过，正式扣款并写流水 ---
+        if enable_cost and req_cost > 0:
+            new_points = current_points - req_cost
+            c.execute("UPDATE users_meta SET points = ? WHERE user_id = ?", (new_points, uid))
+            c.execute("INSERT INTO point_logs (user_id, username, action, amount, balance) VALUES (?, ?, ?, ?, ?)",
+                      (uid, uname, f"提交求片心愿: {data.title}", -req_cost, new_points))
+
+        # --- 4. 写入求片工单表 ---
+        c.execute("INSERT INTO media_requests (tmdb_id, media_type, title, year, poster_path, status, season) VALUES (?, ?, ?, ?, ?, 0, ?)",
+                  (data.tmdb_id, data.media_type, data.title, data.year, data.poster_path, data.season))
+        
+        conn.commit()
+        conn.close()
+        
+        # --- 5. 触发给管理员的推送通知 ---
+        try:
+            add_sys_notification("request", f"收到新求片: {data.title}", f"用户 {uname} 提交了新的心愿单", "/requests_admin")
+            
+            season_str = f" 第 {data.season} 季" if data.media_type == "tv" else ""
+            msg = f"🎬 <b>收到新求片心愿</b>\n\n👤 <b>用户：</b>{uname}\n📺 <b>内容：</b>{data.title} ({data.year}){season_str}\n\n请及时前往后台审批处理。"
+            bot.send_photo("sys_notify", f"https://image.tmdb.org/t/p/w500{data.poster_path}" if data.poster_path else REPORT_COVER_URL, msg, platform="all")
+        except: pass
+
+        return {"status": "success", "message": "心愿已提交！系统将尽快处理您的请求。"}
+        
+    except Exception as e:
+        return {"status": "error", "message": f"提交失败: {str(e)}"}
 
 @router.get("/api/requests/my")
 def get_my_requests(request: Request):

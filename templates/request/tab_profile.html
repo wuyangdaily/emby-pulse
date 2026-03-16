@@ -20,7 +20,47 @@
                         <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">账号有效期：<span x-text="expireDate" :class="expireDate === '永久有效' ? 'text-brand-500' : 'text-rose-500'"></span></div>
                     </div>
                 </div>
-                
+
+                <div x-data="pointsEngine()" x-init="initPoints()" class="w-full mt-4 flex flex-col gap-3 z-10">
+                    
+                    <div class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-[20px] p-5 text-white shadow-[0_8px_30px_rgba(245,158,11,0.25)] relative overflow-hidden text-left flex justify-between items-center border border-white/20 dark:border-white/10">
+                        <i class="fa-solid fa-coins absolute -right-2 -bottom-4 text-7xl opacity-20"></i>
+                        <div class="relative z-10">
+                            <div class="text-[10px] font-black tracking-widest uppercase opacity-90 mb-0.5 drop-shadow-sm">我的可用资产</div>
+                            <div class="text-3xl font-black font-mono drop-shadow-md flex items-baseline gap-1">
+                                <span x-text="isLoadingPoints ? '...' : points"></span>
+                                <span class="text-xs font-bold opacity-80">Pts</span>
+                            </div>
+                        </div>
+                        <div class="relative z-10">
+                            <button @click="checkIn($event)" :disabled="hasCheckedIn || isCheckingIn" 
+                                    class="px-4 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl font-bold text-xs border border-white/40 transition-all shadow-sm disabled:opacity-80 disabled:cursor-not-allowed flex items-center gap-1.5" 
+                                    :class="!hasCheckedIn ? 'animate-pulse ring-2 ring-white/50 ring-offset-2 ring-offset-orange-400' : 'opacity-80 bg-white/10 border-transparent'">
+                                <i class="fa-solid" :class="hasCheckedIn ? 'fa-check-circle text-green-300' : 'fa-gift'"></i>
+                                <span x-text="hasCheckedIn ? '今日已签' : '签到盲盒'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div x-show="config?.enable_renew === '1'" class="bg-white/80 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-[18px] p-3.5 flex justify-between items-center shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center gap-3 text-left">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-inner">
+                                <i class="fa-solid fa-battery-full text-[15px]"></i>
+                            </div>
+                            <div>
+                                <div class="text-[12px] font-black text-slate-800 dark:text-zinc-200">自助续期 <span x-text="config?.renew_days || 30"></span> 天时长</div>
+                                <div class="text-[10px] font-bold text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-coins text-amber-500"></i> 消耗 <span x-text="config?.renew_cost || 500"></span> 积分
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="redeemRenew()" :disabled="isRedeeming" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 hover:bg-emerald-500 hover:text-white dark:bg-black/50 dark:text-zinc-400 dark:hover:bg-emerald-500 dark:hover:text-white transition-all flex items-center justify-center shadow-sm disabled:opacity-50 disabled:active:scale-100 active:scale-95 border border-slate-200/50 dark:border-white/5">
+                            <i class="fa-solid fa-cart-shopping text-xs" x-show="!isRedeeming"></i>
+                            <i class="fa-solid fa-circle-notch fa-spin text-xs" x-show="isRedeeming"></i>
+                        </button>
+                    </div>
+
+                </div>
                 <button @click="openMyPosterStudio()" class="w-full mt-3 py-3 rounded-2xl font-black text-white bg-slate-900 dark:bg-brand-600 shadow-xl transition-transform active:scale-95 z-10 flex items-center justify-center gap-2 btn-glow">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> 生成专属观影海报
                 </button>
@@ -247,3 +287,87 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('pointsEngine', () => ({
+            points: 0,
+            hasCheckedIn: false,
+            config: {},
+            isLoadingPoints: true,
+            isCheckingIn: false,
+            isRedeeming: false,
+            
+            initPoints() {
+                fetch('/api/user/points/info').then(r=>r.json()).then(res => {
+                    if(res.status === 'success') {
+                        this.points = res.data.points;
+                        this.hasCheckedIn = res.data.has_checked_in;
+                        this.config = res.data.config;
+                    }
+                    this.isLoadingPoints = false;
+                }).catch(e => this.isLoadingPoints = false);
+            },
+            
+            checkIn(e) {
+                if(this.hasCheckedIn) return;
+                this.isCheckingIn = true;
+                fetch('/api/user/points/checkin', {method:'POST'}).then(r=>r.json()).then(res => {
+                    if(res.status === 'success') {
+                        this.hasCheckedIn = true;
+                        this.points = res.balance;
+                        if(typeof showToast === 'function') showToast(res.message, 'success');
+                        this.triggerCoinDrop(e.currentTarget); // 触发金币动效
+                    } else {
+                        if(typeof showToast === 'function') showToast(res.message, 'error');
+                    }
+                    this.isCheckingIn = false;
+                }).catch(err => this.isCheckingIn = false);
+            },
+            
+            redeemRenew() {
+                if(!confirm(`确定消耗 ${this.config.renew_cost} 积分自助兑换 ${this.config.renew_days} 天时长吗？`)) return;
+                this.isRedeeming = true;
+                fetch('/api/user/points/redeem', {
+                    method:'POST', 
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({item_id: 'renew'})
+                }).then(r=>r.json()).then(res => {
+                    if(res.status === 'success') {
+                        if(typeof showToast === 'function') showToast(res.message, 'success');
+                        this.initPoints();
+                        setTimeout(() => window.location.reload(), 1500); // 兑换成功后刷新页面更新大盘数据
+                    } else {
+                        if(typeof showToast === 'function') showToast(res.message, 'error');
+                    }
+                    this.isRedeeming = false;
+                }).catch(err => this.isRedeeming = false);
+            },
+            
+            triggerCoinDrop(buttonEl) {
+                const rect = buttonEl.getBoundingClientRect();
+                for(let i=0; i<20; i++) {
+                    let coin = document.createElement('i');
+                    coin.className = 'fa-solid fa-coins text-amber-400 absolute z-[9999] text-xl';
+                    coin.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))';
+                    coin.style.left = (rect.left + rect.width/2 - 10) + 'px';
+                    coin.style.top = (rect.top + rect.height/2 - 10) + 'px';
+                    coin.style.transition = 'all 1s cubic-bezier(0.25, 1, 0.5, 1)';
+                    document.body.appendChild(coin);
+                    
+                    let angle = Math.random() * Math.PI * 2;
+                    let distance = 60 + Math.random() * 120;
+                    let tx = Math.cos(angle) * distance;
+                    let ty = -Math.abs(Math.sin(angle) * distance) - 60; // 向上喷射然后下落
+                    
+                    setTimeout(() => {
+                        coin.style.transform = `translate(${tx}px, ${ty}px) rotate(${Math.random()*720}deg) scale(${0.5 + Math.random()})`;
+                        coin.style.opacity = '0';
+                    }, 20);
+                    
+                    setTimeout(() => coin.remove(), 1000);
+                }
+            }
+        }));
+    });
+</script>

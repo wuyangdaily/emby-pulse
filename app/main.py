@@ -19,6 +19,7 @@ from app.core.config import PORT, SECRET_KEY, CONFIG_DIR, FONT_DIR
 from app.core.database import init_db
 from app.services.bot_service import bot
 from app.routers import media_request
+from app.routers import points
 # 🔥 引入所有路由
 from app.routers import views, auth, users, stats, bot as bot_router, system, proxy, report, webhook, insight, tasks, history, calendar, search, clients, gaps, risk,notifications
 
@@ -156,6 +157,7 @@ app.include_router(notifications.router)  # 🔥 挂载全局通知 API
 app.include_router(dedupe.router)
 app.include_router(notify_rules.router)
 app.include_router(system_tools.router)
+app.include_router(points.router)
 
 if __name__ == "__main__":
     import uvicorn

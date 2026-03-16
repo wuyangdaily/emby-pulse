@@ -62,20 +62,49 @@
                 </div>
             </div>
 
-            <div class="flex gap-3 mt-4 mb-[env(safe-area-inset-bottom)]">
-                <button @click="submitRequest()" :disabled="isSubmitting || isCheckingLocal || (activeItem?.media_type === 'tv' && selectedSeasons.length === 0) || (activeItem?.media_type === 'movie' && activeItem?.local_status === 2)" class="flex-1 py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xl" :class="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? 'bg-green-600 shadow-green-600/30 cursor-default' : 'bg-slate-900 hover:bg-slate-800 dark:bg-brand-600 dark:hover:bg-brand-500 dark:shadow-brand-600/30 active:scale-95'">
+            <div class="flex gap-3 mt-4 mb-[env(safe-area-inset-bottom)]" x-data="requestPointsCheck()" x-init="initCheck()">
+                
+                <button @click="submitRequest()" :disabled="isSubmitting || isCheckingLocal || (activeItem?.media_type === 'tv' && selectedSeasons.length === 0) || (activeItem?.media_type === 'movie' && activeItem?.local_status === 2)" 
+                        class="flex-1 py-4 rounded-2xl font-black text-lg flex justify-center items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-xl" 
+                        :class="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? 'bg-green-600 shadow-green-600/30 cursor-default' : 'bg-slate-900 hover:bg-slate-800 dark:bg-brand-600 dark:hover:bg-brand-500 dark:shadow-brand-600/30 active:scale-95'">
+                    
                     <span x-show="isSubmitting || isCheckingLocal" class="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full"></span>
+                    
                     <template x-if="!isSubmitting && !isCheckingLocal">
                         <div class="flex items-center gap-2">
                             <i class="fa-solid" :class="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? 'fa-check-double' : 'fa-paper-plane'"></i>
-                            <span x-text="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? '该电影已在库中' : '发送许愿心愿'"></span>
+                            <span>
+                                <span x-text="(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv') ? '该电影已在库中' : '发送许愿心愿'"></span>
+                                <span x-show="enableCost && !(activeItem?.local_status === 2 && activeItem?.media_type !== 'tv')" class="text-[11px] bg-black/20 px-1.5 py-0.5 rounded-lg ml-1.5 font-mono tracking-tighter inline-flex items-center gap-1 shadow-inner border border-white/10">
+                                    <i class="fa-solid fa-coins text-amber-400"></i> -<span x-text="reqCost"></span>
+                                </span>
+                            </span>
                         </div>
                     </template>
                 </button>
+
                 <button x-show="(!isCheckingLocal && !isLoadingSeasons) && (activeItem?.local_status === 2 || (activeItem?.media_type === 'tv' && tvSeasons.some(s => s.exists_locally)))" @click="openFeedbackModal(activeItem.title, activeItem.poster_path)" class="px-6 py-4 rounded-2xl bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white border border-rose-100 dark:border-rose-500/20 font-black transition-all shadow-md flex items-center justify-center active:scale-95" title="资源有问题？点此向服主反馈">
                     <i class="fa-solid fa-triangle-exclamation text-xl"></i>
                 </button>
             </div>
+
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('requestPointsCheck', () => ({
+            reqCost: 0,
+            enableCost: false,
+            initCheck() {
+                fetch('/api/user/points/info').then(r=>r.json()).then(res => {
+                    if(res.status === 'success') {
+                        this.enableCost = res.data.config.enable_req_cost === '1';
+                        this.reqCost = res.data.config.req_cost || 50;
+                    }
+                }).catch(e => console.log(e));
+            }
+        }));
+    });
+</script>
