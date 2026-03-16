@@ -95,7 +95,6 @@
     let pollInterval = null;
     let isDropdownOpen = false;
 
-    // 🔥 修补外点点击关闭面板的逻辑
     document.addEventListener('click', (e) => {
         const btn = document.getElementById('running-tasks-btn');
         const panel = document.getElementById('running-tasks-panel');
@@ -244,9 +243,14 @@
                 let statusIcon = '<span class="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block mr-1.5"></span>';
                 let statusText = '无记录';
                 
-                if (t.LastExecutionResult) {
-                    const end = new Date(t.LastExecutionResult.EndTimeUtc);
+                // 🔥 核心修复：强制追加 Z 保证 JavaScript 识别为 UTC，不再产生 8 小时时差！
+                if (t.LastExecutionResult && t.LastExecutionResult.EndTimeUtc) {
+                    let utcStr = t.LastExecutionResult.EndTimeUtc;
+                    if (!utcStr.endsWith('Z')) utcStr += 'Z';
+                    
+                    const end = new Date(utcStr);
                     lastRunTime = end.toLocaleString('zh-CN', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                    
                     if (t.LastExecutionResult.Status === 'Completed') {
                         statusIcon = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1.5 shadow-[0_0_6px_rgba(16,185,129,0.6)]"></span>';
                         statusText = '执行成功';

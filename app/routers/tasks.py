@@ -1,6 +1,7 @@
 import sqlite3
 import requests
 import asyncio
+import datetime
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from app.core.config import cfg
@@ -97,7 +98,7 @@ COMMON_TASK_DICT = {
 }
 
 # ==========================================
-# 🔥 优化：100% 精准的后台守护进程 (依靠时间戳追踪)
+# 🔥 优化：100% 精准的后台守护进程 (依靠时间戳追踪，附带本地时区推送)
 # ==========================================
 _task_last_end_times = {}
 _poller_initialized = False
@@ -125,20 +126,22 @@ async def poll_emby_tasks():
                         end_time = last_result.get("EndTimeUtc")
                         status = last_result.get("Status", "Unknown")
                         
-                        # 如果初始化过且存在结束时间，开始比对
                         if _poller_initialized and end_time:
                             prev_end = _task_last_end_times.get(tid)
-                            # 如果时间戳变了，说明刚刚必然跑完了一次！
                             if prev_end and end_time != prev_end:
+                                
+                                # 🔥 强制将通知时间转换为北京时间 (UTC+8) 显示
+                                now_str = (datetime.datetime.utcnow() + datetime.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M:%S")
+
                                 if status == "Completed":
                                     try: add_sys_notification("system", f"任务完成: {display_name}", f"Emby 后台作业正常执行完毕", "/tasks")
                                     except: pass
-                                    try: bot.send_message("sys_notify", f"✅ <b>任务执行完成</b>\n\n📌 <b>任务</b>: {display_name}\n⏱️ <b>状态</b>: 成功", platform="all")
+                                    try: bot.send_message("sys_notify", f"✅ <b>任务执行完成</b>\n\n📌 <b>任务</b>: {display_name}\n⏱️ <b>时间</b>: {now_str}\n📊 <b>状态</b>: 成功", platform="all")
                                     except: pass
                                 elif status == "Failed":
                                     try: add_sys_notification("system", f"任务失败: {display_name}", f"Emby 后台作业执行异常，请检查", "/tasks")
                                     except: pass
-                                    try: bot.send_message("sys_notify", f"❌ <b>任务执行失败</b>\n\n📌 <b>任务</b>: {display_name}\n⚠️ <b>警告</b>: 运行异常，请前往后台检查 Emby 日志", platform="all")
+                                    try: bot.send_message("sys_notify", f"❌ <b>任务执行失败</b>\n\n📌 <b>任务</b>: {display_name}\n⏱️ <b>时间</b>: {now_str}\n⚠️ <b>警告</b>: 运行异常，请前往后台检查 Emby 日志", platform="all")
                                     except: pass
                         
                         if end_time:
