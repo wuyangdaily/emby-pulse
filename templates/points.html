@@ -20,7 +20,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="w-full max-w-[1600px] mx-auto py-4 pb-32 px-4 sm:px-6 md:px-8 space-y-6">
+<div class="w-full max-w-[1200px] mx-auto py-4 pb-32 px-4 sm:px-6 md:px-8 space-y-6">
 
     <div class="apple-card flex flex-col md:flex-row md:items-center justify-between gap-6 w-full p-5 md:p-6">
         <div class="flex items-center gap-4 pl-1">
@@ -53,51 +53,81 @@
         </div>
     </div>
 
-    <div class="apple-card">
-        <div class="flex items-center justify-between mb-5 border-b border-gray-100 dark:border-white/5 pb-4">
-            <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 flex justify-center items-center"><i class="fa-solid fa-store"></i></div><span class="font-bold text-[15px]">积分商城货架配置</span></div>
-            <button onclick="addStoreItem()" class="px-4 py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 font-bold rounded-xl text-xs"><i class="fa-solid fa-plus"></i> 新增商品</button>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div class="apple-card flex items-center justify-between cursor-pointer hover:bg-white/90 dark:hover:bg-[#1f1f21] group transition-colors" onclick="openModal('store-modal')">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-500/10 text-emerald-500 rounded-[14px] flex justify-center items-center shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-store text-lg"></i></div>
+                <div><h3 class="font-black text-[15px] text-gray-900 dark:text-white">积分商城货架管理</h3><p class="text-xs font-bold text-gray-500 mt-0.5">新增、修改或下架兑换商品</p></div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400 group-hover:translate-x-1 transition-transform"></i>
         </div>
-        <div id="store-items-container" class="space-y-4"></div>
+        
+        <div class="apple-card flex items-center justify-between cursor-pointer hover:bg-white/90 dark:hover:bg-[#1f1f21] group transition-colors" onclick="openModal('users-modal')">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-500/10 text-blue-500 rounded-[14px] flex justify-center items-center shadow-inner group-hover:scale-110 transition-transform"><i class="fa-solid fa-users"></i></div>
+                <div><h3 class="font-black text-[15px] text-gray-900 dark:text-white">全站用户资产大盘</h3><p class="text-xs font-bold text-gray-500 mt-0.5">查看排行榜、资金流水调控</p></div>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400 group-hover:translate-x-1 transition-transform"></i>
+        </div>
     </div>
+</div>
 
-    <div class="apple-card">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-[16px] font-bold flex items-center gap-2"><i class="fa-solid fa-users text-brand-500"></i> 用户资产账本</h3>
-            <div class="flex gap-3">
-                <input type="text" id="search-input" placeholder="搜索用户..." class="w-48 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl py-2 px-3 text-[13px] outline-none" onkeyup="filterTable()">
-                <button onclick="openBatchModal()" class="px-4 py-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 font-bold rounded-xl text-[13px]"><i class="fa-solid fa-money-bill-transfer"></i> 批量调控</button>
+<div id="store-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-2xl rounded-[28px] shadow-2xl transform scale-95 transition-transform flex flex-col max-h-[85vh] overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center shrink-0 bg-slate-50/50 dark:bg-[#1C1C1E]">
+            <h3 class="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white"><i class="fa-solid fa-store text-emerald-500"></i> 商品货架配置</h3>
+            <div class="flex items-center gap-2">
+                <button onclick="addStoreItem()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 font-bold rounded-lg text-xs hover:bg-emerald-100 transition-colors"><i class="fa-solid fa-plus"></i> 新增</button>
+                <button onclick="closeModal('store-modal')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex justify-center items-center text-gray-500 hover:text-rose-500 transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
             </div>
         </div>
-        <div class="overflow-x-auto">
+        <div id="store-items-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-gray-50/50 dark:bg-[#0a0a0a]">
+            </div>
+        <div class="p-4 border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#1C1C1E] shrink-0">
+            <button onclick="saveConfig(); closeModal('store-modal')" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[14px] font-bold text-[13px] shadow-md shadow-emerald-500/20 transition-all active:scale-[0.98]">确认保存货架配置</button>
+        </div>
+    </div>
+</div>
+
+<div id="users-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-4xl rounded-[28px] shadow-2xl transform scale-95 transition-transform flex flex-col max-h-[85vh] overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center shrink-0 flex-wrap gap-4 bg-slate-50/50 dark:bg-[#1C1C1E]">
+            <h3 class="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white"><i class="fa-solid fa-users text-blue-500"></i> 用户资产账本</h3>
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <input type="text" id="search-input" placeholder="搜索用户..." class="w-full sm:w-48 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl py-2 px-3 text-[13px] outline-none focus:border-brand-500" onkeyup="filterTable()">
+                <button onclick="openBatchModal()" class="px-4 py-2 bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 font-bold rounded-xl text-[13px] shrink-0"><i class="fa-solid fa-money-bill-transfer"></i> 批量调控</button>
+                <button onclick="closeModal('users-modal')" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 flex justify-center items-center text-gray-500 hover:text-rose-500 transition-colors shrink-0"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto">
             <table class="w-full text-left border-collapse">
-                <thead><tr class="border-b border-gray-200 dark:border-white/10 text-[12px] text-gray-500"><th class="py-3 px-2 w-10 text-center"><input type="checkbox" class="ep-checkbox-custom" onclick="toggleAll(this)"></th><th class="py-3 px-4 uppercase">用户信息</th><th class="py-3 px-4 uppercase">资产 (积分)</th><th class="py-3 px-4 uppercase">活跃时间</th><th class="py-3 px-4 text-right uppercase">操作</th></tr></thead>
+                <thead><tr class="border-b border-gray-200 dark:border-white/10 text-[12px] text-gray-500 sticky top-0 bg-white dark:bg-[#1C1C1E] z-10 shadow-sm"><th class="py-3 px-4 w-10 text-center"><input type="checkbox" class="ep-checkbox-custom" onclick="toggleAll(this)"></th><th class="py-3 px-4 uppercase">用户信息</th><th class="py-3 px-4 uppercase">资产 (积分)</th><th class="py-3 px-4 uppercase hidden sm:table-cell">活跃时间</th><th class="py-3 px-4 text-right uppercase">操作</th></tr></thead>
                 <tbody id="user-tbody" class="text-[14px]"></tbody>
             </table>
         </div>
     </div>
 </div>
 
-<div id="batch-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
-    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-md rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform">
-        <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-sack-dollar text-brand-500"></i> 发放/扣除资产</h3><button onclick="closeBatchModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button></div>
+<div id="batch-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-md rounded-[28px] shadow-2xl p-6 transform scale-95 transition-transform overflow-hidden">
+        <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white"><i class="fa-solid fa-sack-dollar text-brand-500"></i> 发放 / 扣除资产</h3><button onclick="closeModal('batch-modal')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button></div>
         <div class="space-y-4">
-            <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5">数额 (+增 -减)</label><input type="number" id="batch_amount" value="100" class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-center font-bold"></div>
-            <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5">变更理由</label><input type="text" id="batch_reason" placeholder="例如：节日福利" class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5">数额 (+增 -减)</label><input type="number" id="batch_amount" value="100" class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-center font-black text-lg outline-none focus:border-brand-500"></div>
+            <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5">变更理由 (将记入用户流水账单)</label><input type="text" id="batch_reason" placeholder="例如：节日福利" class="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-brand-500"></div>
         </div>
-        <div class="flex gap-3 mt-8"><button onclick="closeBatchModal()" class="flex-1 py-3 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-[14px] font-bold text-sm">取消</button><button onclick="submitBatch()" class="flex-1 py-3 bg-brand-500 text-white rounded-[14px] font-bold text-sm">确认执行</button></div>
+        <div class="flex gap-3 mt-8"><button onclick="closeModal('batch-modal')" class="flex-1 py-3.5 bg-gray-100 dark:bg-[#2C2C2E] text-gray-600 dark:text-gray-300 rounded-[14px] font-bold text-[13px] active:scale-[0.98] transition-transform">取消</button><button onclick="submitBatch()" class="flex-1 py-3.5 bg-brand-500 hover:bg-brand-600 text-white rounded-[14px] font-bold text-[13px] active:scale-[0.98] transition-transform shadow-md shadow-brand-500/20">确认执行</button></div>
     </div>
 </div>
 
-<div id="logs-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
-    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-2xl rounded-[28px] shadow-2xl transform scale-95 transition-transform flex flex-col h-[70vh]">
-        <div class="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center shrink-0">
-            <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-list-ul text-blue-500"></i> <span id="logs-modal-title">资产流水</span></h3>
-            <button onclick="closeLogsModal()" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex justify-center items-center text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
+<div id="logs-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/60 backdrop-blur-md opacity-0 transition-opacity duration-300 p-4">
+    <div class="bg-white dark:bg-[#1C1C1E] w-full max-w-2xl rounded-[28px] shadow-2xl transform scale-95 transition-transform flex flex-col h-[75vh] overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center shrink-0 bg-slate-50/50 dark:bg-[#1C1C1E]">
+            <h3 class="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white"><i class="fa-solid fa-list-ul text-blue-500"></i> <span id="logs-modal-title">资产明细</span></h3>
+            <button onclick="closeModal('logs-modal')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 flex justify-center items-center text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
         </div>
-        <div class="flex-1 overflow-y-auto p-4">
-            <table class="w-full text-left text-[13px]">
-                <thead><tr class="text-gray-500 text-[11px] uppercase"><th class="pb-3 px-2">时间</th><th class="pb-3 px-2">事由</th><th class="pb-3 px-2 text-right">变动</th><th class="pb-3 px-2 text-right">余额</th></tr></thead>
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/50 dark:bg-[#0a0a0a]">
+            <table class="w-full text-left text-[13px] border-collapse">
+                <thead><tr class="text-gray-500 text-[11px] uppercase tracking-wider"><th class="pb-3 px-2">发生时间</th><th class="pb-3 px-2">交易事由</th><th class="pb-3 px-2 text-right">变动额</th><th class="pb-3 px-2 text-right">结算余额</th></tr></thead>
                 <tbody id="logs-tbody" class="text-gray-700 dark:text-gray-300"></tbody>
             </table>
         </div>
@@ -107,32 +137,43 @@
 
 {% block scripts %}
 <script>
+    // 🔥 Modal 核心：确保打开时具有 flex 属性以便让 items-center 生效实现强居中！
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        setTimeout(() => { modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); }, 10);
+    }
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95');
+        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+    }
+
     let allUsers = [];
     let storeItems = [];
 
-    // 渲染商品编辑器
     function renderStoreItems() {
         const container = document.getElementById('store-items-container');
-        if (storeItems.length === 0) { container.innerHTML = '<div class="text-center py-6 text-gray-400 text-xs font-bold bg-gray-50 dark:bg-white/5 rounded-xl">暂无商品，请点击上方添加</div>'; return; }
+        if (storeItems.length === 0) { container.innerHTML = '<div class="text-center py-10 text-gray-400 text-xs font-bold bg-white dark:bg-white/5 rounded-2xl border border-dashed border-gray-300 dark:border-white/10">货架空空如也，点击右上角添加商品</div>'; return; }
         let html = '';
         storeItems.forEach((item, index) => {
             html += `
-            <div class="bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[18px] p-5 relative shadow-sm transition-all hover:border-brand-300 group">
-                <button onclick="removeStoreItem(${index})" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash text-xs"></i></button>
+            <div class="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-5 relative shadow-sm transition-all hover:border-emerald-300 group">
+                <button onclick="removeStoreItem(${index})" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 sm:opacity-100"><i class="fa-solid fa-trash text-xs"></i></button>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-10">
-                    <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase">商品名称</label><input type="text" value="${item.name}" onchange="storeItems[${index}].name=this.value" class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500"></div>
-                    <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase">类型模式</label><select onchange="storeItems[${index}].type=this.value; storeItems[${index}].icon=(this.value==='renew'?'fa-battery-half':'fa-gift'); storeItems[${index}].color=(this.value==='renew'?'text-emerald-500':'text-amber-500'); renderStoreItems()" class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500"><option value="renew" ${item.type==='renew'?'selected':''}>系统自动发货 (账号续期)</option><option value="manual" ${item.type==='manual'?'selected':''}>仅扣费人工发货 (如求片/邀请码等)</option></select></div>
+                    <div><label class="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">商品名称</label><input type="text" value="${item.name}" onchange="storeItems[${index}].name=this.value" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-brand-500"></div>
+                    <div><label class="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">发货机制类型</label><select onchange="storeItems[${index}].type=this.value; storeItems[${index}].icon=(this.value==='renew'?'fa-battery-half':'fa-gift'); storeItems[${index}].color=(this.value==='renew'?'text-emerald-500':'text-amber-500'); renderStoreItems()" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-[13px] font-bold outline-none focus:border-brand-500"><option value="renew" ${item.type==='renew'?'selected':''}>系统自动发货 (账号延期)</option><option value="manual" ${item.type==='manual'?'selected':''}>仅扣费手工发货 (发邀请码等)</option></select></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase">消耗积分定价</label><input type="number" value="${item.cost}" onchange="storeItems[${index}].cost=parseInt(this.value)" class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-amber-600 outline-none focus:border-brand-500"></div>
-                    ${item.type === 'renew' ? `<div><label class="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase">增加账号寿命 (天数)</label><input type="number" value="${item.val||30}" onchange="storeItems[${index}].val=parseInt(this.value)" class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm font-mono font-bold text-emerald-600 outline-none focus:border-brand-500"></div>` : ''}
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">定价 (扣除积分)</label><input type="number" value="${item.cost}" onchange="storeItems[${index}].cost=parseInt(this.value)" class="w-full bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl px-3 py-2 text-sm font-mono font-black text-amber-600 outline-none focus:ring-2 focus:ring-amber-500/50"></div>
+                    ${item.type === 'renew' ? `<div><label class="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">增加账号寿命 (天)</label><input type="number" value="${item.val||30}" onchange="storeItems[${index}].val=parseInt(this.value)" class="w-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl px-3 py-2 text-sm font-mono font-black text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-500/50"></div>` : ''}
                 </div>
-                <div><label class="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase">一句话描述 (C端展示)</label><input type="text" value="${item.desc||''}" placeholder="选填..." onchange="storeItems[${index}].desc=this.value" class="w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-500"></div>
+                <div><label class="block text-[10px] font-black text-gray-400 mb-1.5 uppercase tracking-widest">前端副标题描述</label><input type="text" value="${item.desc||''}" placeholder="向用户展示的话..." onchange="storeItems[${index}].desc=this.value" class="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm font-bold outline-none focus:border-brand-500 text-gray-500"></div>
             </div>`;
         });
         container.innerHTML = html;
     }
-    function addStoreItem() { storeItems.push({id: 'item_' + Date.now(), type: 'renew', name: '新建商品', cost: 500, val: 30, desc: '描述...', icon: 'fa-battery-half', color: 'text-emerald-500'}); renderStoreItems(); }
+    function addStoreItem() { storeItems.push({id: 'item_' + Date.now(), type: 'renew', name: '新建商品', cost: 500, val: 30, desc: '在这里写描述...', icon: 'fa-battery-half', color: 'text-emerald-500'}); renderStoreItems(); }
     function removeStoreItem(idx) { storeItems.splice(idx, 1); renderStoreItems(); }
 
     async function loadConfig() {
@@ -169,14 +210,19 @@
         const tbody = document.getElementById('user-tbody');
         let html = '';
         users.forEach(u => {
-            html += `<tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-white/5"><td class="py-3 px-2 text-center"><input type="checkbox" class="ep-checkbox-custom user-cb" value="${u.id}"></td><td class="py-3 px-4 font-bold">${u.name}</td><td class="py-3 px-4"><span class="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-500/10 rounded-lg font-mono font-bold text-[13px] border border-amber-200/50 dark:border-amber-500/20"><i class="fa-solid fa-coins"></i> ${u.points}</span></td><td class="py-3 px-4 text-xs text-gray-500 font-mono">${u.last_active.substring(0, 16).replace('T',' ')}</td><td class="py-3 px-4 text-right">
+            html += `<tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                <td class="py-3 px-4 text-center"><input type="checkbox" class="ep-checkbox-custom user-cb" value="${u.id}"></td>
+                <td class="py-3 px-4 font-bold text-gray-800 dark:text-gray-200">${u.name}</td>
+                <td class="py-3 px-4"><span class="px-2.5 py-1 bg-amber-50 text-amber-600 dark:bg-amber-500/10 rounded-lg font-mono font-bold text-[13px] border border-amber-200/50 dark:border-amber-500/20"><i class="fa-solid fa-coins"></i> ${u.points}</span></td>
+                <td class="py-3 px-4 text-xs text-gray-500 font-mono hidden sm:table-cell">${u.last_active.substring(0, 16).replace('T',' ')}</td>
+                <td class="py-3 px-4 text-right">
                 <div class="flex items-center justify-end gap-2">
-                    <button onclick="openLogsModal('${u.id}', '${u.name}')" title="查看流水账单" class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white transition-colors shadow-sm"><i class="fa-solid fa-list-ul"></i></button>
-                    <button onclick="openSingleBatchModal('${u.id}', '${u.name}')" title="调整积分" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 hover:text-brand-500 shadow-sm"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="openLogsModal('${u.id}', '${u.name}')" title="查看流水账单" class="w-8 h-8 rounded-full bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500 dark:hover:text-white transition-colors shadow-sm"><i class="fa-solid fa-list-ul text-xs"></i></button>
+                    <button onclick="openSingleBatchModal('${u.id}', '${u.name}')" title="发钱/扣款" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-[#2C2C2E] text-gray-500 hover:text-brand-500 shadow-sm transition-colors"><i class="fa-solid fa-pen text-xs"></i></button>
                 </div>
             </td></tr>`;
         });
-        tbody.innerHTML = html || '<tr><td colspan="5" class="py-10 text-center text-gray-400">无数据</td></tr>';
+        tbody.innerHTML = html || '<tr><td colspan="5" class="py-10 text-center text-gray-400 font-bold text-sm">暂无数据</td></tr>';
     }
     function filterTable() { const kw = document.getElementById('search-input').value.toLowerCase(); renderTable(allUsers.filter(u => u.name.toLowerCase().includes(kw))); }
     function toggleAll(el) { document.querySelectorAll('.user-cb').forEach(cb => cb.checked = el.checked); }
@@ -184,40 +230,41 @@
     let batchIds = [];
     function openBatchModal() {
         batchIds = Array.from(document.querySelectorAll('.user-cb:checked')).map(cb => cb.value);
-        if(batchIds.length===0) return alert('请勾选用户');
+        if(batchIds.length===0) return alert('请先在左侧勾选要操作的用户！');
         document.getElementById('batch_reason').value = '';
-        const modal = document.getElementById('batch-modal'); modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
+        openModal('batch-modal');
     }
-    function openSingleBatchModal(uid, uname) { batchIds = [uid]; document.getElementById('batch_reason').value = `手动调整 ${uname}`; const modal = document.getElementById('batch-modal'); modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95'); }
-    function closeBatchModal() { const modal = document.getElementById('batch-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
+    function openSingleBatchModal(uid, uname) { batchIds = [uid]; document.getElementById('batch_reason').value = `管理员手动调控: ${uname}`; openModal('batch-modal'); }
 
     async function submitBatch() {
-        const amt = parseInt(document.getElementById('batch_amount').value); const reason = document.getElementById('batch_reason').value;
+        const amt = parseInt(document.getElementById('batch_amount').value); const reason = document.getElementById('batch_reason').value || "管理员大盘调控";
         const res = await fetch('/api/points/batch_update', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_ids: batchIds, amount: amt, reason: reason})});
         const json = await res.json(); alert(json.message);
-        if(json.status === 'success') { closeBatchModal(); loadUsers(); }
+        if(json.status === 'success') { closeModal('batch-modal'); loadUsers(); }
     }
 
-    // 🔥 查看账单浮窗
     async function openLogsModal(uid, uname) {
-        document.getElementById('logs-modal-title').innerText = `${uname} 的资产明细`;
-        const modal = document.getElementById('logs-modal'); modal.classList.remove('hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0'); modal.querySelector('div').classList.remove('scale-95');
-        
-        document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="4" class="text-center py-10"><i class="fa-solid fa-circle-notch fa-spin text-brand-500"></i></td></tr>';
+        document.getElementById('logs-modal-title').innerText = `${uname} 的资产流水明细`;
+        openModal('logs-modal');
+        document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="4" class="text-center py-16"><i class="fa-solid fa-circle-notch fa-spin text-brand-500 text-2xl"></i></td></tr>';
         const res = await fetch(`/api/points/logs?user_id=${uid}`); const json = await res.json();
         
         let html = '';
         if(json.data && json.data.length > 0) {
             json.data.forEach(log => {
                 const isPos = log.amount > 0;
-                const color = isPos ? 'text-emerald-500' : 'text-rose-500';
+                const color = isPos ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'text-rose-500 bg-rose-50 dark:bg-rose-500/10';
                 const prefix = isPos ? '+' : '';
-                html += `<tr class="border-b border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5"><td class="py-3 px-2 font-mono text-[10px] text-gray-400">${log.created_at.substring(5, 16).replace('T',' ')}</td><td class="py-3 px-2 font-bold">${log.action}</td><td class="py-3 px-2 text-right font-mono font-black ${color}">${prefix}${log.amount}</td><td class="py-3 px-2 text-right font-mono text-gray-500">${log.balance}</td></tr>`;
+                html += `<tr class="border-b border-gray-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/5 transition-colors">
+                    <td class="py-3 px-2 font-mono text-[10px] text-gray-400 whitespace-nowrap">${log.created_at.substring(5, 16).replace('T',' ')}</td>
+                    <td class="py-3 px-2 font-bold text-gray-700 dark:text-gray-300 text-xs">${log.action}</td>
+                    <td class="py-3 px-2 text-right font-mono font-black whitespace-nowrap"><span class="px-2 py-0.5 rounded border border-transparent ${isPos?'border-emerald-100 dark:border-emerald-500/20':'border-rose-100 dark:border-rose-500/20'} ${color}">${prefix}${log.amount}</span></td>
+                    <td class="py-3 px-2 text-right font-mono text-gray-500 font-bold">${log.balance}</td>
+                </tr>`;
             });
-        } else { html = '<tr><td colspan="4" class="text-center py-10 text-gray-400 text-xs">暂无明细</td></tr>'; }
+        } else { html = '<tr><td colspan="4" class="text-center py-16 text-gray-400 text-xs font-bold bg-white dark:bg-white/5 rounded-2xl">暂无资金流水</td></tr>'; }
         document.getElementById('logs-tbody').innerHTML = html;
     }
-    function closeLogsModal() { const modal = document.getElementById('logs-modal'); modal.classList.add('opacity-0'); modal.querySelector('div').classList.add('scale-95'); setTimeout(() => modal.classList.add('hidden'), 300); }
 
     document.addEventListener('DOMContentLoaded', () => { loadConfig(); loadUsers(); });
 </script>

@@ -7,9 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 from app.core.config import cfg, REPORT_COVER_URL
-# 👇 修复点：引入 add_sys_notification
 from app.core.database import DB_PATH, query_db, add_sys_notification
-from app.schemas.models import MediaRequestSubmitModel as BaseSubmitModel
 from app.services.bot_service import bot
 
 router = APIRouter()
@@ -332,7 +330,7 @@ def check_local_status(media_type: str, tmdb_id: int):
     exists = check_emby_exists(tmdb_id, media_type)
     return {"status": "success", "exists": exists}
 
-# 🔥 修复 1：改为 async def 绕过模型限制直接拿 JSON
+# 🔥 核心修复：安全解析并同步写入 request_users 表，确保列表显示正常
 @router.post("/api/requests/submit")
 async def submit_media_request(request: Request):
     user = request.session.get("req_user")
@@ -342,19 +340,17 @@ async def submit_media_request(request: Request):
     uname = user['Name']
 
     try:
-        # 直接解析请求体
         data = await request.json()
-        tmdb_id = data.get("tmdb_id")
+        tmdb_id = int(data.get("tmdb_id") or 0)
+        season = int(data.get("season") or 0)
         media_type = data.get("media_type")
         title = data.get("title")
         year = data.get("year")
         poster_path = data.get("poster_path")
-        season = data.get("season", 0)
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         
-        # --- 1. 积分拦截系统 ---
         c.execute("SELECT value FROM point_config WHERE key = 'enable_req_cost'")
         enable_cost_row = c.fetchone()
         enable_cost = (enable_cost_row[0] == "1") if enable_cost_row else False
@@ -374,7 +370,6 @@ async def submit_media_request(request: Request):
                 conn.close()
                 return {"status": "error", "message": f"积分不足！求片需消耗 {req_cost} 积分，当前仅有 {current_points} 积分。请前往首页签到。"}
 
-        # --- 2. 工单查重逻辑 ---
         c.execute("SELECT status FROM media_requests WHERE tmdb_id = ? AND season = ?", (tmdb_id, season))
         existing = c.fetchone()
         if existing:
@@ -382,34 +377,34 @@ async def submit_media_request(request: Request):
             status_map = {0: "处理中", 1: "下载中", 2: "已完成", 3: "已拒绝", 4: "待手动处理"}
             return {"status": "error", "message": f"该资源工单已存在，当前状态：{status_map.get(existing[0], '未知')}"}
 
-        # --- 3. 查重通过，正式扣款并写流水 ---
         if enable_cost and req_cost > 0:
             new_points = current_points - req_cost
             c.execute("UPDATE users_meta SET points = ? WHERE user_id = ?", (new_points, uid))
             c.execute("INSERT INTO point_logs (user_id, username, action, amount, balance) VALUES (?, ?, ?, ?, ?)",
                       (uid, uname, f"提交求片心愿: {title}", -req_cost, new_points))
 
-        # --- 4. 写入求片工单表 ---
-        c.execute("INSERT INTO media_requests (tmdb_id, media_type, title, year, poster_path, status, season) VALUES (?, ?, ?, ?, ?, 0, ?)",
+        # 🔥 写入总表
+        c.execute("INSERT OR IGNORE INTO media_requests (tmdb_id, media_type, title, year, poster_path, status, season) VALUES (?, ?, ?, ?, ?, 0, ?)",
                   (tmdb_id, media_type, title, year, poster_path, season))
+                  
+        # 🔥 核心修复：写入用户关联表！只有写入这里，用户在“我的心愿”才能看到
+        c.execute("INSERT OR IGNORE INTO request_users (tmdb_id, user_id, username, season) VALUES (?, ?, ?, ?)",
+                  (tmdb_id, uid, uname, season))
         
         conn.commit()
         conn.close()
         
-        # --- 5. 触发推送通知 (带审批按钮) ---
         try:
             add_sys_notification("request", f"收到新求片: {title}", f"用户 {uname} 提交了新的心愿单", "/requests_admin")
             season_str = f" 第 {season} 季" if media_type == "tv" else ""
             msg = f"🎬 <b>收到新求片心愿</b>\n\n👤 <b>用户：</b>{uname}\n📺 <b>内容：</b>{title} ({year}){season_str}\n\n请及时前往后台审批处理。"
             
-            # 🔥 恢复快捷操作按钮键盘
             admin_url = cfg.get("pulse_url") or cfg.get_main_public_url() or "http://127.0.0.1:10307"
             keyboard = {"inline_keyboard": [
                 [{"text": "🚀 推送 MP", "callback_data": f"req_approve_{tmdb_id}"}, {"text": "✋ 手动接单", "callback_data": f"req_manual_{tmdb_id}"}],
                 [{"text": "❌ 拒绝求片", "callback_data": f"req_reject_menu_{tmdb_id}"}, {"text": "💻 网页审批", "url": f"{admin_url.rstrip('/')}/requests_admin"}]
             ]}
             
-            from app.services.bot_service import bot
             bot.send_photo("sys_notify", f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else REPORT_COVER_URL, msg, reply_markup=keyboard, platform="all")
         except: pass
 
@@ -581,7 +576,6 @@ def submit_feedback(data: FeedbackSubmitModel, request: Request):
     img_url = actual_poster or REPORT_COVER_URL
     bot.send_photo("sys_notify", img_url, msg, reply_markup=keyboard, platform="all")
     
-    # 👇 新增：写入全局通知中心
     try:
         add_sys_notification(
             notify_type="system",

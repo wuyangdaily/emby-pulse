@@ -69,7 +69,7 @@ async def save_points_config(request: Request):
         if isinstance(v, (dict, list)): v = json.dumps(v, ensure_ascii=False)
         c.execute("INSERT OR REPLACE INTO point_config (key, value) VALUES (?, ?)", (k, str(v)))
     conn.commit(); conn.close()
-    return {"status": "success", "message": "积分配置已更新"}
+    return {"status": "success", "message": "积分经济学参数已更新"}
 
 @router.get("/api/points/users")
 def get_users_points(request: Request):
@@ -103,7 +103,6 @@ def batch_update_points(data: BatchPointsModel, request: Request):
         return {"status": "success", "message": f"成功修改了 {count} 名用户的资产"}
     except Exception as e: return {"status": "error", "message": str(e)}
 
-# 🔥 新增：获取某个用户的流水账单
 @router.get("/api/points/logs")
 def get_point_logs(request: Request, user_id: str = None):
     if not request.session.get("user"): return {"status": "error"}
@@ -186,9 +185,8 @@ def user_redeem(data: RedeemModel, request: Request):
         exp_row = c.execute("SELECT expire_date FROM users_meta WHERE user_id = ?", (user['Id'],)).fetchone()
         current_exp = exp_row[0] if exp_row else None
         
-        # 🔥 永久账号拦截：防覆盖
         if target_item.get("type") == "renew":
-            if not current_exp or current_exp == "" or "2099" in current_exp or "3000" in current_exp:
+            if not current_exp or current_exp == "" or "2099" in current_exp or "3000" in current_exp or "永久" in current_exp:
                 conn.close(); return {"status": "error", "message": "您的账号当前为【永久有效】，无需兑换续期！"}
 
         new_points = current_points - cost
