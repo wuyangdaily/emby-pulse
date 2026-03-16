@@ -2,6 +2,7 @@ import sqlite3
 import datetime
 import random
 import json
+import os
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 from typing import List, Optional
@@ -11,6 +12,7 @@ from app.core.media_adapter import media_api
 from app.services.bot_service import bot
 
 router = APIRouter()
+APP_VERSION = os.environ.get("APP_VERSION", "1.2.0.Dev")
 
 def ensure_points_schema():
     try:
@@ -49,8 +51,15 @@ class BatchPointsModel(BaseModel): user_ids: List[str]; amount: int; reason: str
 
 @router.get("/points")
 async def points_page(request: Request):
-    if not request.session.get("user"): return templates.TemplateResponse("login.html", {"request": request})
-    return templates.TemplateResponse("points.html", {"request": request, "user": request.session.get("user"), "active_page": "points"})
+    if not request.session.get("user"):
+        return templates.TemplateResponse("login.html", {"request": request})
+    
+    return templates.TemplateResponse("points.html", {
+        "request": request, 
+        "user": request.session.get("user"), 
+        "active_page": "points",
+        "version": APP_VERSION  # 🔥 3. 这里补上版本号变量
+    })
 
 @router.get("/api/points/config")
 def get_points_config(request: Request):
