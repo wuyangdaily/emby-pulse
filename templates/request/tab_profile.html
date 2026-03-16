@@ -17,12 +17,33 @@
                     </h3>
                     <div class="mt-2 space-y-1">
                         <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">入驻天数：<span x-text="userStats?.overview?.account_age_days || 1"></span> 天</div>
-                        <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">账号有效期：<span x-text="expireDate" :class="expireDate === '永久有效' ? 'text-brand-500' : 'text-rose-500'"></span></div>
+                        <div class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded inline-block">账号有效期：<span x-text="expireDate" :class="(expireDate === '永久有效' || expireDate.includes('2099') || expireDate.includes('3000')) ? 'text-brand-500' : 'text-rose-500'"></span></div>
                     </div>
                 </div>
 
-                <div x-data="pointsEngine()" x-init="initPoints()" class="w-full mt-4 flex flex-col gap-3 z-10">
+                <div x-data="pointsEngine()" x-init="initPoints()" class="w-full mt-4 flex flex-col gap-3 z-10 relative">
                     
+                    <div class="absolute right-4 -top-3 z-20 pointer-events-none flex flex-col items-center">
+                        <div x-show="!hasCheckedIn && !isLoadingPoints && !showRewardBubble"
+                             x-transition.opacity
+                             class="bg-rose-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg shadow-rose-500/40 animate-bounce whitespace-nowrap relative">
+                            点我抽盲盒!
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-rose-500 rotate-45"></div>
+                        </div>
+
+                        <div x-show="showRewardBubble"
+                             x-transition:enter="transition ease-out duration-300"
+                             x-transition:enter-start="opacity-0 translate-y-4 scale-50"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition ease-in duration-500"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-6 scale-110"
+                             class="bg-emerald-500 text-white text-[12px] font-black px-3 py-1 rounded-full shadow-lg shadow-emerald-500/40 whitespace-nowrap relative">
+                            <i class="fa-solid fa-coins mr-1"></i> +<span x-text="checkinReward"></span> 积分
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-emerald-500 rotate-45"></div>
+                        </div>
+                    </div>
+
                     <div @click="storeModalOpen = true" class="bg-gradient-to-br from-amber-400 to-orange-500 rounded-[20px] p-5 text-white shadow-[0_8px_30px_rgba(245,158,11,0.25)] relative overflow-hidden text-left flex justify-between items-center border border-white/20 dark:border-white/10 cursor-pointer hover:scale-[1.02] transition-transform group">
                         <i class="fa-solid fa-coins absolute -right-2 -bottom-4 text-7xl opacity-20 group-hover:rotate-12 transition-transform duration-500"></i>
                         <div class="relative z-10">
@@ -43,77 +64,84 @@
                     </div>
 
                     <template x-teleport="body">
-                        <div x-show="storeModalOpen" class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 text-left" x-cloak>
+                        <div x-show="storeModalOpen" class="fixed inset-0 z-[200] flex items-center justify-center p-4 text-left" x-cloak>
                             <div x-show="storeModalOpen" x-transition.opacity @click="storeModalOpen = false" class="absolute inset-0 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm"></div>
-                            <div x-show="storeModalOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-full sm:translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" class="relative w-full sm:w-[450px] bg-white dark:bg-[#111] border border-slate-200 dark:border-white/5 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[85vh]">
-                                <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center shrink-0 bg-slate-50/50 dark:bg-white/5 rounded-t-3xl">
+                            <div x-show="storeModalOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-10 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" class="relative w-full max-w-[450px] bg-white dark:bg-[#111] border border-slate-200 dark:border-white/5 rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+                                <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center shrink-0 bg-slate-50/50 dark:bg-white/5">
                                     <h3 class="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2"><i class="fa-solid fa-store text-brand-500"></i> 积分补给站</h3>
                                     <button @click="storeModalOpen = false" class="w-8 h-8 rounded-full bg-slate-200/50 dark:bg-white/10 text-slate-500 hover:text-rose-500 flex justify-center items-center transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
                                 </div>
                                 <div class="p-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 shrink-0 flex justify-between items-center">
-                                    <div><div class="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-0.5">当前余额</div><div class="text-2xl font-black font-mono text-amber-700 dark:text-amber-400" x-text="points + ' Pts'"></div></div>
-                                    <i class="fa-solid fa-piggy-bank text-4xl text-amber-500/30"></i>
+                                    <div>
+                                        <div class="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-widest mb-0.5">当前余额</div>
+                                        <div class="text-2xl font-black font-mono text-amber-700 dark:text-amber-400" x-text="points + ' Pts'"></div>
+                                    </div>
+                                    <button @click="showMyLogs = true; loadMyLogs()" x-show="!showMyLogs" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-500 font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"><i class="fa-solid fa-list-ul"></i> 资产明细</button>
+                                    <i class="fa-solid fa-piggy-bank text-4xl text-amber-500/30" x-show="showMyLogs"></i>
                                 </div>
-                                <div class="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3 bg-slate-50 dark:bg-[#0a0a0a]">
-                                    <template x-for="item in (config?.store_items || [])" :key="item.id">
-                                        <div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[18px] p-4 flex items-center justify-between shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all group">
-                                            <div class="flex items-center gap-3.5 flex-1 min-w-0">
-                                                <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-inner bg-slate-100 dark:bg-black/50" :class="item.color || 'text-brand-500'"><i class="fa-solid text-lg" :class="item.icon || 'fa-box'"></i></div>
-                                                <div class="flex-1 min-w-0 pr-2">
-                                                    <div class="text-[14px] font-black text-slate-800 dark:text-zinc-200 truncate" x-text="item.name"></div>
-                                                    <div class="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-0.5 truncate" x-text="item.desc || '专属福利兑换'"></div>
+                                <div class="p-4 sm:p-5 overflow-y-auto flex-1 bg-slate-50 dark:bg-[#0a0a0a]">
+                                    
+                                    <div x-show="!showMyLogs" class="space-y-3">
+                                        <template x-for="item in (config?.store_items || [])" :key="item.id">
+                                            <div class="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[18px] p-4 flex items-center justify-between shadow-sm hover:shadow-md hover:border-brand-300 dark:hover:border-brand-500/50 transition-all group">
+                                                <div class="flex items-center gap-3.5 flex-1 min-w-0">
+                                                    <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-inner bg-slate-100 dark:bg-black/50" :class="item.color || 'text-brand-500'"><i class="fa-solid text-lg" :class="item.icon || 'fa-box'"></i></div>
+                                                    <div class="flex-1 min-w-0 pr-2">
+                                                        <div class="text-[14px] font-black text-slate-800 dark:text-zinc-200 truncate" x-text="item.name"></div>
+                                                        <div class="text-[10px] font-bold text-slate-500 dark:text-zinc-400 mt-0.5 truncate" x-text="item.desc || '专属福利兑换'"></div>
+                                                    </div>
+                                                </div>
+                                                <button @click="redeemItem(item)" :disabled="isRedeeming || points < item.cost" class="shrink-0 px-4 py-2 rounded-xl font-bold text-xs flex flex-col items-center justify-center shadow-sm transition-all active:scale-95 border disabled:opacity-50 disabled:active:scale-100" :class="points >= item.cost ? 'bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20 dark:hover:bg-brand-500' : 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-white/5 dark:border-white/5'">
+                                                    <span x-text="item.cost + ' 积分'"></span>
+                                                </button>
+                                            </div>
+                                        </template>
+                                        <div x-show="!(config?.store_items?.length)" class="text-center py-10 text-xs font-bold text-slate-400"><i class="fa-solid fa-box-open text-3xl opacity-20 mb-2 block"></i>店主正在进货中...</div>
+                                    </div>
+
+                                    <div x-show="showMyLogs" class="space-y-2" style="display: none;">
+                                        <div class="flex justify-between items-center mb-3 px-1">
+                                            <span class="text-xs font-bold text-slate-500"><i class="fa-regular fa-clock"></i> 最近 50 条收支记录</span>
+                                            <button @click="showMyLogs = false" class="text-xs text-brand-500 font-bold hover:underline"><i class="fa-solid fa-arrow-left"></i> 返回商城</button>
+                                        </div>
+                                        <div x-show="myLogs.length === 0" class="text-center py-10 text-xs font-bold text-slate-400">暂无任何资产流水</div>
+                                        <template x-for="log in myLogs" :key="log.created_at + log.amount">
+                                            <div class="bg-white dark:bg-white/5 p-3.5 rounded-[16px] flex justify-between items-center shadow-sm border border-slate-100 dark:border-white/5">
+                                                <div class="flex-1 pr-2">
+                                                    <div class="text-xs font-bold text-slate-800 dark:text-zinc-200" x-text="log.action"></div>
+                                                    <div class="text-[9px] text-slate-400 font-mono mt-1" x-text="log.created_at"></div>
+                                                </div>
+                                                <div class="text-right shrink-0">
+                                                    <div class="text-sm font-black font-mono" :class="log.amount > 0 ? 'text-emerald-500' : 'text-rose-500'" x-text="(log.amount > 0 ? '+' : '') + log.amount"></div>
                                                 </div>
                                             </div>
-                                            <button @click="redeemItem(item)" :disabled="isRedeeming || points < item.cost" class="shrink-0 px-4 py-2 rounded-xl font-bold text-xs flex flex-col items-center justify-center shadow-sm transition-all active:scale-95 border disabled:opacity-50 disabled:active:scale-100" :class="points >= item.cost ? 'bg-brand-50 text-brand-600 border-brand-200 hover:bg-brand-500 hover:text-white dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20 dark:hover:bg-brand-500' : 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-white/5 dark:border-white/5'">
-                                                <span x-text="item.cost + ' 积分'"></span>
-                                            </button>
-                                        </div>
-                                    </template>
-                                    <div x-show="!(config?.store_items?.length)" class="text-center py-10 text-xs font-bold text-slate-400"><i class="fa-solid fa-box-open text-3xl opacity-20 mb-2 block"></i>店主正在进货中...</div>
+                                        </template>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
                     </template>
 
                 </div>
+
                 <button @click="openMyPosterStudio()" class="w-full mt-3 py-3 rounded-2xl font-black text-white bg-slate-900 dark:bg-brand-600 shadow-xl transition-transform active:scale-95 z-10 flex items-center justify-center gap-2 btn-glow">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> 生成专属观影海报
                 </button>
                 
                 <div x-data="{
-                        routes: [],
-                        expanded: false,
-                        showUrls: false,
+                        routes: [], expanded: false, showUrls: false,
                         parseRoutes() {
                             if(!serverUrl) return;
-                            try {
-                                let parsed = JSON.parse(serverUrl);
-                                if(Array.isArray(parsed)) {
-                                    this.routes = parsed.sort((a, b) => (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0));
-                                } else { throw new Error(); }
-                            } catch(e) {
-                                this.routes = [{name: '默认首选线路', url: serverUrl, is_main: true}];
-                            }
+                            try { let parsed = JSON.parse(serverUrl); if(Array.isArray(parsed)) { this.routes = parsed.sort((a, b) => (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0)); } else { throw new Error(); } } catch(e) { this.routes = [{name: '默认首选线路', url: serverUrl, is_main: true}]; }
                         },
                         pingAll() {
                             this.routes.forEach(r => {
-                                r.ping = '测速中';
-                                r.color = 'text-blue-400';
-                                r.dot = 'bg-blue-400 animate-pulse';
-                                let start = Date.now();
-                                let img = new Image();
-                                img.src = r.url.replace(/\/$/, '') + '/web/favicon.ico?t=' + Math.random();
-                                img.onload = () => {
-                                    let ms = Date.now() - start;
-                                    r.ping = ms + 'ms';
-                                    if(ms < 80) { r.color='text-green-500'; r.dot='bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'; }
-                                    else if(ms < 200) { r.color='text-amber-500'; r.dot='bg-amber-500'; }
-                                    else { r.color='text-rose-500'; r.dot='bg-rose-500'; }
-                                };
+                                r.ping = '测速中'; r.color = 'text-blue-400'; r.dot = 'bg-blue-400 animate-pulse';
+                                let start = Date.now(); let img = new Image(); img.src = r.url.replace(/\/$/, '') + '/web/favicon.ico?t=' + Math.random();
+                                img.onload = () => { let ms = Date.now() - start; r.ping = ms + 'ms'; if(ms < 80) { r.color='text-green-500'; r.dot='bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]'; } else if(ms < 200) { r.color='text-amber-500'; r.dot='bg-amber-500'; } else { r.color='text-rose-500'; r.dot='bg-rose-500'; } };
                                 img.onerror = () => { r.ping = '超时'; r.color='text-rose-500'; r.dot='bg-rose-500'; };
-                                setTimeout(() => {
-                                    if(r.ping === '测速中') { r.ping = '超时'; r.color='text-rose-500'; r.dot='bg-rose-500'; }
-                                }, 3000);
+                                setTimeout(() => { if(r.ping === '测速中') { r.ping = '超时'; r.color='text-rose-500'; r.dot='bg-rose-500'; } }, 3000);
                             });
                         }
                     }"
@@ -121,34 +149,19 @@
                     class="w-full mt-2 z-10 bg-slate-50 dark:bg-[#111] rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden text-left shadow-sm">
 
                     <div x-show="expanded" style="display: none;" class="px-3 py-2.5 flex items-center justify-between border-b border-slate-100 dark:border-white/5 cursor-pointer group hover:bg-slate-100 dark:hover:bg-white/5 transition-colors" @click="expanded = false">
+                        <div class="flex items-center gap-1.5"><i class="fa-solid fa-network-wired text-brand-500"></i><span class="text-[11px] font-bold text-slate-700 dark:text-zinc-200 tracking-wide">服务器访问节点测速</span><span class="bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 px-1.5 py-0.5 rounded text-[9px] font-black shadow-sm" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span></div>
                         <div class="flex items-center gap-1.5">
-                            <i class="fa-solid fa-network-wired text-brand-500"></i>
-                            <span class="text-[11px] font-bold text-slate-700 dark:text-zinc-200 tracking-wide">服务器访问节点测速</span>
-                            <span class="bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 px-1.5 py-0.5 rounded text-[9px] font-black shadow-sm" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button @click.stop="showUrls = !showUrls" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors" title="显示/隐藏地址">
-                                <i class="fa-regular" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i>
-                            </button>
-                            <div class="w-6 h-6 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors">
-                                <i class="fa-solid fa-chevron-up text-[10px] transition-transform duration-300"></i>
-                            </div>
+                            <button @click.stop="showUrls = !showUrls" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors" title="显示/隐藏地址"><i class="fa-regular" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i></button>
+                            <div class="w-6 h-6 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors"><i class="fa-solid fa-chevron-up text-[10px] transition-transform duration-300"></i></div>
                         </div>
                     </div>
 
                     <div x-show="!expanded" class="p-2 cursor-pointer group" @click="expanded = true; pingAll();">
                         <div class="flex items-center justify-between px-1 mb-1.5">
-                            <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase flex items-center gap-1.5">
-                                <i class="fa-solid fa-network-wired text-brand-500"></i> 访问节点
-                                <span class="bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-300 px-1.5 rounded text-[8px]" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span>
-                            </div>
+                            <div class="text-[10px] font-black text-slate-400 tracking-widest uppercase flex items-center gap-1.5"><i class="fa-solid fa-network-wired text-brand-500"></i> 访问节点 <span class="bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-300 px-1.5 rounded text-[8px]" x-show="routes.length > 1" x-text="routes.length + ' 线'"></span></div>
                             <div class="flex items-center gap-1">
-                                <button @click.stop="showUrls = !showUrls" class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 transition-colors">
-                                    <i class="fa-regular text-[10px]" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                </button>
-                                <div class="w-5 h-5 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors">
-                                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300"></i>
-                                </div>
+                                <button @click.stop="showUrls = !showUrls" class="w-5 h-5 rounded flex items-center justify-center text-slate-400 hover:text-brand-500 transition-colors"><i class="fa-regular text-[10px]" :class="showUrls ? 'fa-eye-slash' : 'fa-eye'"></i></button>
+                                <div class="w-5 h-5 rounded bg-slate-200/50 dark:bg-[#222] flex justify-center items-center text-slate-400 group-hover:text-brand-500 transition-colors"><i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-300"></i></div>
                             </div>
                         </div>
                         
@@ -156,14 +169,8 @@
                             <div class="flex items-center gap-2 overflow-hidden w-full pl-1">
                                 <div class="w-1.5 h-1.5 rounded-full shrink-0 transition-colors" :class="routes[0]?.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
                                 <div class="flex flex-col truncate w-full">
-                                    <div class="text-[11px] font-bold text-slate-800 dark:text-zinc-200 flex items-center truncate">
-                                        <span x-text="routes[0]?.name"></span>
-                                        <span class="px-1 py-[0.5px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[8px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">当前首选</span>
-                                    </div>
-                                    <div class="text-[9px] text-slate-400 font-mono mt-0.5 truncate">
-                                        <span x-show="showUrls" x-text="routes[0]?.url" class="select-all"></span>
-                                        <span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span>
-                                    </div>
+                                    <div class="text-[11px] font-bold text-slate-800 dark:text-zinc-200 flex items-center truncate"><span x-text="routes[0]?.name"></span><span class="px-1 py-[0.5px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[8px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">当前首选</span></div>
+                                    <div class="text-[9px] text-slate-400 font-mono mt-0.5 truncate"><span x-show="showUrls" x-text="routes[0]?.url" class="select-all"></span><span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span></div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 shrink-0 pl-2">
@@ -180,14 +187,8 @@
                                     <div class="flex items-center gap-2 overflow-hidden w-full pl-1">
                                         <div class="w-1.5 h-1.5 rounded-full shrink-0 transition-colors" :class="r.dot || 'bg-slate-300 dark:bg-slate-600'"></div>
                                         <div class="flex flex-col truncate w-full">
-                                            <div class="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center truncate">
-                                                <span x-text="r.name"></span>
-                                                <span x-show="r.is_main" class="px-1 py-[0.5px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[8px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">首选</span>
-                                            </div>
-                                            <div class="text-[9px] text-slate-400 font-mono mt-0.5 truncate">
-                                                <span x-show="showUrls" x-text="r.url" class="select-all"></span>
-                                                <span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span>
-                                            </div>
+                                            <div class="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center truncate"><span x-text="r.name"></span><span x-show="r.is_main" class="px-1 py-[0.5px] rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 text-[8px] font-bold ml-1.5 border border-brand-200 dark:border-transparent shrink-0">首选</span></div>
+                                            <div class="text-[9px] text-slate-400 font-mono mt-0.5 truncate"><span x-show="showUrls" x-text="r.url" class="select-all"></span><span x-show="!showUrls" class="tracking-[0.2em] text-slate-300 dark:text-slate-600">••••••••••••••••</span></div>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2 shrink-0 pl-2">
@@ -238,33 +239,18 @@
         </div>
 
         <div class="grid grid-cols-3 gap-3 sm:gap-5 mt-5">
-            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm">
-                <div class="text-2xl sm:text-3xl font-black font-mono text-slate-800 dark:text-white" x-text="userStats?.overview?.total_plays || 0"></div>
-                <div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">总播放次数</div>
-            </div>
-            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm">
-                <div class="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-br from-brand-500 to-blue-500" x-text="Math.round((userStats?.overview?.total_duration || 0) / 3600)"></div>
-                <div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">总沉浸小时</div>
-            </div>
-            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm">
-                <div class="text-2xl sm:text-3xl font-black font-mono text-slate-800 dark:text-white" x-text="Math.round((userStats?.overview?.avg_duration || 0) / 60)"></div>
-                <div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">均次分钟</div>
-            </div>
+            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm"><div class="text-2xl sm:text-3xl font-black font-mono text-slate-800 dark:text-white" x-text="userStats?.overview?.total_plays || 0"></div><div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">总播放次数</div></div>
+            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm"><div class="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-br from-brand-500 to-blue-500" x-text="Math.round((userStats?.overview?.total_duration || 0) / 3600)"></div><div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">总沉浸小时</div></div>
+            <div class="glass-panel p-4 rounded-2xl border-t border-white/40 dark:border-white/5 text-center shadow-sm"><div class="text-2xl sm:text-3xl font-black font-mono text-slate-800 dark:text-white" x-text="Math.round((userStats?.overview?.avg_duration || 0) / 60)"></div><div class="text-[10px] text-slate-500 dark:text-zinc-500 font-bold tracking-widest mt-1 uppercase">均次分钟</div></div>
         </div>
 
-        <div class="glass-panel p-5 rounded-3xl mt-5 border-t border-white/40 dark:border-white/5 w-full shadow-sm">
-            <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-chart-line text-blue-500 mr-1.5 text-lg"></i> 近 30 天观影频率 (小时)</h4>
-            <div class="relative h-48 sm:h-64 w-full"><canvas id="profileTrendChart"></canvas></div>
-        </div>
+        <div class="glass-panel p-5 rounded-3xl mt-5 border-t border-white/40 dark:border-white/5 w-full shadow-sm"><h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-chart-line text-blue-500 mr-1.5 text-lg"></i> 近 30 天观影频率 (小时)</h4><div class="relative h-48 sm:h-64 w-full"><canvas id="profileTrendChart"></canvas></div></div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
             <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 flex flex-col justify-center shadow-sm">
                 <h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-scale-balanced text-teal-500 mr-1.5 text-lg"></i> 偏好天平</h4>
                 <div class="flex justify-between text-[11px] font-black mb-2"><span class="text-blue-500 tracking-wider">电影 <span x-text="getMoviePct()"></span>%</span><span class="text-purple-500 tracking-wider"><span x-text="100 - getMoviePct()"></span>% 剧集</span></div>
-                <div class="h-4 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex border border-slate-300 dark:border-white/5 shadow-inner">
-                    <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-full transition-all duration-1000" :style="`width: ${getMoviePct()}%`"></div>
-                    <div class="bg-gradient-to-r from-purple-400 to-purple-600 h-full transition-all duration-1000" :style="`width: ${100 - getMoviePct()}%`"></div>
-                </div>
+                <div class="h-4 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden flex border border-slate-300 dark:border-white/5 shadow-inner"><div class="bg-gradient-to-r from-blue-400 to-blue-600 h-full transition-all duration-1000" :style="`width: ${getMoviePct()}%`"></div><div class="bg-gradient-to-r from-purple-400 to-purple-600 h-full transition-all duration-1000" :style="`width: ${100 - getMoviePct()}%`"></div></div>
                 <p class="text-[10px] text-center text-slate-500 dark:text-zinc-500 font-bold mt-4" x-text="getPrefText()"></p>
             </div>
             <div class="glass-panel p-5 rounded-3xl border-t border-white/40 dark:border-white/5 shadow-sm"><h4 class="font-black text-sm text-slate-800 dark:text-white tracking-widest uppercase mb-4"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-1.5 text-lg"></i> 24H 生物钟</h4><div class="relative h-32 w-full"><canvas id="profileHourChart"></canvas></div></div>
@@ -277,23 +263,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <template x-for="log in (userStats?.logs || []).slice(0, 14)" :key="log.DateCreated || log.ItemId">
                     <div class="flex justify-between items-center bg-white/50 dark:bg-white/5 p-2.5 rounded-2xl border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 transition-colors group cursor-pointer" @click="openShowcaseModal(log.ItemId, {Name: log.ItemName || log.Name})">
-                        
-                        <img :src="`/api/proxy/smart_image?item_id=${log.ItemId}&type=Primary`" 
-                             class="w-10 h-14 rounded-lg object-cover bg-slate-200 dark:bg-[#111] shrink-0 mr-3 shadow-sm" 
-                             @error="window.fallbackPoster($el, log.ItemName || log.Name)">
-                        
+                        <img :src="`/api/proxy/smart_image?item_id=${log.ItemId}&type=Primary`" class="w-10 h-14 rounded-lg object-cover bg-slate-200 dark:bg-[#111] shrink-0 mr-3 shadow-sm" @error="window.fallbackPoster($el, log.ItemName || log.Name)">
                         <div class="min-w-0 flex-1">
                             <div class="font-bold text-sm text-slate-800 dark:text-zinc-200 truncate group-hover:text-brand-500 transition-colors" x-text="log.ItemName || log.Name"></div>
-                            <div class="text-[10px] text-slate-500 mt-0.5 flex gap-2 items-center">
-                                <span x-text="(log.DateCreated || '').substring(5, 16).replace('T', ' ')"></span>
-                                <span class="bg-slate-200 dark:bg-black/50 text-slate-600 dark:text-zinc-300 px-1.5 py-0.5 rounded font-bold" x-text="log.Client || log.Device"></span>
-                            </div>
+                            <div class="text-[10px] text-slate-500 mt-0.5 flex gap-2 items-center"><span x-text="(log.DateCreated || '').substring(5, 16).replace('T', ' ')"></span><span class="bg-slate-200 dark:bg-black/50 text-slate-600 dark:text-zinc-300 px-1.5 py-0.5 rounded font-bold" x-text="log.Client || log.Device"></span></div>
                         </div>
                         <div class="flex items-center gap-2 shrink-0 ml-2">
                             <div class="text-[10px] font-black text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded-md border border-brand-100 dark:border-brand-500/20" x-text="Math.round(log.PlayDuration/60) + 'm'"></div>
-                            <button @click.stop="openFeedbackModal(log.ItemName || log.Name, log.smart_poster)" class="w-7 h-7 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center border border-rose-100 dark:border-rose-500/20 opacity-0 group-hover:opacity-100 sm:opacity-100" title="资源有问题？点此报错">
-                                <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
-                            </button>
+                            <button @click.stop="openFeedbackModal(log.ItemName || log.Name, log.smart_poster)" class="w-7 h-7 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500 dark:hover:text-white transition-colors flex items-center justify-center border border-rose-100 dark:border-rose-500/20 opacity-0 group-hover:opacity-100 sm:opacity-100" title="资源有问题？点此报错"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i></button>
                         </div>
                     </div>
                 </template>
@@ -306,36 +283,36 @@
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('pointsEngine', () => ({
-            points: 0,
-            hasCheckedIn: false,
-            config: {},
-            isLoadingPoints: true,
-            isCheckingIn: false,
-            isRedeeming: false,
-            storeModalOpen: false,
+            points: 0, hasCheckedIn: false, config: {}, isLoadingPoints: true, isCheckingIn: false, storeModalOpen: false, isRedeeming: false,
+            showMyLogs: false, myLogs: [],
+            checkinReward: 0, showRewardBubble: false,
             
             initPoints() {
                 fetch('/api/user/points/info').then(r=>r.json()).then(res => {
-                    if(res.status === 'success') {
-                        this.points = res.data.points;
-                        this.hasCheckedIn = res.data.has_checked_in;
-                        this.config = res.data.config;
-                    }
+                    if(res.status === 'success') { this.points = res.data.points; this.hasCheckedIn = res.data.has_checked_in; this.config = res.data.config; }
                     this.isLoadingPoints = false;
                 }).catch(e => this.isLoadingPoints = false);
             },
+
+            loadMyLogs() {
+                fetch('/api/user/points/logs').then(r=>r.json()).then(res => {
+                    if(res.status === 'success') { this.myLogs = res.data; }
+                });
+            },
             
             checkIn(e) {
-                if(this.hasCheckedIn) return;
-                this.isCheckingIn = true;
+                if(this.hasCheckedIn) return; this.isCheckingIn = true;
                 fetch('/api/user/points/checkin', {method:'POST'}).then(r=>r.json()).then(res => {
-                    if(res.status === 'success') {
-                        this.hasCheckedIn = true;
-                        this.points = res.balance;
-                        if(typeof showToast === 'function') showToast(res.message, 'success');
-                        this.triggerCoinDrop(e.currentTarget);
-                    } else {
-                        if(typeof showToast === 'function') showToast(res.message, 'error');
+                    if(res.status === 'success') { 
+                        this.hasCheckedIn = true; 
+                        this.points = res.balance; 
+                        this.checkinReward = res.reward;
+                        this.showRewardBubble = true;
+                        setTimeout(() => { this.showRewardBubble = false; }, 2500);
+                        if(typeof showToast === 'function') showToast(res.message, 'success'); 
+                        this.triggerCoinDrop(e.currentTarget); 
+                    } else { 
+                        if(typeof showToast === 'function') showToast(res.message, 'error'); 
                     }
                     this.isCheckingIn = false;
                 }).catch(err => this.isCheckingIn = false);
@@ -344,17 +321,13 @@
             redeemItem(item) {
                 if(!confirm(`确定消耗 ${item.cost} 积分兑换【${item.name}】吗？`)) return;
                 this.isRedeeming = true;
-                fetch('/api/user/points/redeem', {
-                    method:'POST', 
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({item_id: item.id})
-                }).then(r=>r.json()).then(res => {
-                    if(res.status === 'success') {
-                        if(typeof showToast === 'function') showToast(res.message, 'success');
-                        this.initPoints();
-                        setTimeout(() => window.location.reload(), 1500);
-                    } else {
-                        if(typeof showToast === 'function') showToast(res.message, 'error');
+                fetch('/api/user/points/redeem', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({item_id: item.id})}).then(r=>r.json()).then(res => {
+                    if(res.status === 'success') { 
+                        if(typeof showToast === 'function') showToast(res.message, 'success'); 
+                        this.initPoints(); 
+                        if(item.type === 'renew') setTimeout(() => window.location.reload(), 1500); 
+                    } else { 
+                        if(typeof showToast === 'function') showToast(res.message, 'error'); 
                     }
                     this.isRedeeming = false;
                 }).catch(err => this.isRedeeming = false);
@@ -363,24 +336,9 @@
             triggerCoinDrop(buttonEl) {
                 const rect = buttonEl.getBoundingClientRect();
                 for(let i=0; i<20; i++) {
-                    let coin = document.createElement('i');
-                    coin.className = 'fa-solid fa-coins text-amber-400 absolute z-[9999] text-xl';
-                    coin.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))';
-                    coin.style.left = (rect.left + rect.width/2 - 10) + 'px';
-                    coin.style.top = (rect.top + rect.height/2 - 10) + 'px';
-                    coin.style.transition = 'all 1s cubic-bezier(0.25, 1, 0.5, 1)';
-                    document.body.appendChild(coin);
-                    
-                    let angle = Math.random() * Math.PI * 2;
-                    let distance = 60 + Math.random() * 120;
-                    let tx = Math.cos(angle) * distance;
-                    let ty = -Math.abs(Math.sin(angle) * distance) - 60;
-                    
-                    setTimeout(() => {
-                        coin.style.transform = `translate(${tx}px, ${ty}px) rotate(${Math.random()*720}deg) scale(${0.5 + Math.random()})`;
-                        coin.style.opacity = '0';
-                    }, 20);
-                    
+                    let coin = document.createElement('i'); coin.className = 'fa-solid fa-coins text-amber-400 absolute z-[9999] text-xl'; coin.style.filter = 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'; coin.style.left = (rect.left + rect.width/2 - 10) + 'px'; coin.style.top = (rect.top + rect.height/2 - 10) + 'px'; coin.style.transition = 'all 1s cubic-bezier(0.25, 1, 0.5, 1)'; document.body.appendChild(coin);
+                    let angle = Math.random() * Math.PI * 2; let distance = 60 + Math.random() * 120; let tx = Math.cos(angle) * distance; let ty = -Math.abs(Math.sin(angle) * distance) - 60;
+                    setTimeout(() => { coin.style.transform = `translate(${tx}px, ${ty}px) rotate(${Math.random()*720}deg) scale(${0.5 + Math.random()})`; coin.style.opacity = '0'; }, 20);
                     setTimeout(() => coin.remove(), 1000);
                 }
             }
