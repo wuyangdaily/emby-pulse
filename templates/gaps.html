@@ -647,6 +647,19 @@ document.addEventListener('alpine:init', () => {
 
         mountData(rawResults) {
             this.gapData = rawResults.map(series => {
+                // ================= 🔥 核心修复开始：重构 Emby 跳转链接 =================
+                let jumpUrl = series.emby_url || '';
+                // 拦截包含 JSON 字符串、undefined 或空网址的情况
+                if (!jumpUrl || jumpUrl === '#' || jumpUrl.includes('undefined') || jumpUrl.includes('[%7B') || jumpUrl.includes('[{')) {
+                    if (typeof globalEmbyBaseUrl !== 'undefined' && globalEmbyBaseUrl && series.series_id) {
+                        jumpUrl = `${globalEmbyBaseUrl}/web/index.html#!/item?id=${series.series_id}&serverId=${typeof globalEmbyServerId !== 'undefined' ? globalEmbyServerId : ''}`;
+                    } else {
+                        jumpUrl = 'javascript:alert("未获取到 Emby 地址，请检查系统设置")';
+                    }
+                }
+                series.emby_url = jumpUrl;
+                // ================= 🔥 核心修复结束 =================
+
                 const grouped = {};
                 series.gaps.forEach(ep => { if (!grouped[ep.season]) grouped[ep.season] = []; grouped[ep.season].push(ep); });
                 const groupedArr = [];
