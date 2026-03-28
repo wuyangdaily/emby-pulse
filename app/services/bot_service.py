@@ -248,7 +248,8 @@ class SystemDaemon:
                     self.last_check_min = now.minute
                     if now.hour == 9 and now.minute == 0:
                         self._check_user_expiration()
-                        bus.publish("notify.daily_report")
+                        # 日报已改用观影报告插件的定时任务，此处注释掉避免重复发送
+                        # bus.publish("notify.daily_report")
                 if now.minute % 10 == 0 and now.minute != self.last_sync_min:
                     self.last_sync_min = now.minute
                     self._sync_pending_requests()
